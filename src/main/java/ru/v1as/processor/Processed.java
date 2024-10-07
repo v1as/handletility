@@ -78,7 +78,7 @@ public class Processed<T> {
         return handler.handle(value);
     }
 
-    private boolean isError() {
+    public boolean isError() {
         return exception != null;
     }
 
