@@ -9,6 +9,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import ru.v1as.ResultState;
+import ru.v1as.handler.Handled;
+import ru.v1as.handler.Handler;
 
 @Getter
 @Accessors(fluent = true)
@@ -56,11 +58,24 @@ public class Processed<T> {
     }
 
     @SuppressWarnings("unchecked")
-    public <O> Processed<O> map(Processor<T, O> processor) {
+    public <O> Processed<O> process(Processor<T, O> processor) {
         if (isError()) {
             return (Processed<O>) this;
         }
+        if (isEmpty()) {
+            return skipped();
+        }
         return processor.process(value);
+    }
+
+    public Handled handle(Handler<T> handler) {
+        if (isError()) {
+            return Handled.error(exception);
+        }
+        if (isEmpty()) {
+            return Handled.skipped();
+        }
+        return handler.handle(value);
     }
 
     private boolean isError() {
