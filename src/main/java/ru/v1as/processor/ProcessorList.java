@@ -12,6 +12,7 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import ru.v1as.Modifier;
+import ru.v1as.processor.impl.LoggingExceptionProcessor;
 
 @RequiredArgsConstructor
 public class ProcessorList<I, O> implements Processor<I, O> {
@@ -20,9 +21,10 @@ public class ProcessorList<I, O> implements Processor<I, O> {
     private final String name;
     private final List<Processor<I, O>> processors;
     private final Set<Modifier> modifiers;
+    private final Processor<Exception, O> exceptionProcessor;
 
     public ProcessorList(String name, List<Processor<I, O>> processors) {
-        this(name, processors, Set.of());
+        this(name, processors, Set.of(), new LoggingExceptionProcessor<>());
     }
 
     @Override
@@ -34,7 +36,7 @@ public class ProcessorList<I, O> implements Processor<I, O> {
                 processed = processor.process(input);
             } catch (Exception e) {
                 log.warn("Processing '{}' error", name, e);
-                processed = Processed.error(e);
+                processed = exceptionProcessor.process(e);
             }
             if (log.isTraceEnabled()) {
                 log.trace(

@@ -14,6 +14,7 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import ru.v1as.Modifier;
+import ru.v1as.handler.impl.LoggingExceptionHandler;
 
 @RequiredArgsConstructor
 public class HandlerList<O> implements Handler<O> {
@@ -23,9 +24,10 @@ public class HandlerList<O> implements Handler<O> {
     private final String name;
     private final List<Handler<O>> handlers;
     private final Set<Modifier> modifiers;
+    private final Handler<Exception> exceptionHandler;
 
     public HandlerList(String name, List<Handler<O>> handlers) {
-        this(name, handlers, Set.of());
+        this(name, handlers, Set.of(), new LoggingExceptionHandler());
     }
 
     @Override
@@ -37,8 +39,7 @@ public class HandlerList<O> implements Handler<O> {
             try {
                 handled = handler.handle(input);
             } catch (Exception e) {
-                log.warn("Handling '{}' error", name, e);
-                handled = Handled.error(e);
+                handled = exceptionHandler.handle(e);
             }
             if (log.isTraceEnabled()) {
                 log.trace(
