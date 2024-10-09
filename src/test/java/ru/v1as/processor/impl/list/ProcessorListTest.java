@@ -1,4 +1,4 @@
-package ru.v1as.processor;
+package ru.v1as.processor.impl.list;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static ru.v1as.processor.Processed.processed;
@@ -6,7 +6,8 @@ import static ru.v1as.processor.Processed.skipped;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import ru.v1as.processor.impl.list.ProcessorList;
+import ru.v1as.processor.Processed;
+import ru.v1as.processor.Processor;
 
 public class ProcessorListTest {
 

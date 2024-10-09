@@ -21,11 +21,11 @@ import ru.v1as.handler.impl.LoggingExceptionHandler;
 @RequiredArgsConstructor
 public class HandlerList<I> extends AbstractHandler<I> {
 
-    private final List<Handler<I>> handlers;
+    private final List<? extends Handler<I>> handlers;
     private final Set<HandlerModifier> modifiers;
     private final Handler<Failed<I>> exceptionHandler;
 
-    public HandlerList(List<Handler<I>> handlers) {
+    public HandlerList(List<? extends Handler<I>> handlers) {
         this(handlers, Set.of(), new LoggingExceptionHandler<>());
     }
 
