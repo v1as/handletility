@@ -11,6 +11,7 @@ import static ru.v1as.handler.impl.list.HandlerModifier.STOP_ON_ERROR;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import ru.v1as.Failed;
 import ru.v1as.handler.AbstractHandler;
 import ru.v1as.handler.Handled;
 import ru.v1as.handler.Handler;
@@ -22,10 +23,10 @@ public class HandlerList<I> extends AbstractHandler<I> {
 
     private final List<Handler<I>> handlers;
     private final Set<HandlerModifier> modifiers;
-    private final Handler<Exception> exceptionHandler;
+    private final Handler<Failed<I>> exceptionHandler;
 
     public HandlerList(List<Handler<I>> handlers) {
-        this(handlers, Set.of(), new LoggingExceptionHandler());
+        this(handlers, Set.of(), new LoggingExceptionHandler<>());
     }
 
     @Override
@@ -38,7 +39,7 @@ public class HandlerList<I> extends AbstractHandler<I> {
             try {
                 handled = handle(handler, input);
             } catch (Exception e) {
-                handled = exceptionHandler.handle(e);
+                handled = exceptionHandler.handle(new Failed<>(input, e));
             }
             if (DONE.equals(handled.state())) {
                 done = true;

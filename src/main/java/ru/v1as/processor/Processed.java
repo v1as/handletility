@@ -5,28 +5,13 @@ import static ru.v1as.ResultState.ERROR;
 
 import java.util.Optional;
 import java.util.function.Function;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.experimental.Accessors;
 import ru.v1as.ResultState;
 import ru.v1as.handler.Handled;
 import ru.v1as.handler.Handler;
 
-@Getter
-@Accessors(fluent = true)
-@EqualsAndHashCode
-public class Processed<T> {
+public record Processed<T>(T value, ResultState state, Exception exception) {
 
     private static final Processed<?> SKIPPED = new Processed<>(null, ResultState.SKIPPED, null);
-    private final T value;
-    private final ResultState state;
-    private final Exception exception;
-
-    private Processed(T value, ResultState state, Exception exception) {
-        this.value = value;
-        this.state = state;
-        this.exception = exception;
-    }
 
     public static <O> Processed<O> error(String reason) {
         return error(new ProcessorException(reason));
@@ -93,18 +78,6 @@ public class Processed<T> {
         return value;
     }
 
-    public T value() {
-        return value;
-    }
-
-    public ResultState state() {
-        return state;
-    }
-
-    public Exception exception() {
-        return exception;
-    }
-
     @Override
     public String toString() {
         String result = state.toString();
@@ -117,9 +90,5 @@ public class Processed<T> {
                             : "";
         }
         return result;
-    }
-
-    public <O> Processed<O> accumulate(T processor) {
-        return null;
     }
 }

@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
+import ru.v1as.Failed;
 import ru.v1as.processor.AbstractProcessor;
 import ru.v1as.processor.Processed;
 import ru.v1as.processor.Processor;
@@ -23,7 +24,7 @@ public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
     private final Logger log = getLogger(this.getClass());
     private final List<Processor<I, O>> processors;
     private final Set<ProcessorModifier> modifiers;
-    private final Processor<Exception, O> exceptionProcessor;
+    private final Processor<Failed<I>, O> exceptionProcessor;
 
     public ProcessorList(List<Processor<I, O>> processors) {
         this(processors, Set.of(), new LoggingExceptionProcessor<>());
@@ -38,7 +39,7 @@ public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
                 processed = processor.process(input);
             } catch (Exception e) {
                 log.warn("Processing error", e);
-                processed = exceptionProcessor.process(e);
+                processed = exceptionProcessor.process(new Failed<>(input, e));
             }
             if (log.isTraceEnabled()) {
                 log.trace(

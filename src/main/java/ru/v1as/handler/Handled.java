@@ -1,32 +1,18 @@
 package ru.v1as.handler;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.experimental.Accessors;
 import ru.v1as.ResultState;
 
-@Getter
-@Accessors(fluent = true)
-@EqualsAndHashCode
-public class Handled {
+public record Handled(ResultState state, Exception exception) {
 
-    private static final Handled HANDLED = new Handled(null, ResultState.DONE);
-    public static final Handled SKIPPED = new Handled(null, ResultState.SKIPPED);
-
-    private final ResultState state;
-    private final Exception exception;
-
-    private Handled(Exception exception, ResultState state) {
-        this.exception = exception;
-        this.state = state;
-    }
+    private static final Handled HANDLED = new Handled(ResultState.DONE, null);
+    public static final Handled SKIPPED = new Handled(ResultState.SKIPPED, null);
 
     public static Handled error(String reason) {
         return error(new HandlerException(reason));
     }
 
     public static Handled error(Exception exception) {
-        return new Handled(exception, ResultState.ERROR);
+        return new Handled(ResultState.ERROR, exception);
     }
 
     public static Handled handled() {
