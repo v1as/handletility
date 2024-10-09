@@ -1,7 +1,7 @@
 package ru.v1as.handler;
 
 @FunctionalInterface
-public interface Handler<O> {
+public interface Handler<I> {
 
-    Handled handle(O o);
+    Handled handle(I input);
 }

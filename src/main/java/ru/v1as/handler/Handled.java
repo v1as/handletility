@@ -21,6 +21,10 @@ public class Handled {
         this.state = state;
     }
 
+    public static Handled error(String reason) {
+        return error(new HandlerException(reason));
+    }
+
     public static Handled error(Exception exception) {
         return new Handled(exception, ResultState.ERROR);
     }

@@ -1,54 +1,46 @@
-package ru.v1as.handler;
+package ru.v1as.handler.impl.list;
 
-import static org.slf4j.LoggerFactory.getLogger;
-import static ru.v1as.Modifier.CONTINUE_ON_DONE;
-import static ru.v1as.Modifier.STOP_ON_ERROR;
 import static ru.v1as.ResultState.DONE;
 import static ru.v1as.ResultState.ERROR;
 import static ru.v1as.handler.Handled.error;
 import static ru.v1as.handler.Handled.handled;
 import static ru.v1as.handler.Handled.skipped;
+import static ru.v1as.handler.impl.list.HandlerModifier.CONTINUE_ON_DONE;
+import static ru.v1as.handler.impl.list.HandlerModifier.STOP_ON_ERROR;
 
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import ru.v1as.Modifier;
+import ru.v1as.handler.AbstractHandler;
+import ru.v1as.handler.Handled;
+import ru.v1as.handler.Handler;
+import ru.v1as.handler.HandlerException;
 import ru.v1as.handler.impl.LoggingExceptionHandler;
 
 @RequiredArgsConstructor
-public class HandlerList<O> implements Handler<O> {
+public class HandlerList<I> extends AbstractHandler<I> {
 
-    private final Logger log = getLogger(this.getClass());
-
-    private final String name;
-    private final List<Handler<O>> handlers;
-    private final Set<Modifier> modifiers;
+    private final List<Handler<I>> handlers;
+    private final Set<HandlerModifier> modifiers;
     private final Handler<Exception> exceptionHandler;
 
-    public HandlerList(String name, List<Handler<O>> handlers) {
-        this(name, handlers, Set.of(), new LoggingExceptionHandler());
+    public HandlerList(List<Handler<I>> handlers) {
+        this(handlers, Set.of(), new LoggingExceptionHandler());
     }
 
     @Override
-    public Handled handle(O input) {
+    protected Handled handleInternal(I input) {
         HandlerException exception = null;
         boolean done = false;
-        for (Handler<O> handler : handlers) {
+        Handled result;
+        for (Handler<I> handler : handlers) {
             Handled handled;
             try {
-                handled = handler.handle(input);
+                handled = handle(handler, input);
             } catch (Exception e) {
                 handled = exceptionHandler.handle(e);
             }
-            if (log.isTraceEnabled()) {
-                log.trace(
-                        "Handling '{}' has result '{}'",
-                        handler.getClass().getSimpleName(),
-                        handled);
-            }
             if (DONE.equals(handled.state())) {
-                logResult(handled);
                 done = true;
                 if (!should(CONTINUE_ON_DONE)) {
                     return handled;
@@ -56,15 +48,15 @@ public class HandlerList<O> implements Handler<O> {
             }
             if (ERROR.equals(handled.state())) {
                 if (exception == null) {
-                    exception = new HandlerException("Handling '%s' error".formatted(name));
+                    exception = new HandlerException("Handling error");
                 }
                 exception.addSuppressed(handled.exception());
                 if (should(STOP_ON_ERROR)) {
-                    return error(exception);
+                    result = error(exception);
+                    return result;
                 }
             }
         }
-        Handled result;
         if (done) {
             result = handled();
         } else if (exception != null) {
@@ -72,17 +64,14 @@ public class HandlerList<O> implements Handler<O> {
         } else {
             result = skipped();
         }
-        logResult(result);
         return result;
     }
 
-    private boolean should(Modifier modifier) {
+    private boolean should(HandlerModifier modifier) {
         return modifiers.contains(modifier);
     }
 
-    private void logResult(Handled result) {
-        if (log.isDebugEnabled()) {
-            log.debug("Processing '{}' result: {}", name, result);
-        }
+    protected Handled handle(Handler<I> handler, I input) {
+        return handler.handle(input);
     }
 }

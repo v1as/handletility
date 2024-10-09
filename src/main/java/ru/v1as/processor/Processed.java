@@ -28,6 +28,10 @@ public class Processed<T> {
         this.exception = exception;
     }
 
+    public static <O> Processed<O> error(String reason) {
+        return error(new ProcessorException(reason));
+    }
+
     public static <O> Processed<O> error(Exception exception) {
         return new Processed<>(null, ResultState.ERROR, exception);
     }
@@ -113,5 +117,9 @@ public class Processed<T> {
                             : "";
         }
         return result;
+    }
+
+    public <O> Processed<O> accumulate(T processor) {
+        return null;
     }
 }

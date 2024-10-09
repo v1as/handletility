@@ -1,41 +1,43 @@
-package ru.v1as.processor;
+package ru.v1as.processor.impl.list;
 
 import static org.slf4j.LoggerFactory.getLogger;
-import static ru.v1as.Modifier.STOP_ON_ERROR;
 import static ru.v1as.ResultState.DONE;
 import static ru.v1as.ResultState.ERROR;
 import static ru.v1as.processor.Processed.error;
 import static ru.v1as.processor.Processed.skipped;
+import static ru.v1as.processor.impl.list.ProcessorModifier.STOP_ON_ERROR;
 
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
-import ru.v1as.Modifier;
+import ru.v1as.processor.AbstractProcessor;
+import ru.v1as.processor.Processed;
+import ru.v1as.processor.Processor;
+import ru.v1as.processor.ProcessorException;
 import ru.v1as.processor.impl.LoggingExceptionProcessor;
 
 @RequiredArgsConstructor
-public class ProcessorList<I, O> implements Processor<I, O> {
+public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
 
     private final Logger log = getLogger(this.getClass());
-    private final String name;
     private final List<Processor<I, O>> processors;
-    private final Set<Modifier> modifiers;
+    private final Set<ProcessorModifier> modifiers;
     private final Processor<Exception, O> exceptionProcessor;
 
-    public ProcessorList(String name, List<Processor<I, O>> processors) {
-        this(name, processors, Set.of(), new LoggingExceptionProcessor<>());
+    public ProcessorList(List<Processor<I, O>> processors) {
+        this(processors, Set.of(), new LoggingExceptionProcessor<>());
     }
 
     @Override
-    public Processed<O> process(I input) {
+    protected Processed<O> processInternal(I input) {
         ProcessorException exception = null;
         for (Processor<I, O> processor : processors) {
             Processed<O> processed;
             try {
                 processed = processor.process(input);
             } catch (Exception e) {
-                log.warn("Processing '{}' error", name, e);
+                log.warn("Processing error", e);
                 processed = exceptionProcessor.process(e);
             }
             if (log.isTraceEnabled()) {
@@ -45,12 +47,11 @@ public class ProcessorList<I, O> implements Processor<I, O> {
                         processed);
             }
             if (DONE.equals(processed.state())) {
-                logResult(processed);
                 return processed;
             }
             if (ERROR.equals(processed.state())) {
                 if (exception == null) {
-                    exception = new ProcessorException("Processing '%s' error".formatted(name));
+                    exception = new ProcessorException("Processing error");
                 }
                 exception.addSuppressed(processed.exception());
                 if (should(STOP_ON_ERROR)) {
@@ -59,21 +60,12 @@ public class ProcessorList<I, O> implements Processor<I, O> {
             }
         }
         if (exception != null) {
-            Processed<O> result = Processed.error(exception);
-            logResult(result);
-            return result;
+            return Processed.error(exception);
         }
-        logResult(skipped());
         return skipped();
     }
 
-    private boolean should(Modifier modifier) {
+    private boolean should(ProcessorModifier modifier) {
         return modifiers.contains(modifier);
-    }
-
-    private void logResult(Processed<O> result) {
-        if (log.isDebugEnabled()) {
-            log.debug("Processing '{}' result: {}", name, result);
-        }
     }
 }
