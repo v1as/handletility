@@ -4,7 +4,7 @@ plugins {
     id "com.diffplug.spotless" version "7.0.0.BETA2"
 }
 
-group = 'ru.v1as'
+group = 'ru.operation'
 version = '0.0.1'
 
 java {
