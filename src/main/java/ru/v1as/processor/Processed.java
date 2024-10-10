@@ -82,11 +82,14 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
     public String toString() {
         String result = state.toString();
         if (DONE == state) {
-            result += value != null ? String.valueOf(value) : "";
+            result += value != null ? ": " + value : "";
         } else if (ERROR == state) {
             result +=
                     exception != null
-                            ? exception.getClass().getSimpleName() + ":" + exception.getMessage()
+                            ? ": "
+                                    + exception.getClass().getSimpleName()
+                                    + ": "
+                                    + exception.getMessage()
                             : "";
         }
         return result;

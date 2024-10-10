@@ -1,7 +1,6 @@
 package ru.v1as.handler;
 
 import static org.slf4j.LoggerFactory.getLogger;
-
 import static ru.v1as.handler.Handled.error;
 import static ru.v1as.handler.Handled.skipped;
 

@@ -2,9 +2,9 @@ package ru.v1as.handler.impl.map;
 
 import static ru.v1as.handler.Handled.error;
 
+import java.util.List;
 import lombok.Builder;
 import lombok.Singular;
-
 import ru.v1as.handler.AbstractHandler;
 import ru.v1as.handler.Handled;
 import ru.v1as.handler.Handler;
@@ -12,8 +12,6 @@ import ru.v1as.handler.IdentifiedHandler;
 import ru.v1as.identifier.IdentifyProcessor;
 import ru.v1as.processor.Processed;
 import ru.v1as.processor.Processor;
-
-import java.util.List;
 
 public class HandlerMap<K, I> extends AbstractHandler<I> {
 

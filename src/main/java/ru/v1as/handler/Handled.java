@@ -34,4 +34,13 @@ public record Handled(ResultState state, Exception exception) {
     public boolean isHandled() {
         return state == ResultState.DONE;
     }
+
+    @Override
+    public String toString() {
+        String result = state.toString();
+        if (exception != null) {
+            result += ": %s %s".formatted(exception.getClass(), exception.getMessage());
+        }
+        return result;
+    }
 }
