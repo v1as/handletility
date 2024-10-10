@@ -1,28 +1,28 @@
 package ru.operation.handler.impl;
 
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import lombok.RequiredArgsConstructor;
 import ru.operation.handler.AbstractHandler;
 import ru.operation.handler.Handled;
+import ru.operation.util.function.ThrowableConsumer;
 
 @RequiredArgsConstructor
 public class SimpleHandler<I> extends AbstractHandler<I> {
 
     private final Predicate<I> check;
-    private final Consumer<I> consumer;
+    private final ThrowableConsumer<I> consumer;
 
-    public SimpleHandler(Consumer<I> consumer) {
+    public SimpleHandler(ThrowableConsumer<I> consumer) {
         this(SimpleHandler::alwaysTrue, consumer);
     }
 
     @Override
-    protected boolean check(I input) {
+    public boolean check(I input) {
         return check.test(input);
     }
 
     @Override
-    protected Handled handleInternal(I input) {
+    protected Handled handleInternal(I input) throws Exception {
         consumer.accept(input);
         return Handled.handled();
     }

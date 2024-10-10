@@ -10,7 +10,7 @@ public abstract class AbstractHandler<T> implements Handler<T> {
 
     protected final Logger log = getLogger(this.getClass());
 
-    protected boolean check(T input) {
+    public boolean check(T input) {
         return true;
     }
 
@@ -28,7 +28,7 @@ public abstract class AbstractHandler<T> implements Handler<T> {
         }
     }
 
-    protected abstract Handled handleInternal(T input);
+    protected abstract Handled handleInternal(T input) throws Exception;
 
     protected Handled onFailedCheck(T input) {
         log.trace("Skipped because of unsuitable input: '{}'", input);
