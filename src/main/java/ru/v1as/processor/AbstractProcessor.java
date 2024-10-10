@@ -30,12 +30,12 @@ public abstract class AbstractProcessor<I, O> implements Processor<I, O> {
 
     protected abstract Processed<O> processInternal(I input);
 
-    private Processed<O> onFailedCheck(I input) {
+    protected Processed<O> onFailedCheck(I input) {
         log.trace("Skipped because of unsuitable input: '{}'", input);
         return skipped();
     }
 
-    private Processed<O> onException(I input, Exception ex) {
+    protected Processed<O> onException(I input, Exception ex) {
         log.warn("Processing error of '{}'", input, ex);
         return error(ex);
     }

@@ -21,7 +21,8 @@ import ru.v1as.processor.impl.LoggingExceptionProcessor;
 @RequiredArgsConstructor
 public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
 
-    private final Logger log = getLogger(this.getClass());
+    protected final Logger log = getLogger(this.getClass());
+
     private final List<? extends Processor<I, O>> processors;
     private final Set<ProcessorModifier> modifiers;
     private final Processor<Failed<I>, O> exceptionProcessor;

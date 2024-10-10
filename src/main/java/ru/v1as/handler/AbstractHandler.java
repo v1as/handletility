@@ -1,6 +1,7 @@
 package ru.v1as.handler;
 
 import static org.slf4j.LoggerFactory.getLogger;
+
 import static ru.v1as.handler.Handled.error;
 import static ru.v1as.handler.Handled.skipped;
 
@@ -8,7 +9,7 @@ import org.slf4j.Logger;
 
 public abstract class AbstractHandler<T> implements Handler<T> {
 
-    private final Logger log = getLogger(this.getClass());
+    protected final Logger log = getLogger(this.getClass());
 
     protected boolean check(T input) {
         return true;

@@ -2,16 +2,24 @@ package ru.v1as.handler.impl;
 
 import static ru.v1as.handler.impl.AlwaysSkippedHandler.alwaysSkippedHandler;
 
-import lombok.RequiredArgsConstructor;
+import lombok.Builder;
+import lombok.NonNull;
 import ru.v1as.handler.Handled;
 import ru.v1as.handler.Handler;
 
-@RequiredArgsConstructor
+@Builder
 public class CompositeHandler<O> implements Handler<O> {
 
     private final Handler<O> beforeHandler;
     private final Handler<O> handler;
     private final Handler<O> afterHandler;
+
+    public CompositeHandler(
+            Handler<O> beforeHandler, @NonNull Handler<O> handler, Handler<O> afterHandler) {
+        this.beforeHandler = beforeHandler != null ? beforeHandler : alwaysSkippedHandler();
+        this.handler = handler;
+        this.afterHandler = afterHandler != null ? afterHandler : alwaysSkippedHandler();
+    }
 
     @Override
     public Handled handle(O input) {
@@ -21,13 +29,5 @@ public class CompositeHandler<O> implements Handler<O> {
         } finally {
             afterHandler.handle(input);
         }
-    }
-
-    public static <T> Handler<T> withBefore(Handler<T> handler, Handler<T> before) {
-        return new CompositeHandler<>(before, handler, alwaysSkippedHandler());
-    }
-
-    public static <T> Handler<T> withAfter(Handler<T> handler, Handler<T> after) {
-        return new CompositeHandler<>(alwaysSkippedHandler(), handler, after);
     }
 }
