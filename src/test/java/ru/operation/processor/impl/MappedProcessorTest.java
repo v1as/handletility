@@ -25,8 +25,8 @@ public class MappedProcessorTest {
         Processed<Integer> processed = processor.process("abc");
         assertTrue(processed.isError());
         assertEquals(
-                "Processing error because of mapping ERROR: NumberFormatException: For input"
-                        + " string: \"abc\"",
+                "Processing error because of mapping [ERROR: NumberFormatException: For input"
+                        + " string: \"abc\"]",
                 processed.exception().getMessage());
     }
 }

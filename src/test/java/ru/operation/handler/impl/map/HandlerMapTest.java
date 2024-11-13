@@ -43,8 +43,9 @@ public class HandlerMapTest {
     public void shouldHandleWithNoDefault() {
         HandlerMap<String, String> handler =
                 new HandlerMap<>(List.of(firstHandler, secondHandler), identityKey, null);
+        handler.setName("testHandler");
 
-        assertTrue(handler.handle("3").isError());
+        assertTrue(handler.handle("3").isSkipped());
         assertEquals(-1, store[0]);
 
         assertTrue(handler.handle("1").isHandled());

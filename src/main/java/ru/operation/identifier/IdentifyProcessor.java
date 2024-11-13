@@ -6,12 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import ru.operation.processor.AbstractProcessor;
 import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
 
-@Slf4j
 public class IdentifyProcessor<K, T extends Identified<K>, I> extends AbstractProcessor<I, T> {
 
     @Getter private final List<T> items;
@@ -29,11 +27,23 @@ public class IdentifyProcessor<K, T extends Identified<K>, I> extends AbstractPr
     protected Processed<T> processInternal(I input) {
         Processed<K> key = keyProcessor.process(input);
         Processed<T> identified = key.map(keyToItem::get);
-        if (!identified.isEmpty()) {
-            log.trace("For '{}' identified by key '{}'", input, key.value());
-        } else {
-            log.trace("For '{}' not identified {}", input, identified);
-        }
+        logIdentified(input, identified, key);
         return identified;
+    }
+
+    private void logIdentified(I input, Processed<T> identified, Processed<K> key) {
+        if (!identified.isEmpty()) {
+            if (log.isTraceEnabled()) {
+                log.trace("For '{}' identified by key '{}'", input, key);
+            } else if (nameDefined) {
+                log.debug("Identified by key '{}'", key);
+            }
+        } else {
+            if (log.isTraceEnabled()) {
+                log.trace("For '{}' not identified by key {}", input, key);
+            } else if (nameDefined) {
+                log.debug("Not identified by key {}", key);
+            }
+        }
     }
 }

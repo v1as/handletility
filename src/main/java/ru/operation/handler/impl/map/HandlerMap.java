@@ -1,6 +1,7 @@
 package ru.operation.handler.impl.map;
 
 import static ru.operation.handler.Handled.error;
+import static ru.operation.handler.Handled.skipped;
 
 import java.util.List;
 import lombok.Builder;
@@ -28,15 +29,28 @@ public class HandlerMap<K, I> extends AbstractHandler<I> {
     }
 
     @Override
+    public void setName(String name) {
+        super.setName(name);
+        handlerIdentifier.setName(name + "-identifier");
+        if (defaultHandler instanceof AbstractHandler<?> abstractHandler) {
+            abstractHandler.setName(name + "-default");
+        }
+    }
+
+    @Override
     protected Handled handleInternal(I input) {
         Processed<? extends IdentifiedHandler<K, I>> handler = handlerIdentifier.process(input);
         if (!handler.isEmpty()) {
+            log.debug("Using handler {}", handler);
             return handler.value().handle(input);
         }
         if (defaultHandler != null) {
+            log.debug("Using default handler");
             return defaultHandler.handle(input);
         }
-        String reason = handler.isError() ? " " + handler : "";
-        return error("No handler identified" + reason);
+        if (handler.isError()) {
+            return error("No handler identified: " + handler);
+        }
+        return skipped();
     }
 }

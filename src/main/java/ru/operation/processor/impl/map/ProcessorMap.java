@@ -1,6 +1,7 @@
 package ru.operation.processor.impl.map;
 
 import static ru.operation.processor.Processed.error;
+import static ru.operation.processor.Processed.skipped;
 
 import java.util.List;
 import ru.operation.identifier.IdentifyProcessor;
@@ -21,15 +22,24 @@ public class ProcessorMap<K, I, O> extends AbstractProcessor<I, O> {
     }
 
     @Override
+    public void setName(String name) {
+        super.setName(name);
+        this.identifier.setName(name + "-identifier");
+    }
+
+    @Override
     protected Processed<O> processInternal(I input) {
         Processed<? extends Processor<I, O>> processor = identifier.process(input);
         if (!processor.isEmpty()) {
             return processor.value().process(input);
         }
         if (defaultProcessor != null) {
+            log.debug("Using default processor");
             return defaultProcessor.process(input);
         }
-        String reason = processor.isError() ? " " + processor : "";
-        return error("No processor identified" + reason);
+        if (processor.isError()) {
+            return error("No processor identified: " + processor);
+        }
+        return skipped();
     }
 }

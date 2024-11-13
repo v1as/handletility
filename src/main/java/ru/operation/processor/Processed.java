@@ -80,9 +80,9 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
 
     @Override
     public String toString() {
-        String result = state.toString();
+        String result = "[" + state.toString();
         if (DONE == state) {
-            result += value != null ? ": " + value : "";
+            result += value != null ? ": " + value : ":";
         } else if (ERROR == state) {
             result +=
                     exception != null
@@ -92,6 +92,6 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
                                     + exception.getMessage()
                             : "";
         }
-        return result;
+        return result + "]";
     }
 }

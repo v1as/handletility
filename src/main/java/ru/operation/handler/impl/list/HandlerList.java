@@ -6,7 +6,7 @@ import static ru.operation.handler.Handled.error;
 import static ru.operation.handler.Handled.handled;
 import static ru.operation.handler.Handled.skipped;
 import static ru.operation.handler.impl.list.HandlerModifier.CONTINUE_ON_DONE;
-import static ru.operation.handler.impl.list.HandlerModifier.STOP_ON_ERROR;
+import static ru.operation.handler.impl.list.HandlerModifier.CONTINUE_ON_ERROR;
 
 import java.util.List;
 import java.util.Set;
@@ -62,7 +62,7 @@ public class HandlerList<I> extends AbstractHandler<I> {
                     exception = new HandlerException("Handling error");
                 }
                 exception.addSuppressed(handled.exception());
-                if (should(STOP_ON_ERROR)) {
+                if (!should(CONTINUE_ON_ERROR)) {
                     result = error(exception);
                     return result;
                 }

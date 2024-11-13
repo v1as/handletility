@@ -41,6 +41,6 @@ public record Handled(ResultState state, Exception exception) {
         if (exception != null) {
             result += ": %s %s".formatted(exception.getClass(), exception.getMessage());
         }
-        return result;
+        return "[" + result + "]";
     }
 }

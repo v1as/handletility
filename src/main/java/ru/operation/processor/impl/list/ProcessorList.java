@@ -5,7 +5,7 @@ import static ru.operation.ResultState.DONE;
 import static ru.operation.ResultState.ERROR;
 import static ru.operation.processor.Processed.error;
 import static ru.operation.processor.Processed.skipped;
-import static ru.operation.processor.impl.list.ProcessorModifier.STOP_ON_ERROR;
+import static ru.operation.processor.impl.list.ProcessorModifier.CONTINUE_ON_ERROR;
 
 import java.util.List;
 import java.util.Set;
@@ -56,7 +56,7 @@ public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
                     exception = new ProcessorException("Processing error");
                 }
                 exception.addSuppressed(processed.exception());
-                if (should(STOP_ON_ERROR)) {
+                if (!should(CONTINUE_ON_ERROR)) {
                     return error(exception);
                 }
             }

@@ -26,8 +26,8 @@ public class MappedHandlerTest {
         Handled handled = handler.handle("abc");
         assertTrue(handled.isError());
         assertEquals(
-                "Handling error because of mapping: ERROR: NumberFormatException: For input string:"
-                        + " \"abc\"",
+                "Handling error because of mapping: [ERROR: NumberFormatException: For input"
+                        + " string: \"abc\"]",
                 handled.exception().getMessage());
     }
 }
