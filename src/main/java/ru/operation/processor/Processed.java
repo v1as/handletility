@@ -27,7 +27,7 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
         return new Processed<>(null, ResultState.ERROR, exception);
     }
 
-    public static <O> Processed<O> processed(O result) {
+    public static <O> Processed<O> of(O result) {
         return new Processed<>(result, DONE, null);
     }
 
@@ -36,39 +36,39 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
         return (Processed<O>) SKIPPED_RESULT;
     }
 
-    public Optional<T> asOptional() {
+    public Optional<T> toOptional() {
         return Optional.ofNullable(value);
     }
 
     @SuppressWarnings("unchecked")
     public <O> Processed<O> map(Function<T, O> transform) {
-        if (isEmpty()) {
+        if (!hasValue()) {
             return (Processed<O>) this;
         }
         return new Processed<>(transform.apply(value), state, exception);
     }
 
-    /** {@code true} when there is no value (skip, error, or null DONE result). */
-    public boolean isEmpty() {
-        return value == null;
+    /** {@code true} when a value is present ({@code value != null}). */
+    public boolean hasValue() {
+        return value != null;
     }
 
     @SuppressWarnings("unchecked")
-    public <O> Processed<O> process(Processor<T, O> processor) {
+    public <O> Processed<O> flatMap(Processor<T, O> processor) {
         if (isError()) {
             return (Processed<O>) this;
         }
-        if (isEmpty()) {
+        if (!hasValue()) {
             return skipped();
         }
         return processor.process(value);
     }
 
-    public Handled handle(Handler<T> handler) {
+    public Handled thenHandle(Handler<T> handler) {
         if (isError()) {
             return Handled.error(exception);
         }
-        if (isEmpty()) {
+        if (!hasValue()) {
             return Handled.skipped();
         }
         return handler.handle(value);
@@ -86,7 +86,7 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
         return state == DONE;
     }
 
-    public T orThrow() {
+    public T orElseThrow() {
         if (isError()) {
             throw new ProcessorException(exception);
         }

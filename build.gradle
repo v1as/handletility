@@ -1,26 +1,25 @@
 plugins {
     id 'java-library'
-    id 'maven-publish'
-    id "com.diffplug.spotless" version "7.2.1"
+    id 'com.vanniktech.maven.publish' version '0.34.0'
+    id 'com.diffplug.spotless' version '7.2.1'
 }
 
-group = 'ru.operation'
+group = 'io.github.v1as'
 version = '0.0.1'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
-    withSourcesJar()
 }
 
 repositories {
     mavenCentral()
 }
+
 ext {
-    lombokVersion = "1.18.34"
+    lombokVersion = '1.18.34'
 }
 
 dependencies {
-
     compileOnly 'org.slf4j:slf4j-api:2.0.16'
     compileOnly "org.projectlombok:lombok:$lombokVersion"
     annotationProcessor "org.projectlombok:lombok:$lombokVersion"
@@ -45,13 +44,36 @@ spotless {
         formatAnnotations()
     }
 }
-publishing {
-    publications {
-        maven(MavenPublication) {
-            groupId = project.group.toString()
-            version = project.version.toString()
 
-            from components.java
+mavenPublishing {
+    publishToMavenCentral()
+    signAllPublications()
+
+    coordinates(project.group.toString(), 'handletility', project.version.toString())
+
+    pom {
+        name = 'handletility'
+        description = 'Handlers and processors with a uniform DONE / SKIPPED / ERROR result model'
+        inceptionYear = '2024'
+        url = 'https://github.com/v1as/handletility'
+        licenses {
+            license {
+                name = 'The Apache License, Version 2.0'
+                url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                distribution = 'repo'
+            }
+        }
+        developers {
+            developer {
+                id = 'v1as'
+                name = 'v1as'
+                url = 'https://github.com/v1as'
+            }
+        }
+        scm {
+            url = 'https://github.com/v1as/handletility'
+            connection = 'scm:git:git://github.com/v1as/handletility.git'
+            developerConnection = 'scm:git:ssh://git@github.com/v1as/handletility.git'
         }
     }
 }

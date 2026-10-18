@@ -24,7 +24,7 @@ public class SimpleHandler<I> extends AbstractHandler<I> {
     @Override
     protected Handled handleInternal(I input) throws Exception {
         consumer.accept(input);
-        return Handled.handled();
+        return Handled.ok();
     }
 
     private static <T> boolean alwaysTrue(T item) {

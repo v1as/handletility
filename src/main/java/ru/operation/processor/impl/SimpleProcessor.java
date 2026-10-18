@@ -1,6 +1,6 @@
 package ru.operation.processor.impl;
 
-import static ru.operation.processor.Processed.processed;
+import static ru.operation.processor.Processed.of;
 import static ru.operation.processor.Processed.skipped;
 
 import java.util.function.Function;
@@ -27,6 +27,6 @@ public class SimpleProcessor<I, O> extends AbstractProcessor<I, O> {
     @Override
     protected Processed<O> processInternal(I input) throws Exception {
         O transformed = transform.apply(input);
-        return transformed == null ? skipped() : processed(transformed);
+        return transformed == null ? skipped() : of(transformed);
     }
 }

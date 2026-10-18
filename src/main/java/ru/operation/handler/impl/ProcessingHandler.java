@@ -1,7 +1,7 @@
 package ru.operation.handler.impl;
 
 import static ru.operation.handler.Handled.error;
-import static ru.operation.handler.Handled.handled;
+import static ru.operation.handler.Handled.ok;
 import static ru.operation.handler.Handled.skipped;
 
 import lombok.RequiredArgsConstructor;
@@ -21,9 +21,9 @@ public class ProcessingHandler<I, O> implements Handler<I> {
         if (processed.isError()) {
             return error(processed.exception());
         }
-        if (processed.isEmpty()) {
+        if (!processed.hasValue()) {
             return skipped();
         }
-        return handled();
+        return ok();
     }
 }

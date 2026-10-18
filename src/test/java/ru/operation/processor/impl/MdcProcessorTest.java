@@ -23,7 +23,7 @@ public class MdcProcessorTest {
         var processor =
                 new MdcProcessor<>(
                         "traceId",
-                        new SimpleProcessor<>(input -> "t-" + input),
+                        input -> "t-" + input,
                         new SimpleProcessor<String, String>(
                                 input -> {
                                     seen.set(MDC.get("traceId"));

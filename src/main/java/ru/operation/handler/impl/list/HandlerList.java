@@ -3,14 +3,13 @@ package ru.operation.handler.impl.list;
 import static ru.operation.ResultState.DONE;
 import static ru.operation.ResultState.ERROR;
 import static ru.operation.handler.Handled.error;
-import static ru.operation.handler.Handled.handled;
+import static ru.operation.handler.Handled.ok;
 import static ru.operation.handler.Handled.skipped;
 import static ru.operation.handler.impl.list.HandlerModifier.CONTINUE_ON_DONE;
 import static ru.operation.handler.impl.list.HandlerModifier.CONTINUE_ON_ERROR;
 
 import java.util.List;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import lombok.Builder;
 import lombok.Singular;
 import ru.operation.Failed;
@@ -19,7 +18,6 @@ import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
 import ru.operation.handler.HandlerException;
 import ru.operation.handler.impl.LoggingExceptionHandler;
-import ru.operation.handler.impl.SimpleHandler;
 
 /**
  * Runs handlers in order. By default stops on the first {@code DONE} or {@code ERROR}; behaviour is
@@ -44,28 +42,6 @@ public class HandlerList<I> extends AbstractHandler<I> {
 
     public HandlerList(List<? extends Handler<I>> handlers) {
         this(handlers, Set.of(), new LoggingExceptionHandler<>());
-    }
-
-    /**
-     * Builds a list that invokes {@code method} on each item (method-reference fan-out), continuing
-     * after {@code DONE} by default.
-     */
-    public static <T, I> HandlerList<I> fromMethodRefs(List<T> items, BiConsumer<T, I> method) {
-        return fromMethodRefs(
-                items, method, Set.of(CONTINUE_ON_DONE), new LoggingExceptionHandler<>());
-    }
-
-    public static <T, I> HandlerList<I> fromMethodRefs(
-            List<T> items,
-            BiConsumer<T, I> method,
-            Set<HandlerModifier> modifiers,
-            Handler<Failed<I>> exceptionHandler) {
-        return new HandlerList<>(
-                items.stream()
-                        .map(item -> new SimpleHandler<I>(c -> method.accept(item, c)))
-                        .toList(),
-                modifiers,
-                exceptionHandler);
     }
 
     @Override
@@ -98,7 +74,7 @@ public class HandlerList<I> extends AbstractHandler<I> {
             }
         }
         if (done) {
-            result = handled();
+            result = ok();
         } else if (exception != null) {
             result = Handled.error(exception);
         } else {

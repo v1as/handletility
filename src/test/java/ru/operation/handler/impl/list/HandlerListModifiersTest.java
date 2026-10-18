@@ -3,7 +3,7 @@ package ru.operation.handler.impl.list;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ru.operation.handler.Handled.error;
-import static ru.operation.handler.Handled.handled;
+import static ru.operation.handler.Handled.ok;
 import static ru.operation.handler.Handled.skipped;
 
 import java.util.ArrayList;
@@ -22,11 +22,11 @@ public class HandlerListModifiersTest {
                         List.of(
                                 input -> {
                                     called.add("first");
-                                    return handled();
+                                    return ok();
                                 },
                                 input -> {
                                     called.add("second");
-                                    return handled();
+                                    return ok();
                                 }));
 
         assertTrue(list.handle("x").isHandled());
@@ -41,7 +41,7 @@ public class HandlerListModifiersTest {
                         .handler(
                                 input -> {
                                     called.add("first");
-                                    return handled();
+                                    return ok();
                                 })
                         .handler(
                                 input -> {
@@ -61,7 +61,7 @@ public class HandlerListModifiersTest {
                 HandlerList.<String>builder()
                         .handler(input -> error("one"))
                         .handler(input -> error("two"))
-                        .handler(input -> handled())
+                        .handler(input -> ok())
                         .modifier(HandlerModifier.CONTINUE_ON_ERROR)
                         .modifier(HandlerModifier.CONTINUE_ON_DONE)
                         .build();
@@ -82,7 +82,7 @@ public class HandlerListModifiersTest {
                                 },
                                 input -> {
                                     called.add("second");
-                                    return handled();
+                                    return ok();
                                 }));
 
         assertTrue(list.handle("x").isError());

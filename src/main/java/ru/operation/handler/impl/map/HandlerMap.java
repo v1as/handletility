@@ -30,23 +30,14 @@ public class HandlerMap<K, I> extends AbstractHandler<I> {
     }
 
     @Override
-    public void setName(String name) {
-        super.setName(name);
-        handlerIdentifier.setName(name + "-identifier");
-        if (defaultHandler instanceof AbstractHandler<?> abstractHandler) {
-            abstractHandler.setName(name + "-default");
-        }
-    }
-
-    @Override
     protected Handled handleInternal(I input) {
         Processed<? extends IdentifiedHandler<K, I>> handler = handlerIdentifier.process(input);
-        if (!handler.isEmpty()) {
-            log.debug("Using handler {}", handler);
+        if (handler.hasValue()) {
+            log.trace("Using handler {}", handler);
             return handler.value().handle(input);
         }
         if (defaultHandler != null) {
-            log.debug("Using default handler");
+            log.trace("Using default handler");
             return defaultHandler.handle(input);
         }
         if (handler.isError()) {

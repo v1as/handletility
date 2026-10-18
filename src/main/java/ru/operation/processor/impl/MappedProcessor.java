@@ -13,21 +13,10 @@ public class MappedProcessor<T, I, O> extends AbstractProcessor<T, O> {
     private final Processor<I, O> delegate;
 
     @Override
-    public void setName(String name) {
-        super.setName(name);
-        if (mapper instanceof AbstractProcessor<?, ?> abstractMapper) {
-            abstractMapper.setName(name + "-mapper");
-        }
-        if (delegate instanceof AbstractProcessor<?, ?> abstractDelegate) {
-            abstractDelegate.setName(name + "-delegate");
-        }
-    }
-
-    @Override
     protected Processed<O> processInternal(T input) throws Exception {
         Processed<I> mapped = mapper.process(input);
-        if (mapped.isEmpty()) {
-            log.debug("Processing '{}' interrupted because of mapping: {}", input, mapped);
+        if (!mapped.hasValue()) {
+            log.trace("Processing '{}' interrupted because of mapping: {}", input, mapped);
             return Processed.error(
                     new ProcessorException(
                             "Processing error because of mapping " + mapped, mapped.exception()));

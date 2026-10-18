@@ -11,6 +11,6 @@ public class ConstProcessor<I, O> implements Processor<I, O> {
 
     @Override
     public Processed<O> process(I input) {
-        return Processed.processed(value);
+        return Processed.of(value);
     }
 }

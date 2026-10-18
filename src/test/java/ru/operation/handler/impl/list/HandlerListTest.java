@@ -1,7 +1,7 @@
 package ru.operation.handler.impl.list;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static ru.operation.handler.Handled.handled;
+import static ru.operation.handler.Handled.ok;
 import static ru.operation.handler.Handled.skipped;
 
 import java.util.List;
@@ -13,7 +13,7 @@ import ru.operation.handler.AbstractHandler;
 import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
 import ru.operation.handler.IdentifiedHandler;
-import ru.operation.handler.impl.CompositeHandler;
+import ru.operation.handler.impl.AroundHandler;
 import ru.operation.handler.impl.SimpleHandler;
 import ru.operation.handler.impl.map.HandlerMap;
 import ru.operation.processor.impl.SimpleProcessor;
@@ -22,16 +22,15 @@ public class HandlerListTest {
 
     @Test
     public void should_process_after_skip() {
-        Handler<String> handlers =
-                new HandlerList<>(List.of(value -> skipped(), value -> handled()));
+        Handler<String> handlers = new HandlerList<>(List.of(value -> skipped(), value -> ok()));
         Handled result = handlers.handle("hello");
-        assertEquals(handled(), result);
+        assertEquals(ok(), result);
     }
 
     @Test
     public void testProgram() {
         Handler<Command> baseHandler =
-                CompositeHandler.<Command>builder()
+                AroundHandler.<Command>builder()
                         .beforeHandler(new LoggingHandler())
                         .handler(
                                 HandlerList.<Command>builder()
@@ -62,7 +61,7 @@ public class HandlerListTest {
         @Override
         public Handled handle(Command input) {
             log.info("Command received {}", input);
-            return handled();
+            return ok();
         }
     }
 
@@ -87,7 +86,7 @@ public class HandlerListTest {
         @Override
         protected Handled handleInternal(Command input) {
             System.out.println("Hello " + input);
-            return handled();
+            return ok();
         }
     }
 
@@ -100,7 +99,7 @@ public class HandlerListTest {
         @Override
         protected Handled handleInternal(Command input) {
             System.out.println("Bye " + input);
-            return handled();
+            return ok();
         }
     }
 }

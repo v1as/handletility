@@ -28,23 +28,11 @@ public class IdentifyProcessor<K, T extends Identified<K>, I> extends AbstractPr
     protected Processed<T> processInternal(I input) throws Exception {
         Processed<K> key = keyProcessor.process(input);
         Processed<T> identified = key.map(keyToItem::get);
-        logIdentified(input, identified, key);
-        return identified;
-    }
-
-    private void logIdentified(I input, Processed<T> identified, Processed<K> key) {
-        if (!identified.isEmpty()) {
-            if (log.isTraceEnabled()) {
-                log.trace("For '{}' identified by key '{}'", input, key);
-            } else if (nameDefined) {
-                log.debug("Identified by key '{}'", key);
-            }
+        if (identified.hasValue()) {
+            log.trace("For '{}' identified by key '{}'", input, key);
         } else {
-            if (log.isTraceEnabled()) {
-                log.trace("For '{}' not identified by key {}", input, key);
-            } else if (nameDefined) {
-                log.debug("Not identified by key {}", key);
-            }
+            log.trace("For '{}' not identified by key {}", input, key);
         }
+        return identified;
     }
 }

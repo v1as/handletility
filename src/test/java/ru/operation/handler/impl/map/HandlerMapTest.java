@@ -3,11 +3,12 @@ package ru.operation.handler.impl.map;
 import static java.util.function.Function.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static ru.operation.handler.Handled.handled;
+import static ru.operation.handler.Handled.ok;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import ru.operation.handler.Handler;
+import ru.operation.handler.Handlers;
 import ru.operation.handler.impl.IdentifiedByConstHandler;
 import ru.operation.processor.impl.SimpleProcessor;
 
@@ -20,7 +21,7 @@ public class HandlerMapTest {
                     "1",
                     (input) -> {
                         store[0] = 1;
-                        return handled();
+                        return ok();
                     });
 
     private final IdentifiedByConstHandler<String, String> secondHandler =
@@ -28,22 +29,26 @@ public class HandlerMapTest {
                     "2",
                     (input) -> {
                         store[0] = 2;
-                        return handled();
+                        return ok();
                     });
 
     private final Handler<String> forthHandler =
             (input) -> {
                 store[0] = 4;
-                return handled();
+                return ok();
             };
 
     private final SimpleProcessor<String, String> identityKey = new SimpleProcessor<>(identity());
 
     @Test
     public void shouldHandleWithNoDefault() {
-        HandlerMap<String, String> handler =
-                new HandlerMap<>(List.of(firstHandler, secondHandler), identityKey, null);
-        handler.setName("testHandler");
+        Handler<String> handler =
+                Handlers.compose(
+                                new HandlerMap<>(
+                                        List.of(firstHandler, secondHandler), identityKey, null))
+                        .identified("testHandler")
+                        .logging()
+                        .build();
 
         assertTrue(handler.handle("3").isSkipped());
         assertEquals(-1, store[0]);

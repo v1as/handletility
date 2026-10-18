@@ -5,7 +5,7 @@ import ru.operation.ResultState;
 /** Result of a {@link Handler}: done, skipped, or error (with optional exception). */
 public record Handled(ResultState state, Exception exception) {
 
-    private static final Handled HANDLED = new Handled(ResultState.DONE, null);
+    private static final Handled OK = new Handled(ResultState.DONE, null);
     public static final Handled SKIPPED = new Handled(ResultState.SKIPPED, null);
 
     public static Handled error(String reason) {
@@ -16,8 +16,8 @@ public record Handled(ResultState state, Exception exception) {
         return new Handled(ResultState.ERROR, exception);
     }
 
-    public static Handled handled() {
-        return HANDLED;
+    public static Handled ok() {
+        return OK;
     }
 
     public static Handled skipped() {
@@ -34,6 +34,13 @@ public record Handled(ResultState state, Exception exception) {
 
     public boolean isHandled() {
         return state == ResultState.DONE;
+    }
+
+    public Handled orElseThrow() {
+        if (isError()) {
+            throw new HandlerException("Handling error", exception);
+        }
+        return this;
     }
 
     @Override

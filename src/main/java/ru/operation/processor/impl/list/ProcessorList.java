@@ -45,12 +45,10 @@ public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
                 log.warn("Processing error", e);
                 processed = onException.process(new Failed<>(input, e));
             }
-            if (log.isTraceEnabled()) {
-                log.trace(
-                        "Processor '{}' has result '{}'",
-                        processor.getClass().getSimpleName(),
-                        processed);
-            }
+            log.trace(
+                    "Processor '{}' has result '{}'",
+                    processor.getClass().getSimpleName(),
+                    processed);
             if (DONE.equals(processed.state())) {
                 return processed;
             }

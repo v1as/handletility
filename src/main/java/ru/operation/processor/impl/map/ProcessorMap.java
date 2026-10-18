@@ -23,19 +23,13 @@ public class ProcessorMap<K, I, O> extends AbstractProcessor<I, O> {
     }
 
     @Override
-    public void setName(String name) {
-        super.setName(name);
-        this.identifier.setName(name + "-identifier");
-    }
-
-    @Override
     protected Processed<O> processInternal(I input) throws Exception {
         Processed<? extends Processor<I, O>> processor = identifier.process(input);
-        if (!processor.isEmpty()) {
+        if (processor.hasValue()) {
             return processor.value().process(input);
         }
         if (defaultProcessor != null) {
-            log.debug("Using default processor");
+            log.trace("Using default processor");
             return defaultProcessor.process(input);
         }
         if (processor.isError()) {

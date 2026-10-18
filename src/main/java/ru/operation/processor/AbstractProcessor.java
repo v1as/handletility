@@ -1,15 +1,18 @@
 package ru.operation.processor;
 
+import static org.slf4j.LoggerFactory.getLogger;
 import static ru.operation.processor.Processed.error;
 import static ru.operation.processor.Processed.skipped;
 
-import ru.operation.AbstractOperation;
+import org.slf4j.Logger;
 
 /**
- * Template for processors: optional {@link #check(Object)}, exception → {@link
- * ru.operation.ResultState#ERROR}, and logging.
+ * Template for processors: optional {@link #check(Object)} and exception → {@link
+ * ru.operation.ResultState#ERROR}. Naming and outcome logging belong in wrappers / compose.
  */
-public abstract class AbstractProcessor<I, O> extends AbstractOperation implements Processor<I, O> {
+public abstract class AbstractProcessor<I, O> implements Processor<I, O> {
+
+    protected final Logger log = getLogger(getClass());
 
     protected boolean check(I input) {
         return true;
@@ -21,36 +24,17 @@ public abstract class AbstractProcessor<I, O> extends AbstractOperation implemen
             if (!check(input)) {
                 return onFailedCheck(input);
             }
-            Processed<O> processed = processInternal(input);
-            logProcessed(input, processed);
-            return processed;
+            return processInternal(input);
         } catch (Exception ex) {
             return onException(input, ex);
-        }
-    }
-
-    private void logProcessed(I input, Processed<O> processed) {
-        if (log.isTraceEnabled()) {
-            log.trace("Processed '{}' to '{}'", input, processed);
-        } else if (nameDefined) {
-            log.debug("Processed with result {}", processed.state());
         }
     }
 
     protected abstract Processed<O> processInternal(I input) throws Exception;
 
     protected Processed<O> onFailedCheck(I input) {
-        logOnFailedCheck(input);
-
+        log.trace("Skipped because of unsuitable input: '{}'", input);
         return skipped();
-    }
-
-    private void logOnFailedCheck(I input) {
-        if (log.isTraceEnabled()) {
-            log.trace("Skipped because of unsuitable input: '{}'", input);
-        } else if (nameDefined) {
-            log.debug("Skipped because of unsuitable input.");
-        }
     }
 
     protected Processed<O> onException(I input, Exception ex) {
