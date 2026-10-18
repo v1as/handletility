@@ -5,6 +5,10 @@ import static ru.operation.handler.Handled.skipped;
 
 import ru.operation.AbstractOperation;
 
+/**
+ * Template for handlers: optional {@link #check(Object)}, exception → {@link
+ * ru.operation.ResultState#ERROR}, and logging.
+ */
 public abstract class AbstractHandler<T> extends AbstractOperation implements Handler<T> {
 
     public boolean check(T input) {

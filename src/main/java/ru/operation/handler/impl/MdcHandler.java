@@ -29,17 +29,22 @@ public class MdcHandler<I, T> extends AbstractHandler<I> {
     @Override
     protected Handled handleInternal(I input) throws Exception {
         String prevMdcValue = null;
-        Processed<T> mdcValue = null;
+        boolean mdcSet = false;
         try {
-            mdcValue = mdcValueProcessor.process(input);
+            Processed<T> mdcValue = mdcValueProcessor.process(input);
             if (!mdcValue.isEmpty()) {
                 prevMdcValue = MDC.get(mdcKey);
-                MDC.put(mdcKey, prevMdcValue);
+                MDC.put(mdcKey, String.valueOf(mdcValue.value()));
+                mdcSet = true;
             }
             return handler.handle(input);
         } finally {
-            if (mdcValue != null && !mdcValue.isEmpty()) {
-                MDC.put(mdcKey, prevMdcValue);
+            if (mdcSet) {
+                if (prevMdcValue != null) {
+                    MDC.put(mdcKey, prevMdcValue);
+                } else {
+                    MDC.remove(mdcKey);
+                }
             }
         }
     }

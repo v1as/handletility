@@ -2,6 +2,7 @@ package ru.operation.processor;
 
 import static ru.operation.ResultState.DONE;
 import static ru.operation.ResultState.ERROR;
+import static ru.operation.ResultState.SKIPPED;
 
 import java.util.Optional;
 import java.util.function.Function;
@@ -9,9 +10,14 @@ import ru.operation.ResultState;
 import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
 
+/**
+ * Result of a {@link Processor}: a value (when {@link ResultState#DONE}), or a skip/error without a
+ * value.
+ */
 public record Processed<T>(T value, ResultState state, Exception exception) {
 
-    private static final Processed<?> SKIPPED = new Processed<>(null, ResultState.SKIPPED, null);
+    private static final Processed<?> SKIPPED_RESULT =
+            new Processed<>(null, ResultState.SKIPPED, null);
 
     public static <O> Processed<O> error(String reason) {
         return error(new ProcessorException(reason));
@@ -27,7 +33,7 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
 
     @SuppressWarnings("unchecked")
     public static <O> Processed<O> skipped() {
-        return (Processed<O>) SKIPPED;
+        return (Processed<O>) SKIPPED_RESULT;
     }
 
     public Optional<T> asOptional() {
@@ -42,6 +48,7 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
         return new Processed<>(transform.apply(value), state, exception);
     }
 
+    /** {@code true} when there is no value (skip, error, or null DONE result). */
     public boolean isEmpty() {
         return value == null;
     }
@@ -68,11 +75,19 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
     }
 
     public boolean isError() {
-        return exception != null;
+        return state == ERROR;
+    }
+
+    public boolean isSkipped() {
+        return state == SKIPPED;
+    }
+
+    public boolean isDone() {
+        return state == DONE;
     }
 
     public T orThrow() {
-        if (value == null && exception != null) {
+        if (isError()) {
             throw new ProcessorException(exception);
         }
         return value;

@@ -15,16 +15,16 @@ public class MappedProcessor<T, I, O> extends AbstractProcessor<T, O> {
     @Override
     public void setName(String name) {
         super.setName(name);
-        if (mapper instanceof AbstractProcessor<?, ?> abstractProcessor) {
-            abstractProcessor.setName(name + "-mapper");
+        if (mapper instanceof AbstractProcessor<?, ?> abstractMapper) {
+            abstractMapper.setName(name + "-mapper");
         }
-        if (mapper instanceof AbstractProcessor<?, ?> abstractProcessor) {
-            abstractProcessor.setName(name + "-delegate");
+        if (delegate instanceof AbstractProcessor<?, ?> abstractDelegate) {
+            abstractDelegate.setName(name + "-delegate");
         }
     }
 
     @Override
-    protected Processed<O> processInternal(T input) {
+    protected Processed<O> processInternal(T input) throws Exception {
         Processed<I> mapped = mapper.process(input);
         if (mapped.isEmpty()) {
             log.debug("Processing '{}' interrupted because of mapping: {}", input, mapped);

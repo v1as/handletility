@@ -5,6 +5,10 @@ import static ru.operation.processor.Processed.skipped;
 
 import ru.operation.AbstractOperation;
 
+/**
+ * Template for processors: optional {@link #check(Object)}, exception → {@link
+ * ru.operation.ResultState#ERROR}, and logging.
+ */
 public abstract class AbstractProcessor<I, O> extends AbstractOperation implements Processor<I, O> {
 
     protected boolean check(I input) {
@@ -33,7 +37,7 @@ public abstract class AbstractProcessor<I, O> extends AbstractOperation implemen
         }
     }
 
-    protected abstract Processed<O> processInternal(I input);
+    protected abstract Processed<O> processInternal(I input) throws Exception;
 
     protected Processed<O> onFailedCheck(I input) {
         logOnFailedCheck(input);

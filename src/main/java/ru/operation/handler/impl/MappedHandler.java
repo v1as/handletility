@@ -23,8 +23,8 @@ public class MappedHandler<T, I> extends AbstractHandler<T> {
         if (mapper instanceof AbstractProcessor<?, ?> abstractProcessor) {
             abstractProcessor.setName(name + "-mapper");
         }
-        if (mapper instanceof AbstractProcessor<?, ?> abstractProcessor) {
-            abstractProcessor.setName(name + "-delegate");
+        if (delegate instanceof AbstractHandler<?> abstractHandler) {
+            abstractHandler.setName(name + "-delegate");
         }
     }
 

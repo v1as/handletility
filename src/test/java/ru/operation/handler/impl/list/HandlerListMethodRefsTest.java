@@ -8,7 +8,7 @@ import lombok.Getter;
 import org.junit.jupiter.api.Test;
 import ru.operation.handler.Handler;
 
-public class ConsumerRefHandlerListTest {
+public class HandlerListMethodRefsTest {
 
     @Test
     public void shouldReferenceMethods() {
@@ -17,11 +17,11 @@ public class ConsumerRefHandlerListTest {
         var severalEventsHandlers = List.of(first, second);
 
         Handler<Integer> intMethodHandler =
-                new ConsumerRefHandlerList<>(
+                HandlerList.fromMethodRefs(
                         severalEventsHandlers, SeveralMethodsHandler::handleInteger);
 
         Handler<String> stringMethodHandler =
-                new ConsumerRefHandlerList<>(
+                HandlerList.fromMethodRefs(
                         severalEventsHandlers, SeveralMethodsHandler::handleString);
 
         intMethodHandler.handle(123);

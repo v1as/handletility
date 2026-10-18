@@ -2,6 +2,7 @@ package ru.operation.handler;
 
 import ru.operation.ResultState;
 
+/** Result of a {@link Handler}: done, skipped, or error (with optional exception). */
 public record Handled(ResultState state, Exception exception) {
 
     private static final Handled HANDLED = new Handled(ResultState.DONE, null);

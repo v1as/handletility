@@ -10,6 +10,7 @@ import ru.operation.processor.IdentifiedProcessor;
 import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
 
+/** Routes input to an {@link IdentifiedProcessor} selected by a key extracted from the input. */
 public class ProcessorMap<K, I, O> extends AbstractProcessor<I, O> {
 
     private final IdentifyProcessor<K, ? extends IdentifiedProcessor<K, I, O>, I> identifier;
@@ -28,7 +29,7 @@ public class ProcessorMap<K, I, O> extends AbstractProcessor<I, O> {
     }
 
     @Override
-    protected Processed<O> processInternal(I input) {
+    protected Processed<O> processInternal(I input) throws Exception {
         Processed<? extends Processor<I, O>> processor = identifier.process(input);
         if (!processor.isEmpty()) {
             return processor.value().process(input);

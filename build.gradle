@@ -1,7 +1,7 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
-    id "com.diffplug.spotless" version "7.0.0.BETA2"
+    id "com.diffplug.spotless" version "7.2.1"
 }
 
 group = 'ru.operation'
@@ -29,7 +29,7 @@ dependencies {
 
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'ch.qos.logback:logback-classic:1.5.8'
     testImplementation 'org.awaitility:awaitility:4.2.0'
 }
@@ -40,7 +40,8 @@ test {
 
 spotless {
     java {
-        googleJavaFormat('1.15.0').aosp().reflowLongStrings().skipJavadocFormatting()
+        target 'src/**/*.java'
+        googleJavaFormat('1.22.0').aosp().reflowLongStrings().skipJavadocFormatting()
         formatAnnotations()
     }
 }

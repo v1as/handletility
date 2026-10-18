@@ -25,7 +25,7 @@ public class SimpleProcessor<I, O> extends AbstractProcessor<I, O> {
     }
 
     @Override
-    protected Processed<O> processInternal(I input) {
+    protected Processed<O> processInternal(I input) throws Exception {
         O transformed = transform.apply(input);
         return transformed == null ? skipped() : processed(transformed);
     }

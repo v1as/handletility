@@ -10,6 +10,7 @@ import ru.operation.processor.AbstractProcessor;
 import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
 
+/** Resolves an {@link Identified} item by extracting a key from the input. */
 public class IdentifyProcessor<K, T extends Identified<K>, I> extends AbstractProcessor<I, T> {
 
     @Getter private final List<T> items;
@@ -24,7 +25,7 @@ public class IdentifyProcessor<K, T extends Identified<K>, I> extends AbstractPr
     }
 
     @Override
-    protected Processed<T> processInternal(I input) {
+    protected Processed<T> processInternal(I input) throws Exception {
         Processed<K> key = keyProcessor.process(input);
         Processed<T> identified = key.map(keyToItem::get);
         logIdentified(input, identified, key);
