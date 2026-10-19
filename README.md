@@ -93,51 +93,6 @@ dependencies {
 ./gradlew publishToMavenLocal
 ```
 
-### Публикация в Maven Central
-
-1. Аккаунт на [central.sonatype.com](https://central.sonatype.com) (лучше Sign in with GitHub) — обычно сразу выдаётся namespace `io.github.v1as`. Если нет — [Add Namespace](https://central.sonatype.com/publishing/namespaces) и верификация через временный репозиторий.
-2. [User Token](https://central.sonatype.com/account) → Generate User Token.
-3. GPG-ключ, публичный ключ на keyserver (см. [документацию Sonatype](https://central.sonatype.org/publish/requirements/gpg/)).
-4. В `~/.gradle/gradle.properties` (не в репозиторий):
-
-```properties
-mavenCentralUsername=<token username>
-mavenCentralPassword=<token password>
-signing.keyId=<последние 8 символов key id>
-signing.password=<пароль ключа>
-signing.secretKeyRingFile=<путь к secring.gpg>
-```
-
-Либо in-memory ключ: `signingInMemoryKey` / `signingInMemoryKeyPassword` (см. [vanniktech docs](https://vanniktech.github.io/gradle-maven-publish-plugin/central/)).
-
-5. Загрузка и ручной Publish в Portal:
-
-```bash
-./gradlew publishToMavenCentral
-```
-
-Затем [Deployments](https://central.sonatype.com/publishing/deployments) → Publish. До появления в Central обычно 10–30 минут.
-
-Авторелиз без клика в UI: `./gradlew publishAndReleaseToMavenCentral`.
-
-## Идея
-
-| Абстракция | Назначение | Результат |
-|---|---|---|
-| `Handler<I>` | side-effect над входом (лог, сохранение, отправка) | `Handled` |
-| `Processor<I, O>` | преобразование `I → O` | `Processed<O>` |
-
-Оба результата несут `ResultState` и опциональный `Exception`.
-
-**Наследование** (`AbstractHandler` / `AbstractProcessor`) — только контракт результата:
-
-- precondition через `check(input)` → `SKIPPED`
-- перехват исключений → `ERROR` (+ `warn` в лог)
-
-**Композиция** — для имени, outcome-логирования, MDC и перехвата исключений через обёртки / `Handlers.compose` / `Processors.compose`.
-
-`compose(Consumer)` / `compose(Function)` уже безопасны через `Simple*` → `Abstract*` (исключение → `ERROR`). Сырой `Handler`/`Processor` без `Abstract*` мог бы пробрасывать исключение — compose всегда добавляет слой `Catching`, поэтому стек возвращает `Handled`/`Processed`, а не throws.
-
 ## Быстрый старт
 
 ### Handler
@@ -262,15 +217,6 @@ ru.operation
 ├── identifier/       # IdentifyProcessor, Identified
 └── util/             # Checks, Colls, ThrowableConsumer
 ```
-
-## Сборка и тесты
-
-```bash
-./gradlew test
-./gradlew spotlessApply   # Google Java Format (AOSP)
-./gradlew build
-```
-
 ## Лицензия
 
 [Apache License 2.0](LICENSE)
