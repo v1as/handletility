@@ -1,15 +1,15 @@
 package ru.operation.handler.impl;
 
-import static ru.operation.handler.Handled.error;
-
 import lombok.RequiredArgsConstructor;
 import ru.operation.handler.AbstractHandler;
 import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
-import ru.operation.handler.HandlerException;
-import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
 
+/**
+ * Runs {@code mapper} then {@code delegate}. Skip/error from the mapper propagate (same as {@link
+ * ru.operation.processor.Processed#thenHandle}); the delegate is not called.
+ */
 @RequiredArgsConstructor
 public class MappedHandler<T, I> extends AbstractHandler<T> {
 
@@ -18,13 +18,6 @@ public class MappedHandler<T, I> extends AbstractHandler<T> {
 
     @Override
     protected Handled handleInternal(T input) {
-        Processed<I> mapped = mapper.process(input);
-        if (!mapped.hasValue()) {
-            log.trace("Handling '{}' interrupted because of mapping: {}", input, mapped);
-            return error(
-                    new HandlerException(
-                            "Handling error because of mapping: " + mapped, mapped.exception()));
-        }
-        return delegate.handle(mapped.value());
+        return mapper.process(input).thenHandle(delegate);
     }
 }

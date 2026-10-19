@@ -10,11 +10,16 @@ public final class Processors {
 
     private Processors() {}
 
+    /** Bare processor from a {@link Function} (null result → {@link Processed#skipped()}). */
+    public static <I, O> Processor<I, O> of(Function<I, O> transform) {
+        return new SimpleProcessor<>(notNull(transform, "transform"));
+    }
+
     public static <I, O> ProcessorCompose<I, O> compose(Processor<I, O> core) {
         return ProcessorCompose.from(notNull(core, "core"));
     }
 
     public static <I, O> ProcessorCompose<I, O> compose(Function<I, O> transform) {
-        return compose(new SimpleProcessor<>(notNull(transform, "transform")));
+        return compose(of(transform));
     }
 }

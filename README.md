@@ -54,6 +54,15 @@ Handler<Order> router =
                 .defaultHandler(o -> Handled.skipped())
                 .build();
 
+// Processor chain: of / thenCompose / thenApply / thenHandle (skip/error пробрасываются)
+Processor<String, String> doubleAsString =
+        Processors.of(Integer::parseInt)
+                .thenCompose(Processors.of(n -> n * 2))
+                .thenApply(Object::toString);
+
+Handler<String> parseThenPersist =
+        Processors.of(json -> gson.fromJson(json, Order.class)).thenHandle(persist);
+
 // Processed: map / flatMap / thenHandle / orElseThrow
 Handled handled =
         parseAmount
@@ -64,10 +73,6 @@ Handled handled =
 
 Integer cents = parseAmount.process(order).orElseThrow();
 Optional<Integer> maybe = parseAmount.process(order).toOptional();
-
-// Mapping входа + делегирование
-Handler<String> asOrderThenPersist =
-        new MappedHandler<>(new SimpleProcessor<>(json -> gson.fromJson(json, Order.class)), persist);
 ```
 
 Слои compose при `build()`: `Identified(Mdc(Logging(Catching(Around(core)))))`. Исключение из core/hooks → `ERROR` (или ваш `.onException`), не throws. `Error` не ловится.
@@ -125,6 +130,8 @@ Integer value = out.orElseThrow(); // 42
 `.before(...)` / `.after(...)` — hooks вокруг core (внутри Catching): before получает input, after — результат (`Handled` / `Processed`), на возврат не влияет.  
 `.onException(...)` — кастомный маппинг `Failed` → результат (можно recover в `ok()` / успешный `Processed`); без вызова — `LoggingException*` (warn + `ERROR`).
 
+Цепочка типов — на самом `Processor` (не в compose): `Processors.of(fn).thenCompose(...).thenApply(...).filter(...).thenHandle(...)`. Skip/error пробрасываются, как у `Processed`; `filter` при неуспехе предиката даёт `SKIPPED`.
+
 ```java
 IdentifiedHandler<String, Request> traced = Handlers.compose(delegate) // или Consumer<Request>
         .identified("order-persist")
@@ -143,13 +150,19 @@ IdentifiedHandler<String, Request> traced = Handlers.compose(delegate) // или
 Аналогично для процессоров (`Function` / `Processor` на входе, hooks — `Handler`/`Consumer`):
 
 ```java
-Processors.compose(Request::payload)
-        .identified("parse")
-        .before(pre)
-        .after(post)                  // Handler|Consumer<Processed<?>>
-        .onException(failed -> Processed.error(failed.exception()))
-        .logging()
-        .build();
+Processor<String, String> pipeline =
+        Processors.of(Integer::parseInt)
+                .thenCompose(Processors.of(n -> n * 2))
+                .thenApply(Object::toString);
+
+IdentifiedProcessor<String, String, String> traced =
+        Processors.compose(pipeline)
+                .identified("parse")
+                .before(pre)
+                .after(post)                  // Handler|Consumer<Processed<?>>
+                .onException(failed -> Processed.error(failed.exception()))
+                .logging()
+                .build();
 ```
 
 Обёртки вручную: `IdentifiedByConst*`, `Around*`, `Catching*`, `Named*` (только для логов), `Logging*`, `Mdc*` / `MdcEntry`.
@@ -180,12 +193,21 @@ Handler<Command> router = HandlerMap.<String, Command>handlerMap()
 
 Аналог для процессоров — `ProcessorMap` + `IdentifiedProcessor`.
 
-### Mapping + делегирование
+### Цепочка Processor / Handler
 
 ```java
-Handler<String> asIntThenHandle = new MappedHandler<>(
-        new SimpleProcessor<>(Integer::valueOf),
-        new SimpleHandler<>(n -> sum.addAndGet(n)));
+// of + then* / filter: мягкая семантика (skip/error пробрасываются; filter → SKIPPED)
+Processor<String, Integer> doubled =
+        Processors.of(Integer::parseInt)
+                .filter(n -> n > 0)
+                .thenCompose(Processors.of(n -> n * 2));
+
+Handler<String> asIntThenHandle =
+        Processors.of(Integer::valueOf).thenHandle(Handlers.of(n -> sum.addAndGet(n)));
+
+// Явные обёртки с тем же контрактом
+Handler<String> mapped =
+        new MappedHandler<>(Processors.of(Integer::valueOf), Handlers.of(n -> sum.addAndGet(n)));
 ```
 
 `Processed` умеет продолжать цепочку:

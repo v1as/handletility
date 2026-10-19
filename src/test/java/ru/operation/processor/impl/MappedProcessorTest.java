@@ -1,6 +1,7 @@
 package ru.operation.processor.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -21,12 +22,18 @@ public class MappedProcessorTest {
     }
 
     @Test
-    public void shouldErrorWhileMapping() {
+    public void shouldPropagateMapperError() {
         Processed<Integer> processed = processor.process("abc");
         assertTrue(processed.isError());
-        assertEquals(
-                "Processing error because of mapping [ERROR: NumberFormatException: For input"
-                        + " string: \"abc\"]",
-                processed.exception().getMessage());
+        assertInstanceOf(NumberFormatException.class, processed.exception());
+    }
+
+    @Test
+    public void shouldPropagateMapperSkip() {
+        Processor<String, Integer> skipping =
+                new MappedProcessor<>(
+                        input -> Processed.skipped(), new SimpleProcessor<>((Integer n) -> n + 1));
+
+        assertTrue(skipping.process("x").isSkipped());
     }
 }
