@@ -4,7 +4,6 @@ import static ru.operation.util.Checks.notNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import org.slf4j.event.Level;
 import ru.operation.Failed;
@@ -16,6 +15,7 @@ import ru.operation.handler.impl.LoggingExceptionHandler;
 import ru.operation.handler.impl.MdcHandler;
 import ru.operation.handler.impl.SimpleHandler;
 import ru.operation.handler.impl.wrap.LoggingHandler;
+import ru.operation.util.function.ThrowableConsumer;
 
 /**
  * Builds a handler stack with a fixed wrap order on {@link #build()}: {@code
@@ -67,8 +67,8 @@ public final class HandlerCompose<I> {
         return this;
     }
 
-    public HandlerCompose<I> before(Consumer<I> before) {
-        return before(new SimpleHandler<>(notNull(before, "before consumer")::accept));
+    public HandlerCompose<I> before(ThrowableConsumer<I> before) {
+        return before(new SimpleHandler<>(notNull(before, "before consumer")));
     }
 
     /** Observes the main {@link Handled} result without replacing it. */
@@ -77,8 +77,8 @@ public final class HandlerCompose<I> {
         return this;
     }
 
-    public HandlerCompose<I> after(Consumer<Handled> after) {
-        return after(new SimpleHandler<>(notNull(after, "after consumer")::accept));
+    public HandlerCompose<I> after(ThrowableConsumer<Handled> after) {
+        return after(new SimpleHandler<>(notNull(after, "after consumer")));
     }
 
     /**

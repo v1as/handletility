@@ -1,6 +1,5 @@
 package ru.operation.handler.impl.map;
 
-import static java.util.function.Function.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ru.operation.handler.Handled.ok;
@@ -38,7 +37,7 @@ public class HandlerMapTest {
                 return ok();
             };
 
-    private final SimpleProcessor<String, String> identityKey = new SimpleProcessor<>(identity());
+    private final SimpleProcessor<String, String> identityKey = new SimpleProcessor<>(s -> s);
 
     @Test
     public void shouldHandleWithNoDefault() {

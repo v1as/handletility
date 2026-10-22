@@ -1,7 +1,7 @@
 package ru.operation.processor.impl;
 
 import static ru.operation.util.Checks.notNull;
-import static ru.operation.util.Colls.copyNonEmpty;
+import static ru.operation.util.Collections.copyNonEmpty;
 
 import java.util.ArrayList;
 import java.util.List;

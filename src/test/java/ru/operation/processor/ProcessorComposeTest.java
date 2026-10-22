@@ -8,7 +8,6 @@ import static ru.operation.handler.Handled.ok;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
@@ -164,12 +163,14 @@ public class ProcessorComposeTest {
 
     @Test
     public void composeFunctionStillMapsExceptionToError() {
-        Function<String, String> throwing =
-                s -> {
-                    throw new RuntimeException("from-function");
-                };
         IdentifiedProcessor<String, String, String> composed =
-                Processors.compose(throwing).identified("function-throw").build();
+                Processors.compose(
+                                Processors.<String, String>of(
+                                        s -> {
+                                            throw new RuntimeException("from-function");
+                                        }))
+                        .identified("function-throw")
+                        .build();
 
         Processed<String> result = composed.process("x");
         assertTrue(result.isError());

@@ -4,9 +4,9 @@ import java.util.Collection;
 import java.util.List;
 
 /** Collection helpers. */
-public final class Colls {
+public final class Collections {
 
-    private Colls() {}
+    private Collections() {}
 
     public static boolean isNullOrEmpty(Collection<?> collection) {
         return collection == null || collection.isEmpty();

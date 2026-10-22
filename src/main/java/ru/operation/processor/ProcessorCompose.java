@@ -4,7 +4,6 @@ import static ru.operation.util.Checks.notNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import org.slf4j.event.Level;
 import ru.operation.Failed;
@@ -17,6 +16,7 @@ import ru.operation.processor.impl.IdentifiedByConstProcessor;
 import ru.operation.processor.impl.LoggingExceptionProcessor;
 import ru.operation.processor.impl.MdcProcessor;
 import ru.operation.processor.impl.wrap.LoggingProcessor;
+import ru.operation.util.function.ThrowableConsumer;
 
 /**
  * Builds a processor stack with a fixed wrap order on {@link #build()}: {@code
@@ -68,8 +68,8 @@ public final class ProcessorCompose<I, O> {
         return this;
     }
 
-    public ProcessorCompose<I, O> before(Consumer<I> before) {
-        return before(new SimpleHandler<>(notNull(before, "before consumer")::accept));
+    public ProcessorCompose<I, O> before(ThrowableConsumer<I> before) {
+        return before(new SimpleHandler<>(notNull(before, "before consumer")));
     }
 
     /** Observes the main {@link Processed} result without replacing it. */
@@ -78,8 +78,8 @@ public final class ProcessorCompose<I, O> {
         return this;
     }
 
-    public ProcessorCompose<I, O> after(Consumer<Processed<O>> after) {
-        return after(new SimpleHandler<>(notNull(after, "after consumer")::accept));
+    public ProcessorCompose<I, O> after(ThrowableConsumer<Processed<O>> after) {
+        return after(new SimpleHandler<>(notNull(after, "after consumer")));
     }
 
     /**

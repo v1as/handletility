@@ -17,6 +17,6 @@ public record MdcEntry<I>(String key, Processor<I, ?> valueProcessor) {
     /** Preferred factory: method references like {@code Request::id} work without wrapping. */
     public static <I, T> MdcEntry<I> of(String key, Function<I, T> valueExtractor) {
         return new MdcEntry<>(
-                key, new SimpleProcessor<>(notNull(valueExtractor, "mdc value extractor")));
+                key, new SimpleProcessor<>(notNull(valueExtractor, "mdc value extractor")::apply));
     }
 }

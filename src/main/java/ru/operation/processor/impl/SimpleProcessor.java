@@ -3,19 +3,19 @@ package ru.operation.processor.impl;
 import static ru.operation.processor.Processed.of;
 import static ru.operation.processor.Processed.skipped;
 
-import java.util.function.Function;
 import java.util.function.Predicate;
 import lombok.RequiredArgsConstructor;
 import ru.operation.processor.AbstractProcessor;
 import ru.operation.processor.Processed;
+import ru.operation.util.function.ThrowableFunction;
 
 @RequiredArgsConstructor
 public class SimpleProcessor<I, O> extends AbstractProcessor<I, O> {
 
     private final Predicate<I> check;
-    private final Function<I, O> transform;
+    private final ThrowableFunction<I, O> transform;
 
-    public SimpleProcessor(Function<I, O> transform) {
+    public SimpleProcessor(ThrowableFunction<I, O> transform) {
         this(input -> true, transform);
     }
 
