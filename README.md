@@ -19,6 +19,7 @@ IdentifiedProcessor<String, Order, Integer> parseAmount =
                 .logging(Level.DEBUG)
                 .mdc("orderId", Order::id)
                 .mdc("userId", Order::userId)
+                .when(o -> o.payload() != null) // false → SKIPPED, hooks не бегут
                 .before(o -> metrics.mark("parse.start"))
                 .after(result -> metrics.mark(result.isDone() ? "parse.ok" : "parse.fail"))
                 .onException(failed -> Processed.of(0)) // recover
@@ -75,7 +76,7 @@ Integer cents = parseAmount.process(order).orElseThrow();
 Optional<Integer> maybe = parseAmount.process(order).toOptional();
 ```
 
-Слои compose при `build()`: `Identified(Mdc(Logging(Catching(Around(core)))))`. Исключение из core/hooks → `ERROR` (или ваш `.onException`), не throws. `Error` не ловится.
+Слои compose при `build()`: `Identified(Mdc(Logging(Catching(When(Around(core))))))`. `When` и `Around` в стеке только если слот задан. Исключение из функционального core и из `before`/`after`(consumer) доходит до `Catching` и вашего `.onException` (исходный тип, в том числе checked), не throws. `Error` не ловится. `Handlers.of` / `Processors.of` и `Simple*` сами переводят исключение в `ERROR` и до `onException` композера не доходят.
 
 ## Требования
 
@@ -124,11 +125,12 @@ Integer value = out.orElseThrow(); // 42
 
 ### Именование, логирование, MDC (compose)
 
-Порядок слоёв при `build()` фиксирован: `Identified(Mdc(Logging(Catching(Around(core)))))` — MDC снаружи logging, чтобы в логах был контекст; Catching всегда есть и ловит `Exception` (не `Error`). Нужен `.identified(...)`; результат — `IdentifiedHandler` / `IdentifiedProcessor`.
+Порядок слоёв при `build()` фиксирован: `Identified(Mdc(Logging(Catching(When(Around(core))))))` — MDC снаружи logging, чтобы в логах был контекст; Catching всегда есть и ловит `Exception` (не `Error`). `When` стоит внутри Catching и снаружи Around: предикат ложен → `SKIPPED`, before/after и core не вызываются. `When` и `Around` опускаются, если слот не задан. Нужен `.identified(...)`; результат — `IdentifiedHandler` / `IdentifiedProcessor`.
 
 `.named(...)` — опциональная подпись для логов; если не указан, в логгер идёт `String.valueOf(id)`.  
-`.before(...)` / `.after(...)` — hooks вокруг core (внутри Catching): before получает input, after — результат (`Handled` / `Processed`), на возврат не влияет.  
-`.onException(...)` — кастомный маппинг `Failed` → результат (можно recover в `ok()` / успешный `Processed`); без вызова — `LoggingException*` (warn + `ERROR`).
+`.when(ThrowablePredicate)` — входной guard; повторный вызов затирает предыдущий. Исключение из предиката, в том числе checked, идёт в `.onException` исходным типом. Это не `Processor.filter`: `filter` режет успешный выход.  
+`.before(...)` / `.after(...)` — hooks вокруг core (внутри `When`): before получает input, after — результат (`Handled` / `Processed`), на возврат не влияет. Исключение из consumer-хука останавливает операцию и уходит в `.onException`.  
+`.onException(...)` — кастомный маппинг `Failed` → результат (можно recover в `ok()` / успешный `Processed`); без вызова — `LoggingException*` (warn + `ERROR`). Для `compose(функция)` и consumer-хуков исключение доходит сюда. `of()` и явный `Simple*` держат свою границу `ERROR` и этот слот не вызывают.
 
 Цепочка типов — на самом `Processor` (не в compose): `Processors.of(fn).thenCompose(...).thenApply(...).filter(...).thenHandle(...)`. Skip/error пробрасываются, как у `Processed`; `filter` при неуспехе предиката даёт `SKIPPED`.
 
@@ -139,6 +141,7 @@ IdentifiedHandler<String, Request> traced = Handlers.compose(delegate) // или
         .logging()                    // DEBUG по умолчанию; или .logging(Level.TRACE)
         .mdc("requestId", Request::id)
         .mdc("userId", Request::userId)
+        .when(req -> req.id() != null) // false → SKIPPED, hooks не бегут
         .before(auditBefore)          // Handler или Consumer
         .after(auditAfter)            // Handler<Handled> или Consumer<Handled>
         .onException(failed -> Handled.error(failed.exception())) // опционально
@@ -165,7 +168,7 @@ IdentifiedProcessor<String, String, String> traced =
                 .build();
 ```
 
-Обёртки вручную: `IdentifiedByConst*`, `Around*`, `Catching*`, `Named*` (только для логов), `Logging*`, `Mdc*` / `MdcEntry`.
+Обёртки вручную: `IdentifiedByConst*`, `Around*`, `Catching*`, `When*`, `Propagating*`, `Named*` (только для логов), `Logging*`, `Mdc*` / `MdcEntry`.
 
 ### Цепочка handler’ов
 

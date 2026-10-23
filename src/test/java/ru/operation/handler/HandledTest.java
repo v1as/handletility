@@ -4,8 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import ru.operation.processor.Processed;
 
 public class HandledTest {
 
@@ -27,5 +30,27 @@ public class HandledTest {
     public void orElseThrowPassesThroughOkAndSkipped() {
         assertSame(Handled.ok(), Handled.ok().orElseThrow());
         assertSame(Handled.skipped(), Handled.skipped().orElseThrow());
+    }
+
+    @Test
+    public void thenGetSuppliesOnlyWhenHandled() {
+        assertEquals("ok", Handled.ok().thenGet(() -> "ok").orElseThrow());
+        assertTrue(Handled.ok().thenGet(() -> null).isSkipped());
+
+        assertTrue(Handled.skipped().thenGet(Assertions::fail).isSkipped());
+
+        Exception boom = new HandlerException("boom");
+        Processed<String> error = Handled.error(boom).thenGet(() -> fail());
+        assertTrue(error.isError());
+        assertSame(boom, error.exception());
+
+        Processed<String> failed =
+                Handled.ok()
+                        .thenGet(
+                                () -> {
+                                    throw new IllegalStateException("nope");
+                                });
+        assertTrue(failed.isError());
+        assertEquals("nope", failed.exception().getMessage());
     }
 }

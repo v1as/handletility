@@ -9,20 +9,24 @@ import org.slf4j.event.Level;
 import ru.operation.Failed;
 import ru.operation.MdcEntry;
 import ru.operation.handler.Handler;
-import ru.operation.handler.impl.SimpleHandler;
+import ru.operation.handler.impl.PropagatingHandler;
 import ru.operation.processor.impl.AroundProcessor;
 import ru.operation.processor.impl.CatchingProcessor;
 import ru.operation.processor.impl.IdentifiedByConstProcessor;
 import ru.operation.processor.impl.LoggingExceptionProcessor;
 import ru.operation.processor.impl.MdcProcessor;
+import ru.operation.processor.impl.WhenProcessor;
 import ru.operation.processor.impl.wrap.LoggingProcessor;
 import ru.operation.util.function.ThrowableConsumer;
+import ru.operation.util.function.ThrowablePredicate;
 
 /**
  * Builds a processor stack with a fixed wrap order on {@link #build()}: {@code
- * Identified(Mdc(Logging(Catching(Around(core)))))}. MDC wraps logging so log lines see MDC values.
- * Catching always converts {@link Exception} to {@link Processed} ERROR (or custom {@link
- * #onException}). {@link #identified} is required.
+ * Identified(Mdc(Logging(Catching(When(Around(core))))))}. MDC wraps logging so log lines see MDC
+ * values. Catching always converts {@link Exception} to {@link Processed} ERROR (or custom {@link
+ * #onException}). {@link #when} sits inside catching and outside around, so a failed predicate
+ * skips before/after and the core. {@link #identified} is required. When and around are omitted
+ * when not configured.
  */
 public final class ProcessorCompose<I, O> {
 
@@ -33,6 +37,7 @@ public final class ProcessorCompose<I, O> {
     private Handler<I> beforeHandler;
     private Handler<Processed<O>> afterHandler;
     private Processor<Failed<I>, O> onExceptionProcessor;
+    private ThrowablePredicate<I> when;
     private final List<MdcEntry<I>> mdcEntries = new ArrayList<>();
 
     private ProcessorCompose(Processor<I, O> core) {
@@ -63,13 +68,24 @@ public final class ProcessorCompose<I, O> {
         return this;
     }
 
+    /**
+     * Skips before, after and the core when {@code predicate} is false ({@link
+     * Processed#skipped()}). A later call replaces the previous predicate. A predicate exception,
+     * including a checked one, reaches {@link #onException} as the original type. This is an input
+     * guard; {@link Processor#filter} checks a successful output.
+     */
+    public ProcessorCompose<I, O> when(ThrowablePredicate<I> predicate) {
+        this.when = notNull(predicate, "predicate");
+        return this;
+    }
+
     public ProcessorCompose<I, O> before(Handler<I> before) {
         this.beforeHandler = notNull(before, "before handler");
         return this;
     }
 
     public ProcessorCompose<I, O> before(ThrowableConsumer<I> before) {
-        return before(new SimpleHandler<>(notNull(before, "before consumer")));
+        return before(new PropagatingHandler<>(notNull(before, "before consumer")));
     }
 
     /** Observes the main {@link Processed} result without replacing it. */
@@ -79,7 +95,7 @@ public final class ProcessorCompose<I, O> {
     }
 
     public ProcessorCompose<I, O> after(ThrowableConsumer<Processed<O>> after) {
-        return after(new SimpleHandler<>(notNull(after, "after consumer")));
+        return after(new PropagatingHandler<>(notNull(after, "after consumer")));
     }
 
     /**
@@ -119,6 +135,9 @@ public final class ProcessorCompose<I, O> {
         Processor<I, O> result = core;
         if (beforeHandler != null || afterHandler != null) {
             result = new AroundProcessor<>(beforeHandler, result, afterHandler);
+        }
+        if (when != null) {
+            result = new WhenProcessor<>(when, result);
         }
         result = new CatchingProcessor<>(result, onException);
         if (loggingLevel != null) {

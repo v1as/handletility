@@ -1,6 +1,8 @@
 package ru.operation.handler;
 
 import ru.operation.ResultState;
+import ru.operation.processor.Processed;
+import ru.operation.util.function.ThrowableSupplier;
 
 /** Result of a {@link Handler}: done, skipped, or error (with optional exception). */
 public record Handled(ResultState state, Exception exception) {
@@ -41,6 +43,26 @@ public record Handled(ResultState state, Exception exception) {
             throw new HandlerException("Handling error", exception);
         }
         return this;
+    }
+
+    /**
+     * Continues with a value when this outcome is handled. Skip and error propagate. {@code null}
+     * from {@code next} is {@link Processed#skipped()}; an exception from {@code next} is {@link
+     * Processed#error(Exception)}.
+     */
+    public <O> Processed<O> thenGet(ThrowableSupplier<O> next) {
+        if (isError()) {
+            return Processed.error(exception);
+        }
+        if (isSkipped()) {
+            return Processed.skipped();
+        }
+        try {
+            O value = next.get();
+            return value == null ? Processed.skipped() : Processed.of(value);
+        } catch (Exception e) {
+            return Processed.error(e);
+        }
     }
 
     @Override

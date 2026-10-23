@@ -2,6 +2,7 @@ package ru.operation.handler;
 
 import static ru.operation.util.Checks.notNull;
 
+import ru.operation.handler.impl.PropagatingHandler;
 import ru.operation.handler.impl.SimpleHandler;
 import ru.operation.util.function.ThrowableConsumer;
 
@@ -19,7 +20,11 @@ public final class Handlers {
         return HandlerCompose.from(notNull(core, "core"));
     }
 
+    /**
+     * Compose entry for a consumer. Exceptions propagate to {@link HandlerCompose#onException};
+     * {@link #of} keeps them inside {@link SimpleHandler}.
+     */
     public static <I> HandlerCompose<I> compose(ThrowableConsumer<I> consumer) {
-        return compose(of(consumer));
+        return compose(new PropagatingHandler<>(notNull(consumer, "consumer")));
     }
 }

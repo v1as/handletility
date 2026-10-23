@@ -2,6 +2,7 @@ package ru.operation.processor;
 
 import static ru.operation.util.Checks.notNull;
 
+import ru.operation.processor.impl.PropagatingProcessor;
 import ru.operation.processor.impl.SimpleProcessor;
 import ru.operation.util.function.ThrowableFunction;
 
@@ -22,7 +23,12 @@ public final class Processors {
         return ProcessorCompose.from(notNull(core, "core"));
     }
 
+    /**
+     * Compose entry for a function (null result → {@link Processed#skipped()}). Exceptions
+     * propagate to {@link ProcessorCompose#onException}; {@link #of} keeps them inside {@link
+     * SimpleProcessor}.
+     */
     public static <I, O> ProcessorCompose<I, O> compose(ThrowableFunction<I, O> transform) {
-        return compose(of(transform));
+        return compose(new PropagatingProcessor<>(notNull(transform, "transform")));
     }
 }

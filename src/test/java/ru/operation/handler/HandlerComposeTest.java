@@ -1,12 +1,15 @@
 package ru.operation.handler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +19,7 @@ import ru.operation.handler.impl.IdentifiedByConstHandler;
 import ru.operation.handler.impl.MdcHandler;
 import ru.operation.handler.impl.SimpleHandler;
 import ru.operation.handler.impl.wrap.LoggingHandler;
+import ru.operation.util.function.ThrowableConsumer;
 
 public class HandlerComposeTest {
 
@@ -194,5 +198,173 @@ public class HandlerComposeTest {
         Handled result = composed.handle("x");
         assertTrue(result.isError());
         assertEquals("from-consumer", result.exception().getMessage());
+    }
+
+    @Test
+    public void consumerOnExceptionReceivesOriginalCheckedException() {
+        ThrowableConsumer<String> consumer =
+                s -> {
+                    throw new IOException("checked");
+                };
+        IdentifiedHandler<String, String> composed =
+                Handlers.compose(consumer)
+                        .identified("consumer-checked")
+                        .onException(
+                                failed -> {
+                                    assertInstanceOf(IOException.class, failed.exception());
+                                    assertEquals("checked", failed.exception().getMessage());
+                                    return Handled.ok();
+                                })
+                        .build();
+
+        assertTrue(composed.handle("x").isHandled());
+    }
+
+    @Test
+    public void beforeConsumerThrowSkipsCoreAndReachesOnException() {
+        AtomicBoolean coreCalled = new AtomicBoolean();
+        AtomicReference<Exception> seen = new AtomicReference<>();
+        ThrowableConsumer<String> before =
+                s -> {
+                    throw new IllegalStateException("hook");
+                };
+        IdentifiedHandler<String, String> composed =
+                Handlers.compose((String s) -> coreCalled.set(true))
+                        .identified("before-throw")
+                        .before(before)
+                        .onException(
+                                failed -> {
+                                    seen.set(failed.exception());
+                                    return Handled.ok();
+                                })
+                        .build();
+
+        assertTrue(composed.handle("x").isHandled());
+        assertFalse(coreCalled.get());
+        assertInstanceOf(IllegalStateException.class, seen.get());
+        assertEquals("hook", seen.get().getMessage());
+    }
+
+    @Test
+    public void afterConsumerThrowReplacesCoreResult() {
+        AtomicReference<Exception> seen = new AtomicReference<>();
+        ThrowableConsumer<Handled> after =
+                result -> {
+                    throw new IllegalStateException("after");
+                };
+        IdentifiedHandler<String, String> composed =
+                Handlers.compose((String s) -> {})
+                        .identified("after-throw")
+                        .after(after)
+                        .onException(
+                                failed -> {
+                                    seen.set(failed.exception());
+                                    return Handled.error(failed.exception());
+                                })
+                        .build();
+
+        Handled result = composed.handle("x");
+        assertTrue(result.isError());
+        assertInstanceOf(IllegalStateException.class, result.exception());
+        assertEquals("after", result.exception().getMessage());
+        assertEquals("after", seen.get().getMessage());
+    }
+
+    @Test
+    public void whenFalseSkipsBeforeCoreAndAfter() {
+        List<String> order = new ArrayList<>();
+        IdentifiedHandler<String, String> composed =
+                Handlers.compose(
+                                (String s) -> {
+                                    order.add("main");
+                                })
+                        .identified("op")
+                        .before(
+                                (String s) -> {
+                                    order.add("before");
+                                })
+                        .after(
+                                (Handled result) -> {
+                                    order.add("after");
+                                })
+                        .when(s -> false)
+                        .build();
+
+        assertTrue(composed.handle("x").isSkipped());
+        assertEquals(List.of(), order);
+        assertTrue(composed.toString().contains("Catching(When(Around("));
+    }
+
+    @Test
+    public void whenTrueRunsBeforeCoreAndAfter() {
+        List<String> order = new ArrayList<>();
+        IdentifiedHandler<String, String> composed =
+                Handlers.compose(
+                                (String s) -> {
+                                    order.add("main");
+                                })
+                        .identified("op")
+                        .before(
+                                (String s) -> {
+                                    order.add("before");
+                                })
+                        .after(
+                                (Handled result) -> {
+                                    order.add("after");
+                                })
+                        .when(s -> "x".equals(s))
+                        .build();
+
+        assertTrue(composed.handle("x").isHandled());
+        assertEquals(List.of("before", "main", "after"), order);
+    }
+
+    @Test
+    public void whenPredicateExceptionReachesOnException() {
+        AtomicReference<Exception> seen = new AtomicReference<>();
+        IdentifiedHandler<String, String> composed =
+                Handlers.compose((String s) -> {})
+                        .identified("when-throw")
+                        .when(
+                                s -> {
+                                    throw new IOException("pred");
+                                })
+                        .onException(
+                                failed -> {
+                                    seen.set(failed.exception());
+                                    return Handled.ok();
+                                })
+                        .build();
+
+        assertTrue(composed.handle("x").isHandled());
+        assertInstanceOf(IOException.class, seen.get());
+        assertEquals("pred", seen.get().getMessage());
+    }
+
+    @Test
+    public void whenWithoutAroundStillWrapsCore() {
+        IdentifiedHandler<String, String> composed =
+                Handlers.compose((String s) -> {}).identified("op").when(s -> true).build();
+
+        assertTrue(composed.handle("x").isHandled());
+        assertTrue(composed.toString().contains("Catching(When("));
+        assertFalse(composed.toString().contains("Around("));
+    }
+
+    @Test
+    public void secondWhenReplacesFirst() {
+        List<String> order = new ArrayList<>();
+        IdentifiedHandler<String, String> composed =
+                Handlers.compose(
+                                (String s) -> {
+                                    order.add("main");
+                                })
+                        .identified("op")
+                        .when(s -> false)
+                        .when(s -> true)
+                        .build();
+
+        assertTrue(composed.handle("x").isHandled());
+        assertEquals(List.of("main"), order);
     }
 }
