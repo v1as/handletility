@@ -12,7 +12,6 @@ import ru.operation.handler.Handler;
 import ru.operation.handler.impl.PropagatingHandler;
 import ru.operation.processor.impl.AroundProcessor;
 import ru.operation.processor.impl.CatchingProcessor;
-import ru.operation.processor.impl.IdentifiedByConstProcessor;
 import ru.operation.processor.impl.LoggingExceptionProcessor;
 import ru.operation.processor.impl.MdcProcessor;
 import ru.operation.processor.impl.WhenProcessor;
@@ -22,16 +21,14 @@ import ru.operation.util.function.ThrowablePredicate;
 
 /**
  * Builds a processor stack with a fixed wrap order on {@link #build()}: {@code
- * Identified(Mdc(Logging(Catching(When(Around(core))))))}. MDC wraps logging so log lines see MDC
- * values. Catching always converts {@link Exception} to {@link Processed} ERROR (or custom {@link
+ * Mdc(Logging(Catching(When(Around(core)))))}. MDC wraps logging so log lines see MDC values.
+ * Catching always converts {@link Exception} to {@link Processed} ERROR (or custom {@link
  * #onException}). {@link #when} sits inside catching and outside around, so a failed predicate
- * skips before/after and the core. {@link #identified} is required. When and around are omitted
- * when not configured.
+ * skips before/after and the core. When, around, logging and MDC are omitted when not configured.
  */
 public final class ProcessorCompose<I, O> {
 
     private final Processor<I, O> core;
-    private Object identifier;
     private String name;
     private Level loggingLevel;
     private Handler<I> beforeHandler;
@@ -48,15 +45,7 @@ public final class ProcessorCompose<I, O> {
         return new ProcessorCompose<>(core);
     }
 
-    public <K> ProcessorCompose<I, O> identified(K identifier) {
-        this.identifier = notNull(identifier, "identifier");
-        return this;
-    }
-
-    /**
-     * Optional logger suffix. The logger is the core's class. If absent, the {@link #identified}
-     * value is the suffix.
-     */
+    /** Optional logger suffix. The logger is the core's class. Absent means no suffix. */
     public ProcessorCompose<I, O> named(String name) {
         this.name = notNull(name, "name");
         return this;
@@ -126,10 +115,7 @@ public final class ProcessorCompose<I, O> {
         return this;
     }
 
-    @SuppressWarnings("unchecked")
-    public <K> IdentifiedProcessor<K, I, O> build() {
-        K id = (K) notNull(identifier, "identifier");
-        String logName = name != null ? name : String.valueOf(id);
+    public Processor<I, O> build() {
         Processor<Failed<I>, O> onException =
                 onExceptionProcessor != null
                         ? onExceptionProcessor
@@ -144,11 +130,11 @@ public final class ProcessorCompose<I, O> {
         }
         result = new CatchingProcessor<>(result, onException);
         if (loggingLevel != null) {
-            result = new LoggingProcessor<>(result, core.getClass(), logName, loggingLevel);
+            result = new LoggingProcessor<>(result, core.getClass(), name, loggingLevel);
         }
         if (!mdcEntries.isEmpty()) {
             result = new MdcProcessor<>(mdcEntries, result);
         }
-        return new IdentifiedByConstProcessor<>(id, result);
+        return result;
     }
 }

@@ -49,7 +49,6 @@ public class HandlerMapTest {
                 Handlers.compose(
                                 new HandlerMap<>(
                                         List.of(firstHandler, secondHandler), identityKey, null))
-                        .identified("testHandler")
                         .logging()
                         .build();
 

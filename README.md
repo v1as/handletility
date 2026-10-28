@@ -11,10 +11,9 @@ Java-библиотека для построения **обработчиков
 ```java
 record Order(String id, String userId, String payload) {}
 
-// Function → ProcessorCompose: id, имя в логах, MDC, hooks, recover
-IdentifiedProcessor<String, Order, Integer> parseAmount =
+// Function → ProcessorCompose: имя в логах, MDC, hooks, recover
+Processor<Order, Integer> parseAmount =
         Processors.compose((Order o) -> Integer.valueOf(o.payload()))
-                .identified("parse-amount")
                 .named("parseAmount")
                 .logging(Level.DEBUG)
                 .mdc("orderId", Order::id)
@@ -26,9 +25,8 @@ IdentifiedProcessor<String, Order, Integer> parseAmount =
                 .build();
 
 // Consumer → HandlerCompose: тот же стек обёрток
-IdentifiedHandler<String, Order> persist =
+Handler<Order> persist =
         Handlers.compose((Order o) -> repository.save(o))
-                .identified("order-persist")
                 .named("persist")
                 .logging()
                 .mdc("orderId", Order::id)
@@ -41,7 +39,7 @@ IdentifiedHandler<String, Order> persist =
 Handler<Order> pipeline =
         HandlerList.<Order>builder()
                 .handler(persist)
-                .handler(Handlers.compose(o -> notify(o)).identified("notify").build())
+                .handler(Handlers.compose(o -> notify(o)).build())
                 .modifier(HandlerModifier.CONTINUE_ON_DONE)
                 .modifier(HandlerModifier.CONTINUE_ON_ERROR)
                 .build();
@@ -49,8 +47,8 @@ Handler<Order> pipeline =
 // Маршрутизация по ключу
 Handler<Order> router =
         HandlerMap.<String, Order>handlerMap()
-                .handler(Handlers.compose(this::create).identified("create").build())
-                .handler(Handlers.compose(this::cancel).identified("cancel").build())
+                .handler(new IdentifiedByConstHandler<>("create", Handlers.compose(this::create).build()))
+                .handler(new IdentifiedByConstHandler<>("cancel", Handlers.compose(this::cancel).build()))
                 .keyExtractor(new SimpleProcessor<>(Order::payload))
                 .defaultHandler(o -> Handled.skipped())
                 .build();
@@ -69,14 +67,14 @@ Handled handled =
         parseAmount
                 .process(order)
                 .map(amount -> amount * 100)
-                .flatMap(Processors.compose(cents -> taxService.apply(cents)).identified("tax").build())
-                .thenHandle(Handlers.compose((Integer c) -> charge(c)).identified("charge").build());
+                .flatMap(Processors.compose(cents -> taxService.apply(cents)).build())
+                .thenHandle(Handlers.compose((Integer c) -> charge(c)).build());
 
 Integer cents = parseAmount.process(order).orElseThrow();
 Optional<Integer> maybe = parseAmount.process(order).toOptional();
 ```
 
-Слои compose при `build()`: `Identified(Mdc(Logging(Catching(When(Around(core))))))`. `When` и `Around` в стеке только если слот задан. Исключение из функционального core и из `before`/`after`(consumer) доходит до `Catching` и вашего `.onException` (исходный тип, в том числе checked), не throws. `Error` не ловится. `Handlers.of` / `Processors.of` и `Simple*` сами переводят исключение в `ERROR` и до `onException` композера не доходят.
+Слои compose при `build()`: `Mdc(Logging(Catching(When(Around(core)))))`. `When` и `Around` в стеке только если слот задан. Исключение из функционального core и из `before`/`after`(consumer) доходит до `Catching` и вашего `.onException` (исходный тип, в том числе checked), не throws. `Error` не ловится. `Handlers.of` / `Processors.of` и `Simple*` сами переводят исключение в `ERROR` и до `onException` композера не доходят.
 
 ## Требования
 
@@ -125,9 +123,9 @@ Integer value = out.orElseThrow(); // 42
 
 ### Именование, логирование, MDC (compose)
 
-Порядок слоёв при `build()` фиксирован: `Identified(Mdc(Logging(Catching(When(Around(core))))))` — MDC снаружи logging, чтобы в логах был контекст; Catching всегда есть и ловит `Exception` (не `Error`). `When` стоит внутри Catching и снаружи Around: предикат ложен → `SKIPPED`, before/after и core не вызываются. `When` и `Around` опускаются, если слот не задан. Нужен `.identified(...)`; результат — `IdentifiedHandler` / `IdentifiedProcessor`.
+Порядок слоёв при `build()` фиксирован: `Mdc(Logging(Catching(When(Around(core)))))` — MDC снаружи logging, чтобы в логах был контекст; Catching всегда есть и ловит `Exception` (не `Error`). `When` стоит внутри Catching и снаружи Around: предикат ложен → `SKIPPED`, before/after и core не вызываются. `When`, `Around`, logging и MDC опускаются, если слот не задан. Результат — `Handler` / `Processor`.
 
-`.named(...)` — опциональный суффикс логгера. Сам логгер — класс ядра, переданного в `compose`, например `CreateNoteCommandHandler[note]`. Если имя не задано, суффикс — `String.valueOf(id)`.  
+`.named(...)` — опциональный суффикс логгера. Сам логгер — класс ядра, переданного в `compose`, например `CreateNoteCommandHandler[note]`. Если имя не задано, суффикс не добавляется.  
 `.when(ThrowablePredicate)` — входной guard; повторный вызов затирает предыдущий. Исключение из предиката, в том числе checked, идёт в `.onException` исходным типом. Это не `Processor.filter`: `filter` режет успешный выход.  
 `.before(...)` / `.after(...)` — hooks вокруг core (внутри `When`): before получает input, after — результат (`Handled` / `Processed`), на возврат не влияет. Исключение из consumer-хука останавливает операцию и уходит в `.onException`.  
 `.onException(...)` — кастомный маппинг `Failed` → результат (можно recover в `ok()` / успешный `Processed`); без вызова — `LoggingException*` (warn + `ERROR`). Для `compose(функция)` и consumer-хуков исключение доходит сюда. `of()` и явный `Simple*` держат свою границу `ERROR` и этот слот не вызывают.
@@ -135,9 +133,8 @@ Integer value = out.orElseThrow(); // 42
 Цепочка типов — на самом `Processor` (не в compose): `Processors.of(fn).thenCompose(...).thenApply(...).filter(...).thenHandle(...)`. Skip/error пробрасываются, как у `Processed`; `filter` при неуспехе предиката даёт `SKIPPED`.
 
 ```java
-IdentifiedHandler<String, Request> traced = Handlers.compose(delegate) // или Consumer<Request>
-        .identified("order-persist")
-        .named("persist")             // суффикс логгера; без него суффикс — значение identified
+Handler<Request> traced = Handlers.compose(delegate) // или Consumer<Request>
+        .named("persist")             // суффикс логгера; без него суффикса нет
         .logging()                    // DEBUG по умолчанию; или .logging(Level.TRACE)
         .mdc("requestId", Request::id)
         .mdc("userId", Request::userId)
@@ -158,9 +155,8 @@ Processor<String, String> pipeline =
                 .thenCompose(Processors.of(n -> n * 2))
                 .thenApply(Object::toString);
 
-IdentifiedProcessor<String, String, String> traced =
+Processor<String, String> traced =
         Processors.compose(pipeline)
-                .identified("parse")
                 .before(pre)
                 .after(post)                  // Handler|Consumer<Processed<?>>
                 .onException(failed -> Processed.error(failed.exception()))

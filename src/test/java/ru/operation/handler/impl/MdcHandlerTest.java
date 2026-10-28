@@ -86,7 +86,6 @@ public class MdcHandlerTest {
                                             a.set(MDC.get("a"));
                                             b.set(MDC.get("b"));
                                         }))
-                        .identified("multi-mdc")
                         .mdc("a", s -> "A")
                         .mdc("b", s -> "B")
                         .build();
@@ -95,7 +94,6 @@ public class MdcHandlerTest {
         assertEquals("A", a.get());
         assertEquals("B", b.get());
         assertTrue(handler.toString().contains("Mdc([a, b],"));
-        assertEquals("multi-mdc", handler.getIdentifier());
     }
 
     @Test

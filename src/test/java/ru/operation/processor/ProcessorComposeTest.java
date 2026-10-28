@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import ru.operation.handler.impl.SimpleHandler;
-import ru.operation.processor.impl.IdentifiedByConstProcessor;
+import ru.operation.processor.impl.MdcProcessor;
 import ru.operation.processor.impl.SimpleProcessor;
 import ru.operation.processor.impl.wrap.LoggingProcessor;
 import ru.operation.util.function.ThrowableConsumer;
@@ -33,48 +33,38 @@ public class ProcessorComposeTest {
     }
 
     @Test
-    public void buildOrderIsIdentifiedLoggingMdcCore() {
+    public void buildOrderIsLoggingMdcCore() {
         Processor<String, String> core = new SimpleProcessor<>(String::toUpperCase);
-        IdentifiedProcessor<String, String, String> composed =
+        Processor<String, String> composed =
                 Processors.compose(core)
-                        .identified("upper")
                         .mdc("traceId", s -> "t-" + s)
                         .logging()
                         .named("upper-log")
                         .build();
 
-        assertInstanceOf(IdentifiedByConstProcessor.class, composed);
-        assertEquals("upper", composed.getIdentifier());
-        assertTrue(
-                composed.toString()
-                        .startsWith("Identified[upper](Mdc([traceId], Logging(DEBUG, Catching("));
+        assertInstanceOf(MdcProcessor.class, composed);
+        assertTrue(composed.toString().startsWith("Mdc([traceId], Logging(DEBUG, Catching("));
     }
 
     @Test
-    public void loggingUsesIdWhenNameAbsent() {
-        IdentifiedProcessor<String, String, String> composed =
-                Processors.compose(new SimpleProcessor<String, String>(s -> s))
-                        .identified("pid")
-                        .logging()
-                        .build();
+    public void loggingWithoutName() {
+        Processor<String, String> composed =
+                Processors.compose(new SimpleProcessor<String, String>(s -> s)).logging().build();
 
-        IdentifiedByConstProcessor<String, String, String> wrap =
-                (IdentifiedByConstProcessor<String, String, String>) composed;
-        assertInstanceOf(LoggingProcessor.class, wrap.getProcessor());
-        assertTrue(composed.toString().startsWith("Identified[pid](Logging(DEBUG, Catching("));
+        assertInstanceOf(LoggingProcessor.class, composed);
+        assertTrue(composed.toString().startsWith("Logging(DEBUG, Catching("));
     }
 
     @Test
     public void processesWithMdc() {
         AtomicReference<String> seen = new AtomicReference<>();
-        IdentifiedProcessor<String, String, String> composed =
+        Processor<String, String> composed =
                 Processors.compose(
                                 new SimpleProcessor<String, String>(
                                         input -> {
                                             seen.set(MDC.get("traceId"));
                                             return input;
                                         }))
-                        .identified("p")
                         .mdc("traceId", s -> "v")
                         .build();
 
@@ -87,14 +77,13 @@ public class ProcessorComposeTest {
     @Test
     public void beforeAndAfterWrapCoreInsideMdc() {
         List<String> order = new ArrayList<>();
-        IdentifiedProcessor<String, String, String> composed =
+        Processor<String, String> composed =
                 Processors.compose(
                                 new SimpleProcessor<String, String>(
                                         s -> {
                                             order.add("main");
                                             return s.toUpperCase();
                                         }))
-                        .identified("op")
                         .before(new SimpleHandler<>(s -> order.add("before")))
                         .after(
                                 result -> {
@@ -117,13 +106,12 @@ public class ProcessorComposeTest {
     @Test
     public void composeAcceptsFunctionAndBeforeAfterConsumers() {
         List<String> order = new ArrayList<>();
-        IdentifiedProcessor<String, String, String> composed =
+        Processor<String, String> composed =
                 Processors.compose(
                                 (String s) -> {
                                     order.add("main");
                                     return s.toUpperCase();
                                 })
-                        .identified("op")
                         .before(
                                 (String s) -> {
                                     order.add("before");
@@ -144,8 +132,7 @@ public class ProcessorComposeTest {
                 input -> {
                     throw new IllegalStateException("boom");
                 };
-        IdentifiedProcessor<String, String, String> composed =
-                Processors.compose(raw).identified("raw-throw").build();
+        Processor<String, String> composed = Processors.compose(raw).build();
 
         Processed<String> result = composed.process("x");
         assertTrue(result.isError());
@@ -159,11 +146,8 @@ public class ProcessorComposeTest {
                 input -> {
                     throw new IllegalStateException("boom");
                 };
-        IdentifiedProcessor<String, String, String> composed =
-                Processors.compose(raw)
-                        .identified("recover")
-                        .onException(failed -> Processed.of("recovered"))
-                        .build();
+        Processor<String, String> composed =
+                Processors.compose(raw).onException(failed -> Processed.of("recovered")).build();
 
         Processed<String> result = composed.process("x");
         assertTrue(result.isDone());
@@ -172,13 +156,12 @@ public class ProcessorComposeTest {
 
     @Test
     public void composeFunctionStillMapsExceptionToError() {
-        IdentifiedProcessor<String, String, String> composed =
+        Processor<String, String> composed =
                 Processors.compose(
                                 Processors.<String, String>of(
                                         s -> {
                                             throw new RuntimeException("from-function");
                                         }))
-                        .identified("function-throw")
                         .build();
 
         Processed<String> result = composed.process("x");
@@ -192,9 +175,8 @@ public class ProcessorComposeTest {
                 s -> {
                     throw new IOException("checked");
                 };
-        IdentifiedProcessor<String, String, String> composed =
+        Processor<String, String> composed =
                 Processors.compose(transform)
-                        .identified("function-checked")
                         .onException(
                                 failed -> {
                                     assertInstanceOf(IOException.class, failed.exception());
@@ -216,13 +198,12 @@ public class ProcessorComposeTest {
                 s -> {
                     throw new IllegalStateException("hook");
                 };
-        IdentifiedProcessor<String, String, String> composed =
+        Processor<String, String> composed =
                 Processors.compose(
                                 (String s) -> {
                                     coreCalled.set(true);
                                     return s;
                                 })
-                        .identified("before-throw")
                         .before(before)
                         .onException(
                                 failed -> {
@@ -246,9 +227,8 @@ public class ProcessorComposeTest {
                 result -> {
                     throw new IllegalStateException("after");
                 };
-        IdentifiedProcessor<String, String, String> composed =
+        Processor<String, String> composed =
                 Processors.compose((String s) -> "ok")
-                        .identified("after-throw")
                         .after(after)
                         .onException(
                                 failed -> {
@@ -267,13 +247,12 @@ public class ProcessorComposeTest {
     public void whenFalseSkipsBeforeCoreAndAfter() {
         List<String> order = new ArrayList<>();
         AtomicBoolean coreCalled = new AtomicBoolean();
-        IdentifiedProcessor<String, String, String> composed =
+        Processor<String, String> composed =
                 Processors.compose(
                                 (String s) -> {
                                     coreCalled.set(true);
                                     return s.toUpperCase();
                                 })
-                        .identified("op")
                         .before(
                                 (String s) -> {
                                     order.add("before");
@@ -294,13 +273,12 @@ public class ProcessorComposeTest {
     @Test
     public void whenTrueRunsBeforeCoreAndAfter() {
         List<String> order = new ArrayList<>();
-        IdentifiedProcessor<String, String, String> composed =
+        Processor<String, String> composed =
                 Processors.compose(
                                 (String s) -> {
                                     order.add("main");
                                     return s.toUpperCase();
                                 })
-                        .identified("op")
                         .before(
                                 (String s) -> {
                                     order.add("before");
@@ -319,9 +297,8 @@ public class ProcessorComposeTest {
     @Test
     public void whenPredicateExceptionReachesOnException() {
         AtomicReference<Exception> seen = new AtomicReference<>();
-        IdentifiedProcessor<String, String, String> composed =
+        Processor<String, String> composed =
                 Processors.compose((String s) -> s)
-                        .identified("when-throw")
                         .when(
                                 s -> {
                                     throw new IOException("pred");
@@ -342,8 +319,8 @@ public class ProcessorComposeTest {
 
     @Test
     public void whenWithoutAroundStillWrapsCore() {
-        IdentifiedProcessor<String, String, String> composed =
-                Processors.compose((String s) -> s).identified("op").when(s -> true).build();
+        Processor<String, String> composed =
+                Processors.compose((String s) -> s).when(s -> true).build();
 
         assertEquals("x", composed.process("x").value());
         assertTrue(composed.toString().contains("Catching(When("));
@@ -353,13 +330,12 @@ public class ProcessorComposeTest {
     @Test
     public void secondWhenReplacesFirst() {
         AtomicBoolean coreCalled = new AtomicBoolean();
-        IdentifiedProcessor<String, String, String> composed =
+        Processor<String, String> composed =
                 Processors.compose(
                                 (String s) -> {
                                     coreCalled.set(true);
                                     return s;
                                 })
-                        .identified("op")
                         .when(s -> false)
                         .when(s -> true)
                         .build();
@@ -371,20 +347,15 @@ public class ProcessorComposeTest {
     @Test
     public void composeFunctionNullBecomesSkipped() {
         ThrowableFunction<String, String> transform = s -> null;
-        IdentifiedProcessor<String, String, String> composed =
-                Processors.compose(transform).identified("null-fn").build();
+        Processor<String, String> composed = Processors.compose(transform).build();
 
         assertTrue(composed.process("x").isSkipped());
     }
 
     @Test
     public void loggingUsesCoreClassNotCatchingWrapper() {
-        IdentifiedProcessor<String, String, Integer> composed =
-                Processors.compose(new ParseAmountProcessor())
-                        .identified("amount-id")
-                        .named("amount")
-                        .logging()
-                        .build();
+        Processor<String, Integer> composed =
+                Processors.compose(new ParseAmountProcessor()).named("amount").logging().build();
 
         Logger root = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         ListAppender<ILoggingEvent> appender = new ListAppender<>();

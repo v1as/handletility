@@ -10,7 +10,6 @@ import ru.operation.Failed;
 import ru.operation.MdcEntry;
 import ru.operation.handler.impl.AroundHandler;
 import ru.operation.handler.impl.CatchingHandler;
-import ru.operation.handler.impl.IdentifiedByConstHandler;
 import ru.operation.handler.impl.LoggingExceptionHandler;
 import ru.operation.handler.impl.MdcHandler;
 import ru.operation.handler.impl.PropagatingHandler;
@@ -21,16 +20,14 @@ import ru.operation.util.function.ThrowablePredicate;
 
 /**
  * Builds a handler stack with a fixed wrap order on {@link #build()}: {@code
- * Identified(Mdc(Logging(Catching(When(Around(core))))))}. MDC wraps logging so log lines see MDC
- * values. Catching always converts {@link Exception} to {@link Handled} ERROR (or custom {@link
+ * Mdc(Logging(Catching(When(Around(core)))))}. MDC wraps logging so log lines see MDC values.
+ * Catching always converts {@link Exception} to {@link Handled} ERROR (or custom {@link
  * #onException}). {@link #when} sits inside catching and outside around, so a failed predicate
- * skips before/after and the core. {@link #identified} is required. When and around are omitted
- * when not configured.
+ * skips before/after and the core. When, around, logging and MDC are omitted when not configured.
  */
 public final class HandlerCompose<I> {
 
     private final Handler<I> core;
-    private Object identifier;
     private String name;
     private Level loggingLevel;
     private Handler<I> beforeHandler;
@@ -47,15 +44,7 @@ public final class HandlerCompose<I> {
         return new HandlerCompose<>(core);
     }
 
-    public <K> HandlerCompose<I> identified(K identifier) {
-        this.identifier = notNull(identifier, "identifier");
-        return this;
-    }
-
-    /**
-     * Optional logger suffix. The logger is the core's class. If absent, the {@link #identified}
-     * value is the suffix.
-     */
+    /** Optional logger suffix. The logger is the core's class. Absent means no suffix. */
     public HandlerCompose<I> named(String name) {
         this.name = notNull(name, "name");
         return this;
@@ -123,10 +112,7 @@ public final class HandlerCompose<I> {
         return this;
     }
 
-    @SuppressWarnings("unchecked")
-    public <K> IdentifiedHandler<K, I> build() {
-        K id = (K) notNull(identifier, "identifier");
-        String logName = name != null ? name : String.valueOf(id);
+    public Handler<I> build() {
         Handler<Failed<I>> onException =
                 onExceptionHandler != null ? onExceptionHandler : new LoggingExceptionHandler<>();
 
@@ -139,11 +125,11 @@ public final class HandlerCompose<I> {
         }
         result = new CatchingHandler<>(result, onException);
         if (loggingLevel != null) {
-            result = new LoggingHandler<>(result, core.getClass(), logName, loggingLevel);
+            result = new LoggingHandler<>(result, core.getClass(), name, loggingLevel);
         }
         if (!mdcEntries.isEmpty()) {
             result = new MdcHandler<>(mdcEntries, result);
         }
-        return new IdentifiedByConstHandler<>(id, result);
+        return result;
     }
 }
