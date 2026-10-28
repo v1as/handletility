@@ -6,6 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.slf4j.event.Level;
 import ru.operation.handler.impl.IdentifiedByConstHandler;
@@ -366,5 +370,41 @@ public class HandlerComposeTest {
 
         assertTrue(composed.handle("x").isHandled());
         assertEquals(List.of("main"), order);
+    }
+
+    @Test
+    public void loggingUsesCoreClassNotCatchingWrapper() {
+        IdentifiedHandler<String, String> composed =
+                Handlers.compose(new CreateNoteCommandHandler())
+                        .identified("note-id")
+                        .named("note")
+                        .logging()
+                        .build();
+
+        Logger root = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        root.addAppender(appender);
+        try {
+            assertTrue(composed.handle("x").isHandled());
+        } finally {
+            root.detachAppender(appender);
+        }
+
+        assertEquals(
+                CreateNoteCommandHandler.class.getName() + "[note]",
+                appender.list.stream()
+                        .filter(event -> event.getFormattedMessage().startsWith("Handled input"))
+                        .map(ILoggingEvent::getLoggerName)
+                        .findFirst()
+                        .orElseThrow());
+    }
+
+    private static final class CreateNoteCommandHandler implements Handler<String> {
+
+        @Override
+        public Handled handle(String input) {
+            return Handled.ok();
+        }
     }
 }

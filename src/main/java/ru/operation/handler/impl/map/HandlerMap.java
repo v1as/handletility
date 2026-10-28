@@ -14,7 +14,11 @@ import ru.operation.identifier.IdentifyProcessor;
 import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
 
-/** Routes input to an {@link IdentifiedHandler} selected by a key extracted from the input. */
+/**
+ * Routes input to an {@link IdentifiedHandler} selected by a key extracted from the input. A
+ * key-extraction error is returned as-is and does not call {@code defaultHandler}. Skip and an
+ * unknown key do.
+ */
 public class HandlerMap<K, I> extends AbstractHandler<I> {
 
     private final IdentifyProcessor<K, ? extends IdentifiedHandler<K, I>, I> handlerIdentifier;
@@ -36,12 +40,12 @@ public class HandlerMap<K, I> extends AbstractHandler<I> {
             log.trace("Using handler {}", handler);
             return handler.value().handle(input);
         }
+        if (handler.isError()) {
+            return error(handler.exception());
+        }
         if (defaultHandler != null) {
             log.trace("Using default handler");
             return defaultHandler.handle(input);
-        }
-        if (handler.isError()) {
-            return error("No handler identified: " + handler);
         }
         return skipped();
     }

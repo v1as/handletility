@@ -10,7 +10,11 @@ import ru.operation.processor.IdentifiedProcessor;
 import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
 
-/** Routes input to an {@link IdentifiedProcessor} selected by a key extracted from the input. */
+/**
+ * Routes input to an {@link IdentifiedProcessor} selected by a key extracted from the input. A
+ * key-extraction error is returned as-is and does not call {@code defaultProcessor}. Skip and an
+ * unknown key do.
+ */
 public class ProcessorMap<K, I, O> extends AbstractProcessor<I, O> {
 
     private final IdentifyProcessor<K, ? extends IdentifiedProcessor<K, I, O>, I> identifier;
@@ -28,12 +32,12 @@ public class ProcessorMap<K, I, O> extends AbstractProcessor<I, O> {
         if (processor.hasValue()) {
             return processor.value().process(input);
         }
+        if (processor.isError()) {
+            return error(processor.exception());
+        }
         if (defaultProcessor != null) {
             log.trace("Using default processor");
             return defaultProcessor.process(input);
-        }
-        if (processor.isError()) {
-            return error("No processor identified: " + processor);
         }
         return skipped();
     }

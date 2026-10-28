@@ -127,7 +127,7 @@ Integer value = out.orElseThrow(); // 42
 
 Порядок слоёв при `build()` фиксирован: `Identified(Mdc(Logging(Catching(When(Around(core))))))` — MDC снаружи logging, чтобы в логах был контекст; Catching всегда есть и ловит `Exception` (не `Error`). `When` стоит внутри Catching и снаружи Around: предикат ложен → `SKIPPED`, before/after и core не вызываются. `When` и `Around` опускаются, если слот не задан. Нужен `.identified(...)`; результат — `IdentifiedHandler` / `IdentifiedProcessor`.
 
-`.named(...)` — опциональная подпись для логов; если не указан, в логгер идёт `String.valueOf(id)`.  
+`.named(...)` — опциональный суффикс логгера. Сам логгер — класс ядра, переданного в `compose`, например `CreateNoteCommandHandler[note]`. Если имя не задано, суффикс — `String.valueOf(id)`.  
 `.when(ThrowablePredicate)` — входной guard; повторный вызов затирает предыдущий. Исключение из предиката, в том числе checked, идёт в `.onException` исходным типом. Это не `Processor.filter`: `filter` режет успешный выход.  
 `.before(...)` / `.after(...)` — hooks вокруг core (внутри `When`): before получает input, after — результат (`Handled` / `Processed`), на возврат не влияет. Исключение из consumer-хука останавливает операцию и уходит в `.onException`.  
 `.onException(...)` — кастомный маппинг `Failed` → результат (можно recover в `ok()` / успешный `Processed`); без вызова — `LoggingException*` (warn + `ERROR`). Для `compose(функция)` и consumer-хуков исключение доходит сюда. `of()` и явный `Simple*` держат свою границу `ERROR` и этот слот не вызывают.
@@ -137,7 +137,7 @@ Integer value = out.orElseThrow(); // 42
 ```java
 IdentifiedHandler<String, Request> traced = Handlers.compose(delegate) // или Consumer<Request>
         .identified("order-persist")
-        .named("persist")             // опционально; иначе в логах будет order-persist
+        .named("persist")             // суффикс логгера; без него суффикс — значение identified
         .logging()                    // DEBUG по умолчанию; или .logging(Level.TRACE)
         .mdc("requestId", Request::id)
         .mdc("userId", Request::userId)

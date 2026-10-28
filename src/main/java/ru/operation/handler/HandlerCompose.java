@@ -52,7 +52,10 @@ public final class HandlerCompose<I> {
         return this;
     }
 
-    /** Optional log/display name; if absent, {@link #identified} value is used for logging. */
+    /**
+     * Optional logger suffix. The logger is the core's class. If absent, the {@link #identified}
+     * value is the suffix.
+     */
     public HandlerCompose<I> named(String name) {
         this.name = notNull(name, "name");
         return this;
@@ -136,7 +139,7 @@ public final class HandlerCompose<I> {
         }
         result = new CatchingHandler<>(result, onException);
         if (loggingLevel != null) {
-            result = new LoggingHandler<>(result, logName, loggingLevel);
+            result = new LoggingHandler<>(result, core.getClass(), logName, loggingLevel);
         }
         if (!mdcEntries.isEmpty()) {
             result = new MdcHandler<>(mdcEntries, result);

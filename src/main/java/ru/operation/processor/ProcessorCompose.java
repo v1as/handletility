@@ -53,7 +53,10 @@ public final class ProcessorCompose<I, O> {
         return this;
     }
 
-    /** Optional log/display name; if absent, {@link #identified} value is used for logging. */
+    /**
+     * Optional logger suffix. The logger is the core's class. If absent, the {@link #identified}
+     * value is the suffix.
+     */
     public ProcessorCompose<I, O> named(String name) {
         this.name = notNull(name, "name");
         return this;
@@ -141,7 +144,7 @@ public final class ProcessorCompose<I, O> {
         }
         result = new CatchingProcessor<>(result, onException);
         if (loggingLevel != null) {
-            result = new LoggingProcessor<>(result, logName, loggingLevel);
+            result = new LoggingProcessor<>(result, core.getClass(), logName, loggingLevel);
         }
         if (!mdcEntries.isEmpty()) {
             result = new MdcProcessor<>(mdcEntries, result);

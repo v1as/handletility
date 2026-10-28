@@ -1,11 +1,15 @@
 package ru.operation.handler.impl.map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ru.operation.handler.Handled.ok;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
+import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
 import ru.operation.handler.Handlers;
 import ru.operation.handler.impl.IdentifiedByConstHandler;
@@ -72,5 +76,44 @@ public class HandlerMapTest {
 
         assertTrue(handler.handle("2").isHandled());
         assertEquals(2, store[0]);
+    }
+
+    @Test
+    public void keyExtractionErrorDoesNotCallDefault() {
+        IllegalStateException failure = new IllegalStateException("broken parse");
+        AtomicBoolean defaultCalled = new AtomicBoolean();
+        HandlerMap<String, String> handler =
+                new HandlerMap<>(
+                        List.of(firstHandler),
+                        new SimpleProcessor<>(
+                                input -> {
+                                    throw failure;
+                                }),
+                        input -> {
+                            defaultCalled.set(true);
+                            return ok();
+                        });
+
+        Handled result = handler.handle("weird");
+
+        assertTrue(result.isError());
+        assertSame(failure, result.exception());
+        assertFalse(defaultCalled.get());
+    }
+
+    @Test
+    public void skippedKeyUsesDefault() {
+        AtomicBoolean defaultCalled = new AtomicBoolean();
+        HandlerMap<String, String> handler =
+                new HandlerMap<>(
+                        List.of(firstHandler),
+                        new SimpleProcessor<>(input -> null),
+                        input -> {
+                            defaultCalled.set(true);
+                            return ok();
+                        });
+
+        assertTrue(handler.handle("weird").isHandled());
+        assertTrue(defaultCalled.get());
     }
 }

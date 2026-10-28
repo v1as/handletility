@@ -6,6 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ru.operation.handler.Handled.ok;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import ru.operation.handler.impl.SimpleHandler;
 import ru.operation.processor.impl.IdentifiedByConstProcessor;
@@ -371,5 +375,40 @@ public class ProcessorComposeTest {
                 Processors.compose(transform).identified("null-fn").build();
 
         assertTrue(composed.process("x").isSkipped());
+    }
+
+    @Test
+    public void loggingUsesCoreClassNotCatchingWrapper() {
+        IdentifiedProcessor<String, String, Integer> composed =
+                Processors.compose(new ParseAmountProcessor())
+                        .identified("amount-id")
+                        .named("amount")
+                        .logging()
+                        .build();
+
+        Logger root = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        root.addAppender(appender);
+        try {
+            assertEquals(7, composed.process("7").value());
+        } finally {
+            root.detachAppender(appender);
+        }
+
+        assertEquals(
+                ParseAmountProcessor.class.getName() + "[amount]",
+                appender.list.stream()
+                        .filter(event -> event.getFormattedMessage().startsWith("Processed"))
+                        .map(ILoggingEvent::getLoggerName)
+                        .findFirst()
+                        .orElseThrow());
+    }
+
+    private static final class ParseAmountProcessor extends SimpleProcessor<String, Integer> {
+
+        private ParseAmountProcessor() {
+            super(Integer::valueOf);
+        }
     }
 }
