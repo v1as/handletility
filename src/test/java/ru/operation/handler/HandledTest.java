@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.IOException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import ru.operation.processor.Processed;
@@ -20,10 +21,16 @@ public class HandledTest {
 
     @Test
     public void orElseThrowOnError() {
-        Handled error = Handled.error("boom");
-        HandlerException thrown = assertThrows(HandlerException.class, error::orElseThrow);
-        assertEquals("Handling error", thrown.getMessage());
-        assertSame(error.exception(), thrown.getCause());
+        HandlerException error = new HandlerException("boom");
+        assertSame(
+                error,
+                assertThrows(HandlerException.class, () -> Handled.error(error).orElseThrow()));
+
+        IOException checked = new IOException("disk");
+        HandlerException wrapped =
+                assertThrows(HandlerException.class, () -> Handled.error(checked).orElseThrow());
+        assertEquals("disk", wrapped.getMessage());
+        assertSame(checked, wrapped.getCause());
     }
 
     @Test

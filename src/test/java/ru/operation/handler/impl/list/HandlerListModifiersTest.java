@@ -1,16 +1,22 @@
 package ru.operation.handler.impl.list;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ru.operation.handler.Handled.error;
 import static ru.operation.handler.Handled.ok;
 import static ru.operation.handler.Handled.skipped;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
+import ru.operation.handler.HandlerException;
 
 public class HandlerListModifiersTest {
 
@@ -87,5 +93,48 @@ public class HandlerListModifiersTest {
 
         assertTrue(list.handle("x").isError());
         assertEquals(List.of("first"), called);
+    }
+
+    @Test
+    public void singleErrorIsTheOriginalException() {
+        IOException checked = new IOException("disk");
+        Handled checkedResult = new HandlerList<>(List.of(input -> error(checked))).handle("x");
+        assertSame(checked, checkedResult.exception());
+        HandlerException wrapped = assertThrows(HandlerException.class, checkedResult::orElseThrow);
+        assertEquals("disk", wrapped.getMessage());
+        assertSame(checked, wrapped.getCause());
+        assertEquals(0, wrapped.getSuppressed().length);
+
+        IllegalStateException runtime = new IllegalStateException("disk");
+        Handled runtimeResult = new HandlerList<>(List.of(input -> error(runtime))).handle("x");
+        assertSame(runtime, runtimeResult.exception());
+        assertSame(runtime, assertThrows(IllegalStateException.class, runtimeResult::orElseThrow));
+    }
+
+    @Test
+    public void continuedErrorsKeepEachOriginal() {
+        IOException first = new IOException("disk");
+        IllegalArgumentException second = new IllegalArgumentException("bad");
+        Handler<String> list =
+                HandlerList.<String>builder()
+                        .handler(input -> error(first))
+                        .handler(input -> error(second))
+                        .modifier(HandlerModifier.CONTINUE_ON_ERROR)
+                        .build();
+
+        Handled result = list.handle("x");
+        HandlerException aggregated = assertInstanceOf(HandlerException.class, result.exception());
+        assertEquals(List.of(first, second), aggregated.causes());
+        assertSame(first, aggregated.getCause());
+        assertEquals("disk; bad", aggregated.getMessage());
+        assertEquals(0, aggregated.getSuppressed().length);
+        assertSame(aggregated, assertThrows(HandlerException.class, result::orElseThrow));
+    }
+
+    @Test
+    public void nullExceptionIsNotSuppressed() {
+        Handled result = new HandlerList<>(List.of(input -> error((Exception) null))).handle("x");
+        assertTrue(result.isError());
+        assertNull(result.exception());
     }
 }

@@ -87,10 +87,13 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
     }
 
     public T orElseThrow() {
-        if (isError()) {
-            throw new ProcessorException(exception);
+        if (!isError()) {
+            return value;
         }
-        return value;
+        if (exception instanceof RuntimeException runtime) {
+            throw runtime;
+        }
+        throw new ProcessorException(exception == null ? null : exception.getMessage(), exception);
     }
 
     @Override

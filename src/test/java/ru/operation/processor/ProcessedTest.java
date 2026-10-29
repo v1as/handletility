@@ -2,9 +2,11 @@ package ru.operation.processor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import ru.operation.ResultState;
@@ -28,7 +30,24 @@ public class ProcessedTest {
         assertTrue(error.isError());
         assertFalse(error.hasValue());
         assertEquals(ResultState.ERROR, error.state());
-        assertThrows(ProcessorException.class, error::orElseThrow);
+        assertSame(error.exception(), assertThrows(ProcessorException.class, error::orElseThrow));
+    }
+
+    @Test
+    public void orElseThrowKeepsRuntimeAndCheckedMessage() {
+        IllegalStateException runtime = new IllegalStateException("boom");
+        assertSame(
+                runtime,
+                assertThrows(
+                        IllegalStateException.class, () -> Processed.error(runtime).orElseThrow()));
+
+        IOException checked = new IOException("disk");
+        ProcessorException wrapped =
+                assertThrows(
+                        ProcessorException.class,
+                        () -> Processed.<Integer>error(checked).orElseThrow());
+        assertEquals("disk", wrapped.getMessage());
+        assertSame(checked, wrapped.getCause());
     }
 
     @Test

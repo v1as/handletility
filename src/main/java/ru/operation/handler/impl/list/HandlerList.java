@@ -8,6 +8,7 @@ import static ru.operation.handler.Handled.skipped;
 import static ru.operation.handler.impl.list.HandlerModifier.CONTINUE_ON_DONE;
 import static ru.operation.handler.impl.list.HandlerModifier.CONTINUE_ON_ERROR;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import lombok.Builder;
@@ -46,9 +47,9 @@ public class HandlerList<I> extends AbstractHandler<I> {
 
     @Override
     protected Handled handleInternal(I input) {
-        HandlerException exception = null;
+        List<Exception> errors = new ArrayList<>();
+        boolean failed = false;
         boolean done = false;
-        Handled result;
         for (Handler<I> handler : handlers) {
             Handled handled;
             try {
@@ -63,24 +64,32 @@ public class HandlerList<I> extends AbstractHandler<I> {
                 }
             }
             if (ERROR.equals(handled.state())) {
-                if (exception == null) {
-                    exception = new HandlerException("Handling error");
+                failed = true;
+                if (handled.exception() != null) {
+                    errors.add(handled.exception());
                 }
-                exception.addSuppressed(handled.exception());
                 if (!should(CONTINUE_ON_ERROR)) {
-                    result = error(exception);
-                    return result;
+                    return error(combine(errors));
                 }
             }
         }
         if (done) {
-            result = ok();
-        } else if (exception != null) {
-            result = Handled.error(exception);
-        } else {
-            result = skipped();
+            return ok();
         }
-        return result;
+        if (failed) {
+            return error(combine(errors));
+        }
+        return skipped();
+    }
+
+    private static Exception combine(List<Exception> errors) {
+        if (errors.isEmpty()) {
+            return null;
+        }
+        if (errors.size() == 1) {
+            return errors.get(0);
+        }
+        return new HandlerException(errors);
     }
 
     private boolean should(HandlerModifier modifier) {

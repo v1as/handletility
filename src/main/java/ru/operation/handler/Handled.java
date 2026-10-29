@@ -39,10 +39,13 @@ public record Handled(ResultState state, Exception exception) {
     }
 
     public Handled orElseThrow() {
-        if (isError()) {
-            throw new HandlerException("Handling error", exception);
+        if (!isError()) {
+            return this;
         }
-        return this;
+        if (exception instanceof RuntimeException runtime) {
+            throw runtime;
+        }
+        throw new HandlerException(exception == null ? null : exception.getMessage(), exception);
     }
 
     /**

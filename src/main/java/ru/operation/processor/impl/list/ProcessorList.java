@@ -6,6 +6,7 @@ import static ru.operation.processor.Processed.error;
 import static ru.operation.processor.Processed.skipped;
 import static ru.operation.processor.impl.list.ProcessorModifier.CONTINUE_ON_ERROR;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +34,8 @@ public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
 
     @Override
     protected Processed<O> processInternal(I input) throws Exception {
-        ProcessorException exception = null;
+        List<Exception> errors = new ArrayList<>();
+        boolean failed = false;
         Set<ProcessorModifier> effectiveModifiers = modifiers == null ? Set.of() : modifiers;
         Processor<Failed<I>, O> onException =
                 exceptionProcessor != null ? exceptionProcessor : new LoggingExceptionProcessor<>();
@@ -53,18 +55,28 @@ public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
                 return processed;
             }
             if (ERROR.equals(processed.state())) {
-                if (exception == null) {
-                    exception = new ProcessorException("Processing error");
+                failed = true;
+                if (processed.exception() != null) {
+                    errors.add(processed.exception());
                 }
-                exception.addSuppressed(processed.exception());
                 if (!effectiveModifiers.contains(CONTINUE_ON_ERROR)) {
-                    return error(exception);
+                    return error(combine(errors));
                 }
             }
         }
-        if (exception != null) {
-            return Processed.error(exception);
+        if (failed) {
+            return error(combine(errors));
         }
         return skipped();
+    }
+
+    private static Exception combine(List<Exception> errors) {
+        if (errors.isEmpty()) {
+            return null;
+        }
+        if (errors.size() == 1) {
+            return errors.get(0);
+        }
+        return new ProcessorException(errors);
     }
 }
