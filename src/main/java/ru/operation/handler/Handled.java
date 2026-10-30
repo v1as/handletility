@@ -83,7 +83,7 @@ public record Handled(ResultState state, Exception exception) {
     @Override
     public String toString() {
         String result = state.toString();
-        if (exception != null) {
+        if (isError()) {
             result += ": %s %s".formatted(exception.getClass(), exception.getMessage());
         }
         return "[" + result + "]";

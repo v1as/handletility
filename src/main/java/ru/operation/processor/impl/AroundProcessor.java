@@ -51,10 +51,9 @@ public class AroundProcessor<I, O> implements Processor<I, O> {
     }
 
     private static void suppressCoreFailure(Exception hookFailure, Exception coreFailure) {
-        if (hookFailure == null || coreFailure == null || hookFailure == coreFailure) {
-            return;
+        if (hookFailure != coreFailure) {
+            hookFailure.addSuppressed(coreFailure);
         }
-        hookFailure.addSuppressed(coreFailure);
     }
 
     @Override
