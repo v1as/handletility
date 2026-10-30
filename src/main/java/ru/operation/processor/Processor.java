@@ -8,8 +8,10 @@ import ru.operation.handler.Handler;
  * Transforms {@code I} into {@code O}. Prefer extending {@link AbstractProcessor} for check,
  * exception handling and logging.
  *
- * <p>Default chaining methods follow {@link Processed} semantics: skip/error propagate and later
- * steps are not invoked.
+ * <p>{@link #thenApply}, {@link #thenCompose}, {@link #filter} and {@link #thenHandle} follow {@link
+ * Processed}: skip and error propagate, and later steps are not invoked. {@link #or} is the
+ * opposite on skip: it tries the next processor on the same input and still stops on done or
+ * error.
  */
 @FunctionalInterface
 public interface Processor<I, O> {
@@ -24,6 +26,18 @@ public interface Processor<I, O> {
     /** Chains another processor ({@link Processed#flatMap}). */
     default <R> Processor<I, R> thenCompose(Processor<? super O, R> next) {
         return input -> process(input).flatMap(next::process);
+    }
+
+    /**
+     * Tries {@code next} on the same input when this processor returns {@link Processed#skipped()}.
+     * {@code DONE} and {@code ERROR} are returned unchanged and {@code next} is not called. A chain
+     * stops at the first done or error and stays skipped only when every step skips.
+     */
+    default Processor<I, O> or(Processor<? super I, O> next) {
+        return input -> {
+            Processed<O> result = process(input);
+            return result.isSkipped() ? next.process(input) : result;
+        };
     }
 
     /**

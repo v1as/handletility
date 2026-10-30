@@ -53,7 +53,8 @@ Handler<Order> router =
                 .defaultHandler(o -> Handled.skipped())
                 .build();
 
-// Processor chain: of / thenCompose / thenApply / thenHandle (skip/error пробрасываются)
+// Processor chain: of / thenCompose / thenApply / or / thenHandle
+// then* и filter пробрасывают skip/error; or на SKIPPED пробует следующий процессор на том же входе
 Processor<String, String> doubleAsString =
         Processors.of(Integer::parseInt)
                 .thenCompose(Processors.of(n -> n * 2))
@@ -130,7 +131,7 @@ Integer value = out.throwIfError(); // 42
 `.before(...)` / `.after(...)` — hooks вокруг core (внутри `When`): before получает input, after — результат (`Handled` / `Processed`), на возврат не влияет. Исключение из consumer-хука останавливает операцию и уходит в `.onException`.  
 `.onException(...)` — кастомный маппинг `Failed` → результат (можно recover в `ok()` / успешный `Processed`); без вызова — `LoggingException*` (warn + `ERROR`). Для `compose(функция)` и consumer-хуков исключение доходит сюда. `of()` и явный `Simple*` держат свою границу `ERROR` и этот слот не вызывают.
 
-Цепочка типов — на самом `Processor` (не в compose): `Processors.of(fn).thenCompose(...).thenApply(...).filter(...).thenHandle(...)`. Skip/error пробрасываются, как у `Processed`; `filter` при неуспехе предиката даёт `SKIPPED`.
+Цепочка типов — на самом `Processor` (не в compose): `Processors.of(fn).thenCompose(...).thenApply(...).filter(...).or(...).thenHandle(...)`. `thenApply`, `thenCompose`, `filter` и `thenHandle` пробрасывают skip/error, как у `Processed`; `filter` при неуспехе предиката даёт `SKIPPED`. `or` — следующая попытка на том же входе, если текущий шаг вернул `SKIPPED`: `DONE` и `ERROR` цепочку останавливают, как `ProcessorList` без модификаторов.
 
 ```java
 Handler<Request> traced = Handlers.compose(delegate) // или Consumer<Request>
@@ -179,6 +180,14 @@ Handler<String> pipeline = HandlerList.<String>builder()
 
 По умолчанию `HandlerList` останавливается на первом `DONE` и на первом `ERROR`.
 
+`Handler.or` — следующая попытка на том же входе при `SKIPPED`. `DONE` и `ERROR` останавливают цепочку, как список без модификаторов. `CONTINUE_ON_DONE` и `CONTINUE_ON_ERROR` остаются только у `HandlerList`.
+
+```java
+Handler<String> firstApplicable =
+        ((Handler<String>) input -> input.isBlank() ? Handled.skipped() : Handled.ok())
+                .or(Handlers.of(log::info));
+```
+
 ### Маршрутизация по ключу
 
 ```java
@@ -196,10 +205,16 @@ Handler<Command> router = HandlerMap.<String, Command>handlerMap()
 
 ```java
 // of + then* / filter: мягкая семантика (skip/error пробрасываются; filter → SKIPPED)
+// or: тот же вход, пока SKIPPED; первый DONE или ERROR останавливает цепочку
 Processor<String, Integer> doubled =
         Processors.of(Integer::parseInt)
                 .filter(n -> n > 0)
                 .thenCompose(Processors.of(n -> n * 2));
+
+Processor<String, Integer> positiveOrZero =
+        Processors.<String, Integer>of(Integer::parseInt)
+                .filter(n -> n > 0)
+                .or(input -> Processed.of(0));
 
 Handler<String> asIntThenHandle =
         Processors.of(Integer::valueOf).thenHandle(Handlers.of(n -> sum.addAndGet(n)));

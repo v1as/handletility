@@ -1,6 +1,7 @@
 package ru.operation.processor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -57,6 +58,65 @@ public class ProcessorThenTest {
 
         assertEquals(42, even.process("42").value());
         assertTrue(even.process("41").isSkipped());
+    }
+
+    @Test
+    public void orTriesNextOnlyOnSkip() {
+        List<String> seen = new ArrayList<>();
+        Processor<String, String> first =
+                input -> {
+                    seen.add("first");
+                    return Processed.skipped();
+                };
+        Processor<String, String> second =
+                input -> {
+                    seen.add("second");
+                    return Processed.of(input + "-ok");
+                };
+        Processor<String, String> third =
+                input -> {
+                    seen.add("third");
+                    return Processed.of("nope");
+                };
+
+        Processed<String> result = first.or(second).or(third).process("marko");
+
+        assertEquals("marko-ok", result.value());
+        assertEquals(List.of("first", "second"), seen);
+    }
+
+    @Test
+    public void orStopsOnDoneAndError() {
+        List<String> seen = new ArrayList<>();
+        Processor<String, String> next =
+                input -> {
+                    seen.add("next");
+                    return Processed.of("other");
+                };
+
+        Processor<String, String> done = input -> Processed.of("kept");
+        assertEquals("kept", done.or(next).process("x").value());
+        assertTrue(seen.isEmpty());
+
+        Processor<String, String> empty = input -> Processed.of(null);
+        Processed<String> doneWithNull = empty.or(next).process("x");
+        assertTrue(doneWithNull.isDone());
+        assertNull(doneWithNull.value());
+        assertTrue(seen.isEmpty());
+
+        Processor<String, String> failing =
+                input -> Processed.error(new IllegalStateException("boom"));
+        Processed<String> error = failing.or(next).process("x");
+        assertTrue(error.isError());
+        assertEquals("boom", error.exception().getMessage());
+        assertTrue(seen.isEmpty());
+    }
+
+    @Test
+    public void orStaysSkippedWhenEveryStepSkips() {
+        Processor<String, String> skipping = input -> Processed.skipped();
+
+        assertTrue(skipping.or(skipping).process("x").isSkipped());
     }
 
     @Test
