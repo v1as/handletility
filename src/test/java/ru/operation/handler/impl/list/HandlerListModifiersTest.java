@@ -62,17 +62,24 @@ public class HandlerListModifiersTest {
 
     @Test
     public void continueOnErrorCollectsFailures() {
+        HandlerException first = new HandlerException("one");
+        HandlerException second = new HandlerException("two");
         Handler<String> list =
                 HandlerList.<String>builder()
-                        .handler(input -> error("one"))
-                        .handler(input -> error("two"))
+                        .handler(input -> error(first))
+                        .handler(input -> error(second))
                         .handler(input -> ok())
                         .modifier(HandlerModifier.CONTINUE_ON_ERROR)
                         .modifier(HandlerModifier.CONTINUE_ON_DONE)
                         .build();
 
         Handled result = list.handle("x");
-        assertTrue(result.isHandled());
+        HandlerException aggregated = assertInstanceOf(HandlerException.class, result.exception());
+        assertEquals(List.of(first, second), aggregated.causes());
+        assertSame(first, aggregated.getCause());
+        assertEquals("one; two", aggregated.getMessage());
+        assertEquals(0, aggregated.getSuppressed().length);
+        assertSame(aggregated, assertThrows(HandlerException.class, result::throwIfError));
     }
 
     @Test

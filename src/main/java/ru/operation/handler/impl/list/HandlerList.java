@@ -73,11 +73,11 @@ public class HandlerList<I> extends AbstractHandler<I> {
                 }
             }
         }
-        if (done) {
-            return ok();
-        }
         if (failed) {
             return error(combine(errors));
+        }
+        if (done) {
+            return ok();
         }
         return skipped();
     }
