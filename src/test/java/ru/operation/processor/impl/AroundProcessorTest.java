@@ -1,15 +1,20 @@
 package ru.operation.processor.impl;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ru.operation.handler.Handled.ok;
 import static ru.operation.processor.Processed.of;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
+import ru.operation.handler.Handled;
 import ru.operation.handler.impl.SimpleHandler;
 import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
@@ -52,5 +57,94 @@ public class AroundProcessorTest {
                         .build();
 
         assertEquals(of(3), around.process("abc"));
+    }
+
+    @Test
+    public void skippedAndDoneHooksDoNotReplaceCore() {
+        AtomicBoolean coreCalled = new AtomicBoolean();
+        Processor<String, String> skippedBefore =
+                AroundProcessor.<String, String>builder()
+                        .beforeHandler(input -> Handled.skipped())
+                        .processor(
+                                input -> {
+                                    coreCalled.set(true);
+                                    return Processed.error(new IllegalStateException("core"));
+                                })
+                        .build();
+
+        Processed<String> skippedBeforeResult = skippedBefore.process("x");
+
+        assertTrue(coreCalled.get());
+        assertTrue(skippedBeforeResult.isError());
+        assertEquals("core", skippedBeforeResult.exception().getMessage());
+
+        Processor<String, String> doneAfter =
+                AroundProcessor.<String, String>builder()
+                        .processor(input -> Processed.skipped())
+                        .afterHandler(result -> ok())
+                        .build();
+
+        assertTrue(doneAfter.process("x").isSkipped());
+    }
+
+    @Test
+    public void beforeErrorSkipsCoreAndAfter() {
+        AtomicBoolean coreCalled = new AtomicBoolean();
+        AtomicBoolean afterCalled = new AtomicBoolean();
+        IOException hook = new IOException("hook");
+        Processor<String, String> around =
+                AroundProcessor.<String, String>builder()
+                        .beforeHandler(input -> Handled.error(hook))
+                        .processor(
+                                input -> {
+                                    coreCalled.set(true);
+                                    return of("ok");
+                                })
+                        .afterHandler(
+                                result -> {
+                                    afterCalled.set(true);
+                                    return ok();
+                                })
+                        .build();
+
+        Processed<String> result = around.process("x");
+
+        assertTrue(result.isError());
+        assertSame(hook, result.exception());
+        assertFalse(coreCalled.get());
+        assertFalse(afterCalled.get());
+    }
+
+    @Test
+    public void afterErrorDoesNotReturnSuccessfulCore() {
+        IllegalStateException hook = new IllegalStateException("hook");
+        Processor<String, String> around =
+                AroundProcessor.<String, String>builder()
+                        .processor(input -> of("ok"))
+                        .afterHandler(result -> Handled.error(hook))
+                        .build();
+
+        Processed<String> result = around.process("x");
+
+        assertTrue(result.isError());
+        assertSame(hook, result.exception());
+        assertFalse(result.hasValue());
+    }
+
+    @Test
+    public void afterErrorWhenCoreFailedSuppressesCoreException() {
+        IllegalStateException core = new IllegalStateException("core");
+        IllegalStateException hook = new IllegalStateException("hook");
+        Processor<String, String> around =
+                AroundProcessor.<String, String>builder()
+                        .processor(input -> Processed.error(core))
+                        .afterHandler(result -> Handled.error(hook))
+                        .build();
+
+        Processed<String> result = around.process("x");
+
+        assertTrue(result.isError());
+        assertSame(hook, result.exception());
+        assertArrayEquals(new Throwable[] {core}, result.exception().getSuppressed());
     }
 }

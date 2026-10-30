@@ -75,7 +75,7 @@ Integer cents = parseAmount.process(order).throwIfError();
 Optional<Integer> maybe = parseAmount.process(order).toOptional();
 ```
 
-Слои compose при `build()`: `Mdc(Logging(Catching(When(Around(core)))))`. `When` и `Around` в стеке только если слот задан. Исключение из функционального core и из `before`/`after`(consumer) доходит до `Catching` и вашего `.onException` (исходный тип, в том числе checked), не throws. `Error` не ловится. `Handlers.of` / `Processors.of` и `Simple*` сами переводят исключение в `ERROR` и до `onException` композера не доходят.
+Слои compose при `build()`: `Mdc(Logging(Catching(When(Around(core)))))`. `When` и `Around` в стеке только если слот задан. Исключение из функционального core и из consumer-хука доходит до `Catching` и вашего `.onException` (исходный тип, в том числе checked), не throws. `Error` не ловится. `Handlers.of` / `Processors.of` и `Simple*` сами переводят исключение в `ERROR` и до `onException` не доходят — и как ядро, и как before/after. `ERROR` хука останавливает операцию результатом.
 
 ## Требования
 
@@ -128,7 +128,7 @@ Integer value = out.throwIfError(); // 42
 
 `.named(...)` — опциональный суффикс логгера. Сам логгер — класс ядра, переданного в `compose`, например `CreateNoteCommandHandler[note]`. Если имя не задано, суффикс не добавляется.  
 `.when(ThrowablePredicate)` — входной guard; повторный вызов затирает предыдущий. Исключение из предиката, в том числе checked, идёт в `.onException` исходным типом. Это не `Processor.filter`: `filter` режет успешный выход.  
-`.before(...)` / `.after(...)` — hooks вокруг core (внутри `When`): before получает input, after — результат (`Handled` / `Processed`), на возврат не влияет. Исключение из consumer-хука останавливает операцию и уходит в `.onException`.  
+`.before(...)` / `.after(...)` — hooks вокруг core (внутри `When`): before получает input, after — результат (`Handled` / `Processed`). `DONE` и `SKIPPED` на результат ядра не влияют, `SKIPPED` у before ядро не отменяет. `ERROR` хука останавливает операцию и возвращается как результат: провал before не вызывает ядро и after; провал after не отдаёт успешный результат ядра. Если ядро уже завершилось ошибкой, наружу идёт ошибка after, а исключение ядра подавляется на ней. Исключение из consumer-хука уходит в `.onException`.  
 `.onException(...)` — кастомный маппинг `Failed` → результат (можно recover в `ok()` / успешный `Processed`); без вызова — `LoggingException*` (warn + `ERROR`). Для `compose(функция)` и consumer-хуков исключение доходит сюда. `of()` и явный `Simple*` держат свою границу `ERROR` и этот слот не вызывают.
 
 Цепочка типов — на самом `Processor` (не в compose): `Processors.of(fn).thenCompose(...).thenApply(...).filter(...).or(...).thenHandle(...)`. `thenApply`, `thenCompose`, `filter` и `thenHandle` пробрасывают skip/error, как у `Processed`; `filter` при неуспехе предиката даёт `SKIPPED`. `or` — следующая попытка на том же входе, если текущий шаг вернул `SKIPPED`: `DONE` и `ERROR` цепочку останавливают, как `ProcessorList` без модификаторов.
@@ -234,7 +234,7 @@ Processed.of(value)
 
 ### Before / after
 
-`AroundHandler` / `AroundProcessor` — before(input) → main → after(result); результат всегда от main. Hooks — `Handler` (у processor тоже).
+`AroundHandler` / `AroundProcessor` — before(input) → main → after(result). `DONE` и `SKIPPED` хука результат main не подменяют. `ERROR` хука возвращается как результат операции. Исключение хука пробрасывается как есть. Hooks — `Handler` (у processor тоже).
 
 ## Структура пакета
 

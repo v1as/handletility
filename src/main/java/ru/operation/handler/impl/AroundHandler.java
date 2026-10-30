@@ -8,8 +8,12 @@ import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
 
 /**
- * AOP-style around: {@code before(input)} → {@code handler(input)} → {@code after(result)}. The
- * returned {@link Handled} is always from the main handler; after only observes it.
+ * AOP-style around: {@code before(input)} → {@code handler(input)} → {@code after(result)}. {@code
+ * DONE} and {@code SKIPPED} from a hook do not replace the main result, and a skipped before still
+ * runs the core. {@code ERROR} from a hook is returned as the operation result: a failed before
+ * skips the core and after; a failed after replaces a successful main result. When the main result
+ * is already an error, that exception is suppressed on the after-hook failure. An exception thrown
+ * by a hook propagates unchanged.
  */
 @Builder
 public class AroundHandler<I> implements Handler<I> {
@@ -27,10 +31,26 @@ public class AroundHandler<I> implements Handler<I> {
 
     @Override
     public Handled handle(I input) {
-        beforeHandler.handle(input);
+        Handled before = beforeHandler.handle(input);
+        if (before.isError()) {
+            return before;
+        }
         Handled result = handler.handle(input);
-        afterHandler.handle(result);
+        Handled after = afterHandler.handle(result);
+        if (after.isError()) {
+            if (result.isError()) {
+                suppressCoreFailure(after.exception(), result.exception());
+            }
+            return after;
+        }
         return result;
+    }
+
+    private static void suppressCoreFailure(Exception hookFailure, Exception coreFailure) {
+        if (hookFailure == null || coreFailure == null || hookFailure == coreFailure) {
+            return;
+        }
+        hookFailure.addSuppressed(coreFailure);
     }
 
     @Override

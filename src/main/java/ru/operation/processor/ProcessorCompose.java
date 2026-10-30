@@ -71,6 +71,11 @@ public final class ProcessorCompose<I, O> {
         return this;
     }
 
+    /**
+     * Runs before the core. {@code DONE} and {@code SKIPPED} do not change the core result. {@code
+     * ERROR} skips the core and after and becomes the operation result. A thrown exception reaches
+     * {@link #onException}.
+     */
     public ProcessorCompose<I, O> before(Handler<I> before) {
         this.beforeHandler = notNull(before, "before handler");
         return this;
@@ -80,7 +85,11 @@ public final class ProcessorCompose<I, O> {
         return before(new PropagatingHandler<>(notNull(before, "before consumer")));
     }
 
-    /** Observes the main {@link Processed} result without replacing it. */
+    /**
+     * Observes the main {@link Processed}. {@code DONE} and {@code SKIPPED} do not replace it.
+     * {@code ERROR} becomes the operation result. If the main result is already an error, that
+     * exception is suppressed on this failure. A thrown exception reaches {@link #onException}.
+     */
     public ProcessorCompose<I, O> after(Handler<Processed<O>> after) {
         this.afterHandler = notNull(after, "after handler");
         return this;

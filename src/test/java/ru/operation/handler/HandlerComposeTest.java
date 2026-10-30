@@ -1,8 +1,10 @@
 package ru.operation.handler;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -184,6 +186,84 @@ public class HandlerComposeTest {
                         .build();
 
         assertTrue(composed.handle("x").isHandled());
+    }
+
+    @Test
+    public void beforeHandlerErrorSkipsCoreAndReturnsError() {
+        AtomicBoolean coreCalled = new AtomicBoolean();
+        AtomicBoolean afterCalled = new AtomicBoolean();
+        AtomicBoolean onExceptionCalled = new AtomicBoolean();
+        Handler<String> composed =
+                Handlers.compose((String s) -> coreCalled.set(true))
+                        .before(
+                                new SimpleHandler<String>(
+                                        s -> {
+                                            throw new IllegalStateException("hook");
+                                        }))
+                        .after(
+                                result -> {
+                                    afterCalled.set(true);
+                                    return Handled.ok();
+                                })
+                        .onException(
+                                failed -> {
+                                    onExceptionCalled.set(true);
+                                    return Handled.ok();
+                                })
+                        .build();
+
+        Handled result = composed.handle("x");
+
+        assertTrue(result.isError());
+        assertInstanceOf(IllegalStateException.class, result.exception());
+        assertEquals("hook", result.exception().getMessage());
+        assertFalse(coreCalled.get());
+        assertFalse(afterCalled.get());
+        assertFalse(onExceptionCalled.get());
+    }
+
+    @Test
+    public void afterHandlerErrorReplacesCoreSuccess() {
+        AtomicBoolean onExceptionCalled = new AtomicBoolean();
+        Handler<String> composed =
+                Handlers.compose((String s) -> {})
+                        .after(
+                                new SimpleHandler<Handled>(
+                                        result -> {
+                                            throw new IllegalStateException("hook");
+                                        }))
+                        .onException(
+                                failed -> {
+                                    onExceptionCalled.set(true);
+                                    return Handled.ok();
+                                })
+                        .build();
+
+        Handled result = composed.handle("x");
+
+        assertTrue(result.isError());
+        assertEquals("hook", result.exception().getMessage());
+        assertFalse(onExceptionCalled.get());
+    }
+
+    @Test
+    public void afterHandlerErrorWhenCoreFailedSuppressesCoreException() {
+        IllegalStateException core = new IllegalStateException("core");
+        IllegalStateException hook = new IllegalStateException("hook");
+        Handler<String> coreHandler = input -> Handled.error(core);
+        Handler<String> composed =
+                Handlers.compose(coreHandler)
+                        .after(
+                                result -> {
+                                    return Handled.error(hook);
+                                })
+                        .build();
+
+        Handled result = composed.handle("x");
+
+        assertTrue(result.isError());
+        assertSame(hook, result.exception());
+        assertArrayEquals(new Throwable[] {core}, result.exception().getSuppressed());
     }
 
     @Test

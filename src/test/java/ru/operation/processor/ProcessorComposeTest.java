@@ -1,8 +1,10 @@
 package ru.operation.processor;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ru.operation.handler.Handled.ok;
 
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import ru.operation.handler.Handled;
 import ru.operation.handler.impl.SimpleHandler;
 import ru.operation.processor.impl.MdcProcessor;
 import ru.operation.processor.impl.SimpleProcessor;
@@ -188,6 +191,90 @@ public class ProcessorComposeTest {
         Processed<String> result = composed.process("x");
         assertTrue(result.isDone());
         assertEquals("recovered", result.value());
+    }
+
+    @Test
+    public void beforeHandlerErrorSkipsCoreAndReturnsError() {
+        AtomicBoolean coreCalled = new AtomicBoolean();
+        AtomicBoolean afterCalled = new AtomicBoolean();
+        AtomicBoolean onExceptionCalled = new AtomicBoolean();
+        Processor<String, String> composed =
+                Processors.compose(
+                                (String s) -> {
+                                    coreCalled.set(true);
+                                    return s;
+                                })
+                        .before(
+                                new SimpleHandler<String>(
+                                        s -> {
+                                            throw new IllegalStateException("hook");
+                                        }))
+                        .after(
+                                result -> {
+                                    afterCalled.set(true);
+                                    return ok();
+                                })
+                        .onException(
+                                failed -> {
+                                    onExceptionCalled.set(true);
+                                    return Processed.of("recovered");
+                                })
+                        .build();
+
+        Processed<String> result = composed.process("x");
+
+        assertTrue(result.isError());
+        assertInstanceOf(IllegalStateException.class, result.exception());
+        assertEquals("hook", result.exception().getMessage());
+        assertFalse(result.hasValue());
+        assertFalse(coreCalled.get());
+        assertFalse(afterCalled.get());
+        assertFalse(onExceptionCalled.get());
+    }
+
+    @Test
+    public void afterHandlerErrorReplacesCoreSuccess() {
+        AtomicBoolean onExceptionCalled = new AtomicBoolean();
+        Processor<String, String> composed =
+                Processors.compose((String s) -> "ok")
+                        .after(
+                                new SimpleHandler<Processed<String>>(
+                                        result -> {
+                                            throw new IllegalStateException("hook");
+                                        }))
+                        .onException(
+                                failed -> {
+                                    onExceptionCalled.set(true);
+                                    return Processed.of("recovered");
+                                })
+                        .build();
+
+        Processed<String> result = composed.process("x");
+
+        assertTrue(result.isError());
+        assertEquals("hook", result.exception().getMessage());
+        assertFalse(result.hasValue());
+        assertFalse(onExceptionCalled.get());
+    }
+
+    @Test
+    public void afterHandlerErrorWhenCoreFailedSuppressesCoreException() {
+        IllegalStateException core = new IllegalStateException("core");
+        IllegalStateException hook = new IllegalStateException("hook");
+        Processor<String, String> coreProcessor = input -> Processed.error(core);
+        Processor<String, String> composed =
+                Processors.compose(coreProcessor)
+                        .after(
+                                result -> {
+                                    return Handled.error(hook);
+                                })
+                        .build();
+
+        Processed<String> result = composed.process("x");
+
+        assertTrue(result.isError());
+        assertSame(hook, result.exception());
+        assertArrayEquals(new Throwable[] {core}, result.exception().getSuppressed());
     }
 
     @Test
