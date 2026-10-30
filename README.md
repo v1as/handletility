@@ -16,7 +16,7 @@ Java 17. На classpath нужен SLF4J.
 
 ```gradle
 dependencies {
-    implementation 'io.github.v1as:handletility:0.0.5'
+    implementation 'io.github.v1as:handletility:0.0.6'
 }
 ```
 
