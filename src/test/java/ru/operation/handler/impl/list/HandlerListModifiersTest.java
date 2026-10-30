@@ -2,7 +2,6 @@ package ru.operation.handler.impl.list;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -130,12 +129,5 @@ public class HandlerListModifiersTest {
         assertEquals("disk; bad", aggregated.getMessage());
         assertEquals(0, aggregated.getSuppressed().length);
         assertSame(aggregated, assertThrows(HandlerException.class, result::throwIfError));
-    }
-
-    @Test
-    public void nullExceptionIsNotSuppressed() {
-        Handled result = new HandlerList<>(List.of(input -> error((Exception) null))).handle("x");
-        assertTrue(result.isError());
-        assertNull(result.exception());
     }
 }

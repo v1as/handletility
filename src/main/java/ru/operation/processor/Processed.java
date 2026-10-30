@@ -13,8 +13,26 @@ import ru.operation.handler.Handler;
 /**
  * Result of a {@link Processor}. {@link ResultState#DONE} may carry a {@code null} payload; {@link
  * #hasValue()} is {@code true} only for a non-null payload. Skip and error never carry a value.
+ * Done and skip never carry an exception; error always does.
  */
 public record Processed<T>(T value, ResultState state, Exception exception) {
+
+    public Processed {
+        if (state == null) {
+            throw new IllegalArgumentException("state cannot be null");
+        }
+        if (state == DONE) {
+            if (exception != null) {
+                throw new IllegalArgumentException("DONE cannot carry an exception");
+            }
+        } else if (state == SKIPPED) {
+            if (value != null || exception != null) {
+                throw new IllegalArgumentException("SKIPPED cannot carry a value or an exception");
+            }
+        } else if (value != null || exception == null) {
+            throw new IllegalArgumentException("ERROR requires an exception and no value");
+        }
+    }
 
     private static final Processed<?> SKIPPED_RESULT =
             new Processed<>(null, ResultState.SKIPPED, null);
@@ -93,7 +111,7 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
         if (exception instanceof RuntimeException runtime) {
             throw runtime;
         }
-        throw new ProcessorException(exception == null ? null : exception.getMessage(), exception);
+        throw new ProcessorException(exception.getMessage(), exception);
     }
 
     @Override
@@ -102,13 +120,7 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
         if (DONE == state) {
             result += value != null ? ": " + value : ":";
         } else if (ERROR == state) {
-            result +=
-                    exception != null
-                            ? ": "
-                                    + exception.getClass().getSimpleName()
-                                    + ": "
-                                    + exception.getMessage()
-                            : "";
+            result += ": " + exception.getClass().getSimpleName() + ": " + exception.getMessage();
         }
         return result + "]";
     }

@@ -2,7 +2,6 @@ package ru.operation.processor.impl.list;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -79,14 +78,5 @@ public class ProcessorListTest {
         assertEquals("disk; bad", aggregated.getMessage());
         assertEquals(0, aggregated.getSuppressed().length);
         assertSame(aggregated, assertThrows(ProcessorException.class, result::throwIfError));
-    }
-
-    @Test
-    public void nullExceptionIsNotSuppressed() {
-        Processed<String> result =
-                new ProcessorList<String, String>(List.of(input -> error((Exception) null)))
-                        .process("x");
-        assertTrue(result.isError());
-        assertNull(result.exception());
     }
 }

@@ -4,8 +4,21 @@ import ru.operation.ResultState;
 import ru.operation.processor.Processed;
 import ru.operation.util.function.ThrowableSupplier;
 
-/** Result of a {@link Handler}: done, skipped, or error (with optional exception). */
+/** Result of a {@link Handler}: done, skipped, or error. Error always carries an exception. */
 public record Handled(ResultState state, Exception exception) {
+
+    public Handled {
+        if (state == null) {
+            throw new IllegalArgumentException("state cannot be null");
+        }
+        if (state == ResultState.ERROR) {
+            if (exception == null) {
+                throw new IllegalArgumentException("exception cannot be null");
+            }
+        } else if (exception != null) {
+            throw new IllegalArgumentException(state + " cannot carry an exception");
+        }
+    }
 
     private static final Handled OK = new Handled(ResultState.DONE, null);
     public static final Handled SKIPPED = new Handled(ResultState.SKIPPED, null);
@@ -45,7 +58,7 @@ public record Handled(ResultState state, Exception exception) {
         if (exception instanceof RuntimeException runtime) {
             throw runtime;
         }
-        throw new HandlerException(exception == null ? null : exception.getMessage(), exception);
+        throw new HandlerException(exception.getMessage(), exception);
     }
 
     /**

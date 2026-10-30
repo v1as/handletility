@@ -6,6 +6,6 @@ public enum ResultState {
     SKIPPED,
     /** Work completed successfully. */
     DONE,
-    /** Work failed; see accompanying exception when present. */
+    /** Work failed; the accompanying exception is always present. */
     ERROR
 }

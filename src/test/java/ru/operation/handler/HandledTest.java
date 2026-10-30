@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.io.IOException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import ru.operation.ResultState;
 import ru.operation.processor.Processed;
 
 public class HandledTest {
@@ -61,5 +62,16 @@ public class HandledTest {
                                 });
         assertTrue(failed.isError());
         assertEquals("nope", failed.exception().getMessage());
+    }
+
+    @Test
+    public void constructorRejectsInvalidCombinations() {
+        IllegalStateException boom = new IllegalStateException("boom");
+
+        assertThrows(IllegalArgumentException.class, () -> new Handled(ResultState.ERROR, null));
+        assertThrows(IllegalArgumentException.class, () -> Handled.error((Exception) null));
+        assertThrows(IllegalArgumentException.class, () -> new Handled(ResultState.DONE, boom));
+        assertThrows(IllegalArgumentException.class, () -> new Handled(ResultState.SKIPPED, boom));
+        assertThrows(IllegalArgumentException.class, () -> new Handled(null, null));
     }
 }

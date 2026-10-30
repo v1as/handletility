@@ -105,4 +105,21 @@ public class ProcessedTest {
         assertEquals("a", Processed.of("a").toOptional().orElseThrow());
         assertTrue(Processed.<String>skipped().toOptional().isEmpty());
     }
+
+    @Test
+    public void constructorRejectsInvalidCombinations() {
+        IllegalStateException boom = new IllegalStateException("boom");
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new Processed<>("ok", ResultState.ERROR, boom));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new Processed<>("ok", ResultState.SKIPPED, null));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new Processed<>("ok", ResultState.DONE, boom));
+        assertThrows(IllegalArgumentException.class, () -> Processed.error((Exception) null));
+        assertThrows(IllegalArgumentException.class, () -> new Processed<>(null, null, null));
+    }
 }
