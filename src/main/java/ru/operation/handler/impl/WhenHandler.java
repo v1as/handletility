@@ -1,8 +1,9 @@
 package ru.operation.handler.impl;
 
 import static ru.operation.handler.Handled.skipped;
-import static ru.operation.util.Checks.notNull;
 
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
 import ru.operation.util.function.ThrowablePredicate;
@@ -12,15 +13,11 @@ import ru.operation.util.function.ThrowablePredicate;
  * Handled#skipped()} and does not call the delegate. Exceptions from the predicate propagate
  * unchanged, including checked ones.
  */
+@RequiredArgsConstructor
 public class WhenHandler<I> implements Handler<I> {
 
-    private final ThrowablePredicate<I> predicate;
-    private final Handler<I> delegate;
-
-    public WhenHandler(ThrowablePredicate<I> predicate, Handler<I> delegate) {
-        this.predicate = notNull(predicate, "predicate");
-        this.delegate = notNull(delegate, "delegate");
-    }
+    @NonNull private final ThrowablePredicate<I> predicate;
+    @NonNull private final Handler<I> delegate;
 
     @Override
     public Handled handle(I input) {

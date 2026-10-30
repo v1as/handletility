@@ -1,11 +1,11 @@
 package ru.operation.handler.impl;
 
-import static ru.operation.util.Checks.notNull;
 import static ru.operation.util.Collections.copyNonEmpty;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import lombok.NonNull;
 import org.slf4j.MDC;
 import ru.operation.MdcEntry;
 import ru.operation.handler.Handled;
@@ -22,9 +22,9 @@ public class MdcHandler<I> implements Handler<I> {
         this(List.of(MdcEntry.of(mdcKey, mdcValueExtractor)), handler);
     }
 
-    public MdcHandler(List<MdcEntry<I>> entries, Handler<I> handler) {
+    public MdcHandler(List<MdcEntry<I>> entries, @NonNull Handler<I> handler) {
         this.entries = copyNonEmpty(entries, "mdc entries");
-        this.handler = notNull(handler, "handler");
+        this.handler = handler;
     }
 
     @Override

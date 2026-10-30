@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.Singular;
 import ru.operation.Failed;
 import ru.operation.processor.AbstractProcessor;
@@ -34,7 +35,7 @@ public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
 
     @Builder(builderMethodName = "processorList")
     public ProcessorList(
-            @Singular List<? extends Processor<I, O>> processors,
+            @NonNull @Singular List<? extends Processor<I, O>> processors,
             @Singular Set<ProcessorModifier> modifiers,
             ThrowableBiFunction<O, O, O> combiner,
             Processor<Failed<I>, O> exceptionProcessor) {
@@ -50,7 +51,7 @@ public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
     }
 
     @Override
-    protected Processed<O> processInternal(I input) throws Exception {
+    protected Processed<O> processInternal(I input) {
         List<Exception> errors = new ArrayList<>();
         boolean failed = false;
         Processor<Failed<I>, O> onException =

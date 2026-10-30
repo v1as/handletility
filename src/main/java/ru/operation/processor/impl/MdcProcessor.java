@@ -1,11 +1,11 @@
 package ru.operation.processor.impl;
 
-import static ru.operation.util.Checks.notNull;
 import static ru.operation.util.Collections.copyNonEmpty;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import lombok.NonNull;
 import org.slf4j.MDC;
 import ru.operation.MdcEntry;
 import ru.operation.processor.Processed;
@@ -22,9 +22,9 @@ public class MdcProcessor<I, O> implements Processor<I, O> {
         this(List.of(MdcEntry.of(mdcKey, mdcValueExtractor)), processor);
     }
 
-    public MdcProcessor(List<MdcEntry<I>> entries, Processor<I, O> processor) {
+    public MdcProcessor(List<MdcEntry<I>> entries, @NonNull Processor<I, O> processor) {
         this.entries = copyNonEmpty(entries, "mdc entries");
-        this.processor = notNull(processor, "processor");
+        this.processor = processor;
     }
 
     @Override

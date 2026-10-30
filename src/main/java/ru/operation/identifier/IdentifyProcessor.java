@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.NonNull;
 import ru.operation.processor.AbstractProcessor;
 import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
@@ -17,7 +18,7 @@ public class IdentifyProcessor<K, T extends Identified<K>, I> extends AbstractPr
     private final Map<K, T> keyToItem;
     private final Processor<I, K> keyProcessor;
 
-    public IdentifyProcessor(List<T> items, Processor<I, K> keyProcessor) {
+    public IdentifyProcessor(@NonNull List<T> items, @NonNull Processor<I, K> keyProcessor) {
         this.keyToItem =
                 items.stream().collect(Collectors.toMap(Identified::getIdentifier, identity()));
         this.keyProcessor = keyProcessor;
@@ -25,7 +26,7 @@ public class IdentifyProcessor<K, T extends Identified<K>, I> extends AbstractPr
     }
 
     @Override
-    protected Processed<T> processInternal(I input) throws Exception {
+    protected Processed<T> processInternal(I input) {
         Processed<K> key = keyProcessor.process(input);
         Processed<T> identified = key.map(keyToItem::get);
         if (identified.hasValue()) {

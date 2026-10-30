@@ -2,8 +2,8 @@ package ru.operation.processor.impl.wrap;
 
 import static org.slf4j.LoggerFactory.getLogger;
 import static ru.operation.util.Checks.isNullOrEmpty;
-import static ru.operation.util.Checks.notNull;
 
+import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.event.Level;
 import ru.operation.processor.Processed;
@@ -37,9 +37,12 @@ public class LoggingProcessor<I, O> implements Processor<I, O> {
      * name} is an optional suffix.
      */
     public LoggingProcessor(
-            Processor<I, O> delegate, Class<?> loggerType, String name, Level level) {
-        this.delegate = notNull(delegate, "delegate");
-        this.level = notNull(level, "level");
+            @NonNull Processor<I, O> delegate,
+            Class<?> loggerType,
+            String name,
+            @NonNull Level level) {
+        this.delegate = delegate;
+        this.level = level;
         Class<?> type = loggerType != null ? loggerType : delegate.getClass();
         this.log =
                 isNullOrEmpty(name)

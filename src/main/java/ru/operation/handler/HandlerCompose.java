@@ -1,10 +1,13 @@
 package ru.operation.handler;
 
+import static lombok.AccessLevel.PRIVATE;
 import static ru.operation.util.Checks.notNull;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.event.Level;
 import ru.operation.Failed;
 import ru.operation.MdcEntry;
@@ -25,9 +28,10 @@ import ru.operation.util.function.ThrowablePredicate;
  * #onException}). {@link #when} sits inside catching and outside around, so a failed predicate
  * skips before/after and the core. When, around, logging and MDC are omitted when not configured.
  */
+@RequiredArgsConstructor(access = PRIVATE)
 public final class HandlerCompose<I> {
 
-    private final Handler<I> core;
+    @NonNull private final Handler<I> core;
     private String name;
     private Level loggingLevel;
     private Handler<I> beforeHandler;
@@ -35,10 +39,6 @@ public final class HandlerCompose<I> {
     private Handler<Failed<I>> onExceptionHandler;
     private ThrowablePredicate<I> when;
     private final List<MdcEntry<I>> mdcEntries = new ArrayList<>();
-
-    private HandlerCompose(Handler<I> core) {
-        this.core = core;
-    }
 
     public static <I> HandlerCompose<I> from(Handler<I> core) {
         return new HandlerCompose<>(core);
