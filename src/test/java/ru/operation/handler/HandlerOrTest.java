@@ -55,6 +55,17 @@ public class HandlerOrTest {
     }
 
     @Test
+    public void identifiedByBindsKeyAndDelegates() {
+        List<String> seen = new ArrayList<>();
+        IdentifiedHandler<String, String> identified =
+                Handlers.<String>of(seen::add).identifiedBy("audit");
+
+        assertEquals("audit", identified.getIdentifier());
+        assertTrue(identified.handle("marko").isDone());
+        assertEquals(List.of("marko"), seen);
+    }
+
+    @Test
     public void orStaysSkippedWhenEveryStepSkips() {
         Handler<String> skipping = input -> Handled.skipped();
 

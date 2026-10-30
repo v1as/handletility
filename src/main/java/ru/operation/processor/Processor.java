@@ -3,6 +3,7 @@ package ru.operation.processor;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import ru.operation.handler.Handler;
+import ru.operation.processor.impl.IdentifiedByConstProcessor;
 
 /**
  * Transforms {@code I} into {@code O}. Prefer extending {@link AbstractProcessor} for check,
@@ -53,5 +54,10 @@ public interface Processor<I, O> {
     /** Continues with a handler ({@link Processed#thenHandle}). */
     default Handler<I> thenHandle(Handler<? super O> handler) {
         return input -> process(input).thenHandle(handler::handle);
+    }
+
+    /** Identifies this processor by a constant routing key. */
+    default <K> IdentifiedProcessor<K, I, O> identifiedBy(K identifier) {
+        return new IdentifiedByConstProcessor<>(identifier, this);
     }
 }

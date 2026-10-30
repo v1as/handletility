@@ -1,5 +1,7 @@
 package ru.operation.handler;
 
+import ru.operation.handler.impl.IdentifiedByConstHandler;
+
 /**
  * Side-effect operation over an input. Prefer extending {@link AbstractHandler} for check,
  * exception handling and logging.
@@ -22,5 +24,10 @@ public interface Handler<I> {
             Handled result = handle(input);
             return result.isSkipped() ? next.handle(input) : result;
         };
+    }
+
+    /** Identifies this handler by a constant routing key. */
+    default <K> IdentifiedHandler<K, I> identifiedBy(K identifier) {
+        return new IdentifiedByConstHandler<>(identifier, this);
     }
 }
