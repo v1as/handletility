@@ -151,6 +151,15 @@ public class ProcessorThenTest {
     }
 
     @Test
+    public void identifiedByBindsKeyAndDelegates() {
+        IdentifiedProcessor<String, String, Integer> identified =
+                Processors.<String, Integer>of(Integer::parseInt).identifiedBy("parse");
+
+        assertEquals("parse", identified.getIdentifier());
+        assertEquals(42, identified.process("42").value());
+    }
+
+    @Test
     public void filterPropagatesUpstreamSkipAndError() {
         Processor<String, Integer> skipping = input -> Processed.skipped();
         assertTrue(skipping.filter(n -> true).process("x").isSkipped());
