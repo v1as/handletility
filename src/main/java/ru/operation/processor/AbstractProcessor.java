@@ -25,8 +25,8 @@ public abstract class AbstractProcessor<I, O> implements Processor<I, O> {
                 return onFailedCheck(input);
             }
             return processInternal(input);
-        } catch (Exception ex) {
-            return onException(input, ex);
+        } catch (Exception exception) {
+            return onException(input, exception);
         }
     }
 
@@ -37,8 +37,8 @@ public abstract class AbstractProcessor<I, O> implements Processor<I, O> {
         return skipped();
     }
 
-    protected Processed<O> onException(I input, Exception ex) {
-        log.warn("Processing error of '{}'", input, ex);
-        return error(ex);
+    protected Processed<O> onException(I input, Exception exception) {
+        log.warn("Processing error of '{}'", input, exception);
+        return error(exception);
     }
 }

@@ -20,7 +20,7 @@ public record Handled(ResultState state, Exception exception) {
         }
     }
 
-    private static final Handled OK = new Handled(ResultState.DONE, null);
+    private static final Handled DONE = new Handled(ResultState.DONE, null);
     private static final Handled SKIPPED = new Handled(ResultState.SKIPPED, null);
 
     public static Handled error(String reason) {
@@ -31,8 +31,8 @@ public record Handled(ResultState state, Exception exception) {
         return new Handled(ResultState.ERROR, exception);
     }
 
-    public static Handled ok() {
-        return OK;
+    public static Handled done() {
+        return DONE;
     }
 
     public static Handled skipped() {

@@ -12,11 +12,11 @@ import ru.operation.handler.IdentifiedHandler;
 public class IdentifiedByConstHandler<K, I> implements IdentifiedHandler<K, I> {
 
     @NonNull private final K identifier;
-    @NonNull private final Handler<I> handler;
+    @NonNull private final Handler<I> delegate;
 
     @Override
     public Handled handle(I input) {
-        return handler.handle(input);
+        return delegate.handle(input);
     }
 
     @Override
@@ -26,6 +26,6 @@ public class IdentifiedByConstHandler<K, I> implements IdentifiedHandler<K, I> {
 
     @Override
     public String toString() {
-        return "Identified[" + identifier + "](" + handler + ")";
+        return "Identified[" + identifier + "](" + delegate + ")";
     }
 }

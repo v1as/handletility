@@ -19,7 +19,7 @@ public class PropagatingHandler<I> implements Handler<I> {
     public Handled handle(I input) {
         try {
             consumer.accept(input);
-            return Handled.ok();
+            return Handled.done();
         } catch (Exception e) {
             throw unchecked(e);
         }

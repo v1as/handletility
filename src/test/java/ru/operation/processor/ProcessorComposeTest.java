@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static ru.operation.handler.Handled.ok;
+import static ru.operation.handler.Handled.done;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -91,7 +91,7 @@ public class ProcessorComposeTest {
                         .after(
                                 result -> {
                                     order.add("after");
-                                    return ok();
+                                    return done();
                                 })
                         .mdc("k", s -> "v")
                         .build();
@@ -150,7 +150,7 @@ public class ProcessorComposeTest {
                     throw new IllegalStateException("boom");
                 };
         Processor<String, String> composed =
-                Processors.compose(raw).onException(failed -> Processed.of("recovered")).build();
+                Processors.compose(raw).onException(failure -> Processed.of("recovered")).build();
 
         Processed<String> result = composed.process("x");
         assertTrue(result.isDone());
@@ -181,9 +181,9 @@ public class ProcessorComposeTest {
         Processor<String, String> composed =
                 Processors.compose(transform)
                         .onException(
-                                failed -> {
-                                    assertInstanceOf(IOException.class, failed.exception());
-                                    assertEquals("checked", failed.exception().getMessage());
+                                failure -> {
+                                    assertInstanceOf(IOException.class, failure.exception());
+                                    assertEquals("checked", failure.exception().getMessage());
                                     return Processed.of("recovered");
                                 })
                         .build();
@@ -212,10 +212,10 @@ public class ProcessorComposeTest {
                         .after(
                                 result -> {
                                     afterCalled.set(true);
-                                    return ok();
+                                    return done();
                                 })
                         .onException(
-                                failed -> {
+                                failure -> {
                                     onExceptionCalled.set(true);
                                     return Processed.of("recovered");
                                 })
@@ -243,7 +243,7 @@ public class ProcessorComposeTest {
                                             throw new IllegalStateException("hook");
                                         }))
                         .onException(
-                                failed -> {
+                                failure -> {
                                     onExceptionCalled.set(true);
                                     return Processed.of("recovered");
                                 })
@@ -293,8 +293,8 @@ public class ProcessorComposeTest {
                                 })
                         .before(before)
                         .onException(
-                                failed -> {
-                                    seen.set(failed.exception());
+                                failure -> {
+                                    seen.set(failure.exception());
                                     return Processed.of("recovered");
                                 })
                         .build();
@@ -318,8 +318,8 @@ public class ProcessorComposeTest {
                 Processors.compose((String s) -> "ok")
                         .after(after)
                         .onException(
-                                failed -> {
-                                    seen.set(failed.exception());
+                                failure -> {
+                                    seen.set(failure.exception());
                                     return Processed.of("recovered");
                                 })
                         .build();
@@ -391,8 +391,8 @@ public class ProcessorComposeTest {
                                     throw new IOException("pred");
                                 })
                         .onException(
-                                failed -> {
-                                    seen.set(failed.exception());
+                                failure -> {
+                                    seen.set(failure.exception());
                                     return Processed.of("recovered");
                                 })
                         .build();

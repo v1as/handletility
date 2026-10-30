@@ -16,15 +16,15 @@ import ru.operation.processor.Processed;
 public class MdcHandler<I> implements Handler<I> {
 
     private final List<MdcEntry<I>> entries;
-    private final Handler<I> handler;
+    private final Handler<I> delegate;
 
-    public MdcHandler(String mdcKey, Function<I, ?> mdcValueExtractor, Handler<I> handler) {
-        this(List.of(MdcEntry.of(mdcKey, mdcValueExtractor)), handler);
+    public MdcHandler(String key, Function<I, ?> valueExtractor, Handler<I> delegate) {
+        this(List.of(MdcEntry.of(key, valueExtractor)), delegate);
     }
 
-    public MdcHandler(List<MdcEntry<I>> entries, @NonNull Handler<I> handler) {
+    public MdcHandler(List<MdcEntry<I>> entries, @NonNull Handler<I> delegate) {
         this.entries = copyNonEmpty(entries, "mdc entries");
-        this.handler = handler;
+        this.delegate = delegate;
     }
 
     @Override
@@ -40,7 +40,7 @@ public class MdcHandler<I> implements Handler<I> {
                     MDC.put(entry.key(), String.valueOf(mdcValue.value()));
                 }
             }
-            return handler.handle(input);
+            return delegate.handle(input);
         } finally {
             for (int i = appliedKeys.size() - 1; i >= 0; i--) {
                 String previous = previousValues.get(i);
@@ -56,6 +56,6 @@ public class MdcHandler<I> implements Handler<I> {
     @Override
     public String toString() {
         List<String> keys = entries.stream().map(MdcEntry::key).toList();
-        return "Mdc(" + keys + ", " + handler + ")";
+        return "Mdc(" + keys + ", " + delegate + ")";
     }
 }

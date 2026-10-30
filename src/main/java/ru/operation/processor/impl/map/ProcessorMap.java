@@ -5,7 +5,7 @@ import static ru.operation.processor.Processed.skipped;
 
 import java.util.List;
 import lombok.NonNull;
-import ru.operation.identifier.IdentifyProcessor;
+import ru.operation.identifier.IdentifyingProcessor;
 import ru.operation.processor.AbstractProcessor;
 import ru.operation.processor.IdentifiedProcessor;
 import ru.operation.processor.Processed;
@@ -18,20 +18,20 @@ import ru.operation.processor.Processor;
  */
 public class ProcessorMap<K, I, O> extends AbstractProcessor<I, O> {
 
-    private final IdentifyProcessor<K, ? extends IdentifiedProcessor<K, I, O>, I> identifier;
+    private final IdentifyingProcessor<K, ? extends IdentifiedProcessor<K, I, O>, I> lookup;
     private final Processor<I, O> defaultProcessor;
 
     public <T extends IdentifiedProcessor<K, I, O>> ProcessorMap(
             @NonNull List<T> processors,
-            @NonNull Processor<I, K> keyProcessor,
+            @NonNull Processor<I, K> keyExtractor,
             Processor<I, O> defaultProcessor) {
-        this.identifier = new IdentifyProcessor<>(processors, keyProcessor);
+        this.lookup = new IdentifyingProcessor<>(processors, keyExtractor);
         this.defaultProcessor = defaultProcessor;
     }
 
     @Override
     protected Processed<O> processInternal(I input) {
-        Processed<? extends Processor<I, O>> processor = identifier.process(input);
+        Processed<? extends Processor<I, O>> processor = lookup.process(input);
         if (processor.hasValue()) {
             return processor.value().process(input);
         }

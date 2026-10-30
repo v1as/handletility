@@ -45,8 +45,8 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
         return new Processed<>(null, ResultState.ERROR, exception);
     }
 
-    public static <O> Processed<O> of(O result) {
-        return new Processed<>(result, DONE, null);
+    public static <O> Processed<O> of(O value) {
+        return new Processed<>(value, DONE, null);
     }
 
     @SuppressWarnings("unchecked")

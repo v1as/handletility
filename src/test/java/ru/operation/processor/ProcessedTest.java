@@ -143,7 +143,7 @@ public class ProcessedTest {
         assertTrue(handled.isDone());
         assertEquals(3, sum.get());
 
-        assertTrue(Processed.<Integer>skipped().thenHandle(n -> Handled.ok()).isSkipped());
+        assertTrue(Processed.<Integer>skipped().thenHandle(n -> Handled.done()).isSkipped());
     }
 
     @Test

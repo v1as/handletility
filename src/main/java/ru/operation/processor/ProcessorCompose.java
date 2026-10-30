@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.function.Function;
 import lombok.NonNull;
 import org.slf4j.event.Level;
-import ru.operation.Failed;
+import ru.operation.Failure;
 import ru.operation.MdcEntry;
 import ru.operation.handler.Handler;
 import ru.operation.handler.impl.PropagatingHandler;
@@ -34,7 +34,7 @@ public final class ProcessorCompose<I, O> {
     private Level loggingLevel;
     private Handler<I> beforeHandler;
     private Handler<Processed<O>> afterHandler;
-    private Processor<Failed<I>, O> onExceptionProcessor;
+    private Processor<Failure<I>, O> onException;
     private ThrowablePredicate<I> when;
     private final List<MdcEntry<I>> mdcEntries = new ArrayList<>();
 
@@ -105,8 +105,8 @@ public final class ProcessorCompose<I, O> {
      * interface). May recover to a successful {@link Processed} or return {@link
      * Processed#error(Exception)}.
      */
-    public ProcessorCompose<I, O> onException(Processor<Failed<I>, O> onException) {
-        this.onExceptionProcessor = notNull(onException, "onException");
+    public ProcessorCompose<I, O> onException(Processor<Failure<I>, O> onException) {
+        this.onException = notNull(onException, "onException");
         return this;
     }
 
@@ -126,10 +126,8 @@ public final class ProcessorCompose<I, O> {
     }
 
     public Processor<I, O> build() {
-        Processor<Failed<I>, O> onException =
-                onExceptionProcessor != null
-                        ? onExceptionProcessor
-                        : new LoggingExceptionProcessor<>();
+        Processor<Failure<I>, O> exceptionMapping =
+                this.onException != null ? this.onException : new LoggingExceptionProcessor<>();
 
         Processor<I, O> result = core;
         if (beforeHandler != null || afterHandler != null) {
@@ -138,7 +136,7 @@ public final class ProcessorCompose<I, O> {
         if (when != null) {
             result = new WhenProcessor<>(when, result);
         }
-        result = new CatchingProcessor<>(result, onException);
+        result = new CatchingProcessor<>(result, exceptionMapping);
         if (loggingLevel != null) {
             result = new LoggingProcessor<>(result, core.getClass(), name, loggingLevel);
         }

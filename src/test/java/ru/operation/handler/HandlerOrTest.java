@@ -20,12 +20,12 @@ public class HandlerOrTest {
         Handler<String> second =
                 input -> {
                     seen.add("second");
-                    return Handled.ok();
+                    return Handled.done();
                 };
         Handler<String> third =
                 input -> {
                     seen.add("third");
-                    return Handled.ok();
+                    return Handled.done();
                 };
 
         Handled result = first.or(second).or(third).handle("marko");
@@ -40,10 +40,10 @@ public class HandlerOrTest {
         Handler<String> next =
                 input -> {
                     seen.add("next");
-                    return Handled.ok();
+                    return Handled.done();
                 };
 
-        Handler<String> done = input -> Handled.ok();
+        Handler<String> done = input -> Handled.done();
         assertTrue(done.or(next).handle("x").isDone());
         assertTrue(seen.isEmpty());
 

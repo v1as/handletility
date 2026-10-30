@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static ru.operation.handler.Handled.done;
 import static ru.operation.handler.Handled.error;
-import static ru.operation.handler.Handled.ok;
 import static ru.operation.handler.Handled.skipped;
 
 import java.io.IOException;
@@ -27,11 +27,11 @@ public class HandlerListModifiersTest {
                         List.of(
                                 input -> {
                                     called.add("first");
-                                    return ok();
+                                    return done();
                                 },
                                 input -> {
                                     called.add("second");
-                                    return ok();
+                                    return done();
                                 }));
 
         assertTrue(list.handle("x").isDone());
@@ -46,7 +46,7 @@ public class HandlerListModifiersTest {
                         .handler(
                                 input -> {
                                     called.add("first");
-                                    return ok();
+                                    return done();
                                 })
                         .handler(
                                 input -> {
@@ -68,7 +68,7 @@ public class HandlerListModifiersTest {
                 HandlerList.<String>builder()
                         .handler(input -> error(first))
                         .handler(input -> error(second))
-                        .handler(input -> ok())
+                        .handler(input -> done())
                         .modifier(HandlerModifier.CONTINUE_ON_ERROR)
                         .modifier(HandlerModifier.CONTINUE_ON_DONE)
                         .build();
@@ -94,7 +94,7 @@ public class HandlerListModifiersTest {
                                 },
                                 input -> {
                                     called.add("second");
-                                    return ok();
+                                    return done();
                                 }));
 
         assertTrue(list.handle("x").isError());

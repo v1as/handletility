@@ -11,7 +11,7 @@ import java.util.Set;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
-import ru.operation.Failed;
+import ru.operation.Failure;
 import ru.operation.processor.AbstractProcessor;
 import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
@@ -31,19 +31,18 @@ public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
     private final List<? extends Processor<I, O>> processors;
     private final Set<ProcessorModifier> modifiers;
     private final ThrowableBiFunction<O, O, O> combiner;
-    private final Processor<Failed<I>, O> exceptionProcessor;
+    private final Processor<Failure<I>, O> onException;
 
     @Builder(builderMethodName = "processorList")
     public ProcessorList(
             @NonNull @Singular List<? extends Processor<I, O>> processors,
             @Singular Set<ProcessorModifier> modifiers,
             ThrowableBiFunction<O, O, O> combiner,
-            Processor<Failed<I>, O> exceptionProcessor) {
+            Processor<Failure<I>, O> onException) {
         this.processors = processors;
         this.modifiers = modifiers == null ? Set.of() : modifiers;
         this.combiner = combiner;
-        this.exceptionProcessor =
-                exceptionProcessor != null ? exceptionProcessor : new LoggingExceptionProcessor<>();
+        this.onException = onException != null ? onException : new LoggingExceptionProcessor<>();
     }
 
     public ProcessorList(List<? extends Processor<I, O>> processors) {
@@ -54,8 +53,6 @@ public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
     protected Processed<O> processInternal(I input) {
         List<Exception> errors = new ArrayList<>();
         boolean failed = false;
-        Processor<Failed<I>, O> onException =
-                exceptionProcessor != null ? exceptionProcessor : new LoggingExceptionProcessor<>();
         boolean hasDone = false;
         O accumulator = null;
         for (Processor<I, O> processor : processors) {
@@ -64,7 +61,7 @@ public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
                 processed = processor.process(input);
             } catch (Exception e) {
                 log.warn("Processing error", e);
-                processed = onException.process(new Failed<>(input, e));
+                processed = this.onException.process(new Failure<>(input, e));
             }
             log.trace(
                     "Processor '{}' has result '{}'",

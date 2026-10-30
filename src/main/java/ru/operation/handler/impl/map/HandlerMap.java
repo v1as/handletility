@@ -11,7 +11,7 @@ import ru.operation.handler.AbstractHandler;
 import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
 import ru.operation.handler.IdentifiedHandler;
-import ru.operation.identifier.IdentifyProcessor;
+import ru.operation.identifier.IdentifyingProcessor;
 import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
 
@@ -22,7 +22,7 @@ import ru.operation.processor.Processor;
  */
 public class HandlerMap<K, I> extends AbstractHandler<I> {
 
-    private final IdentifyProcessor<K, ? extends IdentifiedHandler<K, I>, I> handlerIdentifier;
+    private final IdentifyingProcessor<K, ? extends IdentifiedHandler<K, I>, I> lookup;
     private final Handler<I> defaultHandler;
 
     @Builder(builderMethodName = "handlerMap")
@@ -30,13 +30,13 @@ public class HandlerMap<K, I> extends AbstractHandler<I> {
             @NonNull @Singular List<? extends IdentifiedHandler<K, I>> handlers,
             @NonNull Processor<I, K> keyExtractor,
             Handler<I> defaultHandler) {
-        this.handlerIdentifier = new IdentifyProcessor<>(handlers, keyExtractor);
+        this.lookup = new IdentifyingProcessor<>(handlers, keyExtractor);
         this.defaultHandler = defaultHandler;
     }
 
     @Override
     protected Handled handleInternal(I input) {
-        Processed<? extends IdentifiedHandler<K, I>> handler = handlerIdentifier.process(input);
+        Processed<? extends IdentifiedHandler<K, I>> handler = lookup.process(input);
         if (handler.hasValue()) {
             log.trace("Using handler {}", handler);
             return handler.value().handle(input);

@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static ru.operation.handler.Handled.ok;
+import static ru.operation.handler.Handled.done;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,7 +24,7 @@ public class HandlerMapTest {
                     "1",
                     (input) -> {
                         store[0] = 1;
-                        return ok();
+                        return done();
                     });
 
     private final IdentifiedByConstHandler<String, String> secondHandler =
@@ -32,13 +32,13 @@ public class HandlerMapTest {
                     "2",
                     (input) -> {
                         store[0] = 2;
-                        return ok();
+                        return done();
                     });
 
     private final Handler<String> forthHandler =
             (input) -> {
                 store[0] = 4;
-                return ok();
+                return done();
             };
 
     private final SimpleProcessor<String, String> identityKey = new SimpleProcessor<>(s -> s);
@@ -90,7 +90,7 @@ public class HandlerMapTest {
                                 }),
                         input -> {
                             defaultCalled.set(true);
-                            return ok();
+                            return done();
                         });
 
         Handled result = handler.handle("weird");
@@ -109,7 +109,7 @@ public class HandlerMapTest {
                         new SimpleProcessor<>(input -> null),
                         input -> {
                             defaultCalled.set(true);
-                            return ok();
+                            return done();
                         });
 
         assertTrue(handler.handle("weird").isDone());

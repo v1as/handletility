@@ -1,7 +1,7 @@
 package ru.operation.handler.impl;
 
+import static ru.operation.handler.Handled.done;
 import static ru.operation.handler.Handled.error;
-import static ru.operation.handler.Handled.ok;
 import static ru.operation.handler.Handled.skipped;
 
 import lombok.NonNull;
@@ -12,7 +12,7 @@ import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
 
 @RequiredArgsConstructor
-public class ProcessingHandler<I, O> implements Handler<I> {
+public class ProcessorHandler<I, O> implements Handler<I> {
 
     @NonNull private final Processor<I, O> processor;
 
@@ -25,6 +25,6 @@ public class ProcessingHandler<I, O> implements Handler<I> {
         if (processed.isSkipped()) {
             return skipped();
         }
-        return ok();
+        return done();
     }
 }

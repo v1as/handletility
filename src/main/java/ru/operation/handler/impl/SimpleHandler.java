@@ -10,7 +10,7 @@ import ru.operation.util.function.ThrowableConsumer;
 @RequiredArgsConstructor
 public class SimpleHandler<I> extends AbstractHandler<I> {
 
-    @NonNull private final Predicate<I> check;
+    @NonNull private final Predicate<I> predicate;
     @NonNull private final ThrowableConsumer<I> consumer;
 
     public SimpleHandler(ThrowableConsumer<I> consumer) {
@@ -19,12 +19,12 @@ public class SimpleHandler<I> extends AbstractHandler<I> {
 
     @Override
     public boolean check(I input) {
-        return check.test(input);
+        return predicate.test(input);
     }
 
     @Override
     protected Handled handleInternal(I input) throws Exception {
         consumer.accept(input);
-        return Handled.ok();
+        return Handled.done();
     }
 }

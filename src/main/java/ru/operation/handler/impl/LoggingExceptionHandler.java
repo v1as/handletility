@@ -5,18 +5,18 @@ import static ru.operation.handler.Handled.error;
 
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
-import ru.operation.Failed;
+import ru.operation.Failure;
 import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
 
 @RequiredArgsConstructor
-public class LoggingExceptionHandler<I> implements Handler<Failed<I>> {
+public class LoggingExceptionHandler<I> implements Handler<Failure<I>> {
 
     private final Logger log = getLogger(this.getClass());
 
     @Override
-    public Handled handle(Failed<I> failed) {
-        log.warn("Handling error while processing {}", failed.value(), failed.exception());
-        return error(failed.exception());
+    public Handled handle(Failure<I> failure) {
+        log.warn("Handling error while processing {}", failure.input(), failure.exception());
+        return error(failure.exception());
     }
 }

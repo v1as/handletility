@@ -12,13 +12,13 @@ import ru.operation.processor.Processor;
  * ru.operation.processor.Processed#thenHandle}); the delegate is not called.
  */
 @RequiredArgsConstructor
-public class MappedHandler<T, I> extends AbstractHandler<T> {
+public class MappedHandler<I, M> extends AbstractHandler<I> {
 
-    @NonNull private final Processor<T, I> mapper;
-    @NonNull private final Handler<I> delegate;
+    @NonNull private final Processor<I, M> mapper;
+    @NonNull private final Handler<M> delegate;
 
     @Override
-    protected Handled handleInternal(T input) {
+    protected Handled handleInternal(I input) {
         return mapper.process(input).thenHandle(delegate);
     }
 }

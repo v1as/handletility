@@ -10,35 +10,35 @@ import org.slf4j.Logger;
  * Template for handlers: optional {@link #check(Object)} and exception → {@link
  * ru.operation.ResultState#ERROR}. Naming and outcome logging belong in wrappers / compose.
  */
-public abstract class AbstractHandler<T> implements Handler<T> {
+public abstract class AbstractHandler<I> implements Handler<I> {
 
     protected final Logger log = getLogger(getClass());
 
-    public boolean check(T input) {
+    public boolean check(I input) {
         return true;
     }
 
     @Override
-    public Handled handle(T input) {
+    public Handled handle(I input) {
         try {
             if (!check(input)) {
                 return onFailedCheck(input);
             }
             return handleInternal(input);
-        } catch (Exception e) {
-            return onException(input, e);
+        } catch (Exception exception) {
+            return onException(input, exception);
         }
     }
 
-    protected abstract Handled handleInternal(T input) throws Exception;
+    protected abstract Handled handleInternal(I input) throws Exception;
 
-    protected Handled onFailedCheck(T input) {
+    protected Handled onFailedCheck(I input) {
         log.trace("Skipped because of unsuitable input: '{}'", input);
         return skipped();
     }
 
-    protected Handled onException(T input, Exception e) {
-        log.warn("Error while handling '{}'", input, e);
-        return error(e);
+    protected Handled onException(I input, Exception exception) {
+        log.warn("Error while handling '{}'", input, exception);
+        return error(exception);
     }
 }

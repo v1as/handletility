@@ -227,7 +227,7 @@ Processor<Order, Integer> readAmount =
                 .when(order -> order.rawAmount() != null)
                 .before(order -> metrics.mark("amount.start"))
                 .after(result -> metrics.mark(result.state().name()))
-                .onException(failed -> Processed.of(0))
+                .onException(failure -> Processed.of(0))
                 .build();
 
 readAmount.process(new Order("a1", null));   // skipped: when остановил вызов
