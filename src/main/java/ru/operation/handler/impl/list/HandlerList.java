@@ -1,7 +1,7 @@
 package ru.operation.handler.impl.list;
 
+import static ru.operation.handler.Handled.done;
 import static ru.operation.handler.Handled.error;
-import static ru.operation.handler.Handled.ok;
 import static ru.operation.handler.Handled.skipped;
 import static ru.operation.handler.impl.list.HandlerModifier.CONTINUE_ON_DONE;
 import static ru.operation.handler.impl.list.HandlerModifier.CONTINUE_ON_ERROR;
@@ -12,7 +12,7 @@ import java.util.Set;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
-import ru.operation.Failed;
+import ru.operation.Failure;
 import ru.operation.handler.AbstractHandler;
 import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
@@ -27,17 +27,16 @@ public class HandlerList<I> extends AbstractHandler<I> {
 
     private final List<? extends Handler<I>> handlers;
     private final Set<HandlerModifier> modifiers;
-    private final Handler<Failed<I>> exceptionHandler;
+    private final Handler<Failure<I>> onException;
 
     @Builder
     public HandlerList(
             @NonNull @Singular List<? extends Handler<I>> handlers,
             @Singular Set<HandlerModifier> modifiers,
-            Handler<Failed<I>> exceptionHandler) {
+            Handler<Failure<I>> onException) {
         this.handlers = handlers;
         this.modifiers = modifiers == null ? Set.of() : modifiers;
-        this.exceptionHandler =
-                exceptionHandler != null ? exceptionHandler : new LoggingExceptionHandler<>();
+        this.onException = onException != null ? onException : new LoggingExceptionHandler<>();
     }
 
     public HandlerList(List<? extends Handler<I>> handlers) {
@@ -54,7 +53,7 @@ public class HandlerList<I> extends AbstractHandler<I> {
             try {
                 handled = handle(handler, input);
             } catch (Exception e) {
-                handled = exceptionHandler.handle(new Failed<>(input, e));
+                handled = onException.handle(new Failure<>(input, e));
             }
             if (handled.isDone()) {
                 done = true;
@@ -74,7 +73,7 @@ public class HandlerList<I> extends AbstractHandler<I> {
             return error(combine(errors));
         }
         if (done) {
-            return ok();
+            return done();
         }
         return skipped();
     }

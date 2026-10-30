@@ -15,16 +15,15 @@ import ru.operation.processor.Processor;
 public class MdcProcessor<I, O> implements Processor<I, O> {
 
     private final List<MdcEntry<I>> entries;
-    private final Processor<I, O> processor;
+    private final Processor<I, O> delegate;
 
-    public MdcProcessor(
-            String mdcKey, Function<I, ?> mdcValueExtractor, Processor<I, O> processor) {
-        this(List.of(MdcEntry.of(mdcKey, mdcValueExtractor)), processor);
+    public MdcProcessor(String key, Function<I, ?> valueExtractor, Processor<I, O> delegate) {
+        this(List.of(MdcEntry.of(key, valueExtractor)), delegate);
     }
 
-    public MdcProcessor(List<MdcEntry<I>> entries, @NonNull Processor<I, O> processor) {
+    public MdcProcessor(List<MdcEntry<I>> entries, @NonNull Processor<I, O> delegate) {
         this.entries = copyNonEmpty(entries, "mdc entries");
-        this.processor = processor;
+        this.delegate = delegate;
     }
 
     @Override
@@ -40,7 +39,7 @@ public class MdcProcessor<I, O> implements Processor<I, O> {
                     MDC.put(entry.key(), String.valueOf(mdcValue.value()));
                 }
             }
-            return processor.process(input);
+            return delegate.process(input);
         } finally {
             for (int i = appliedKeys.size() - 1; i >= 0; i--) {
                 String previous = previousValues.get(i);
@@ -56,6 +55,6 @@ public class MdcProcessor<I, O> implements Processor<I, O> {
     @Override
     public String toString() {
         List<String> keys = entries.stream().map(MdcEntry::key).toList();
-        return "Mdc(" + keys + ", " + processor + ")";
+        return "Mdc(" + keys + ", " + delegate + ")";
     }
 }

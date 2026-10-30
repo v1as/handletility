@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static ru.operation.handler.Handled.ok;
+import static ru.operation.handler.Handled.done;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,7 +25,7 @@ public class AroundHandlerTest {
         Handler<String> around =
                 AroundHandler.<String>builder()
                         .beforeHandler(new SimpleHandler<>((String s) -> order.add("before")))
-                        .handler(
+                        .delegate(
                                 new SimpleHandler<>(
                                         s -> {
                                             order.add("main");
@@ -49,7 +49,7 @@ public class AroundHandlerTest {
 
     @Test
     public void returnsMainHandlerResult() {
-        Handler<String> around = AroundHandler.<String>builder().handler(input -> ok()).build();
+        Handler<String> around = AroundHandler.<String>builder().delegate(input -> done()).build();
 
         assertTrue(around.handle("ok").isDone());
     }
@@ -60,7 +60,7 @@ public class AroundHandlerTest {
         Handler<String> skippedBefore =
                 AroundHandler.<String>builder()
                         .beforeHandler(input -> Handled.skipped())
-                        .handler(
+                        .delegate(
                                 input -> {
                                     coreCalled.set(true);
                                     return Handled.error(new IllegalStateException("core"));
@@ -75,8 +75,8 @@ public class AroundHandlerTest {
 
         Handler<String> doneAfter =
                 AroundHandler.<String>builder()
-                        .handler(input -> Handled.skipped())
-                        .afterHandler(result -> ok())
+                        .delegate(input -> Handled.skipped())
+                        .afterHandler(result -> done())
                         .build();
 
         assertTrue(doneAfter.handle("x").isSkipped());
@@ -91,15 +91,15 @@ public class AroundHandlerTest {
         Handler<String> around =
                 AroundHandler.<String>builder()
                         .beforeHandler(input -> hookError)
-                        .handler(
+                        .delegate(
                                 input -> {
                                     coreCalled.set(true);
-                                    return ok();
+                                    return done();
                                 })
                         .afterHandler(
                                 result -> {
                                     afterCalled.set(true);
-                                    return ok();
+                                    return done();
                                 })
                         .build();
 
@@ -113,7 +113,7 @@ public class AroundHandlerTest {
         Handled hookError = Handled.error(new IllegalStateException("hook"));
         Handler<String> around =
                 AroundHandler.<String>builder()
-                        .handler(input -> ok())
+                        .delegate(input -> done())
                         .afterHandler(result -> hookError)
                         .build();
 
@@ -127,7 +127,7 @@ public class AroundHandlerTest {
         Handled hookError = Handled.error(hook);
         Handler<String> around =
                 AroundHandler.<String>builder()
-                        .handler(input -> Handled.error(core))
+                        .delegate(input -> Handled.error(core))
                         .afterHandler(result -> hookError)
                         .build();
 

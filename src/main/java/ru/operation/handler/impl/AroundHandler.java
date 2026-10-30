@@ -8,7 +8,7 @@ import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
 
 /**
- * AOP-style around: {@code before(input)} → {@code handler(input)} → {@code after(result)}. {@code
+ * AOP-style around: {@code before(input)} → {@code delegate(input)} → {@code after(result)}. {@code
  * DONE} and {@code SKIPPED} from a hook do not replace the main result, and a skipped before still
  * runs the core. {@code ERROR} from a hook is returned as the operation result: a failed before
  * skips the core and after; a failed after replaces a successful main result. When the main result
@@ -19,13 +19,13 @@ import ru.operation.handler.Handler;
 public class AroundHandler<I> implements Handler<I> {
 
     private final Handler<I> beforeHandler;
-    private final Handler<I> handler;
+    private final Handler<I> delegate;
     private final Handler<Handled> afterHandler;
 
     public AroundHandler(
-            Handler<I> beforeHandler, @NonNull Handler<I> handler, Handler<Handled> afterHandler) {
+            Handler<I> beforeHandler, @NonNull Handler<I> delegate, Handler<Handled> afterHandler) {
         this.beforeHandler = beforeHandler != null ? beforeHandler : input -> skipped();
-        this.handler = handler;
+        this.delegate = delegate;
         this.afterHandler = afterHandler != null ? afterHandler : input -> skipped();
     }
 
@@ -35,7 +35,7 @@ public class AroundHandler<I> implements Handler<I> {
         if (before.isError()) {
             return before;
         }
-        Handled result = handler.handle(input);
+        Handled result = delegate.handle(input);
         Handled after = afterHandler.handle(result);
         if (after.isError()) {
             if (result.isError()) {
@@ -56,8 +56,8 @@ public class AroundHandler<I> implements Handler<I> {
     public String toString() {
         return "Around(before="
                 + beforeHandler
-                + ", handler="
-                + handler
+                + ", delegate="
+                + delegate
                 + ", after="
                 + afterHandler
                 + ")";

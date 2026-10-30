@@ -1,7 +1,7 @@
 package ru.operation.handler.impl.list;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static ru.operation.handler.Handled.ok;
+import static ru.operation.handler.Handled.done;
 import static ru.operation.handler.Handled.skipped;
 
 import java.util.List;
@@ -22,9 +22,9 @@ public class HandlerListTest {
 
     @Test
     public void should_process_after_skip() {
-        Handler<String> handlers = new HandlerList<>(List.of(value -> skipped(), value -> ok()));
+        Handler<String> handlers = new HandlerList<>(List.of(value -> skipped(), value -> done()));
         Handled result = handlers.handle("hello");
-        assertEquals(ok(), result);
+        assertEquals(done(), result);
     }
 
     @Test
@@ -32,7 +32,7 @@ public class HandlerListTest {
         Handler<Command> baseHandler =
                 AroundHandler.<Command>builder()
                         .beforeHandler(new LoggingHandler())
-                        .handler(
+                        .delegate(
                                 HandlerList.<Command>builder()
                                         .handler(
                                                 HandlerMap.<String, Command>handlerMap()
@@ -61,7 +61,7 @@ public class HandlerListTest {
         @Override
         public Handled handle(Command input) {
             log.info("Command received {}", input);
-            return ok();
+            return done();
         }
     }
 
@@ -86,7 +86,7 @@ public class HandlerListTest {
         @Override
         protected Handled handleInternal(Command input) {
             System.out.println("Hello " + input);
-            return ok();
+            return done();
         }
     }
 
@@ -99,7 +99,7 @@ public class HandlerListTest {
         @Override
         protected Handled handleInternal(Command input) {
             System.out.println("Bye " + input);
-            return ok();
+            return done();
         }
     }
 }

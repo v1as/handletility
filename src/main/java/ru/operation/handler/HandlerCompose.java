@@ -9,7 +9,7 @@ import java.util.function.Function;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.event.Level;
-import ru.operation.Failed;
+import ru.operation.Failure;
 import ru.operation.MdcEntry;
 import ru.operation.handler.impl.AroundHandler;
 import ru.operation.handler.impl.CatchingHandler;
@@ -36,7 +36,7 @@ public final class HandlerCompose<I> {
     private Level loggingLevel;
     private Handler<I> beforeHandler;
     private Handler<Handled> afterHandler;
-    private Handler<Failed<I>> onExceptionHandler;
+    private Handler<Failure<I>> onException;
     private ThrowablePredicate<I> when;
     private final List<MdcEntry<I>> mdcEntries = new ArrayList<>();
 
@@ -98,11 +98,11 @@ public final class HandlerCompose<I> {
     }
 
     /**
-     * Fully replaces default exception mapping. May recover to {@link Handled#ok()} or return
+     * Fully replaces default exception mapping. May recover to {@link Handled#done()} or return
      * {@link Handled#error(Exception)}.
      */
-    public HandlerCompose<I> onException(Handler<Failed<I>> onException) {
-        this.onExceptionHandler = notNull(onException, "onException");
+    public HandlerCompose<I> onException(Handler<Failure<I>> onException) {
+        this.onException = notNull(onException, "onException");
         return this;
     }
 
@@ -122,8 +122,8 @@ public final class HandlerCompose<I> {
     }
 
     public Handler<I> build() {
-        Handler<Failed<I>> onException =
-                onExceptionHandler != null ? onExceptionHandler : new LoggingExceptionHandler<>();
+        Handler<Failure<I>> exceptionMapping =
+                this.onException != null ? this.onException : new LoggingExceptionHandler<>();
 
         Handler<I> result = core;
         if (beforeHandler != null || afterHandler != null) {
@@ -132,7 +132,7 @@ public final class HandlerCompose<I> {
         if (when != null) {
             result = new WhenHandler<>(when, result);
         }
-        result = new CatchingHandler<>(result, onException);
+        result = new CatchingHandler<>(result, exceptionMapping);
         if (loggingLevel != null) {
             result = new LoggingHandler<>(result, core.getClass(), name, loggingLevel);
         }

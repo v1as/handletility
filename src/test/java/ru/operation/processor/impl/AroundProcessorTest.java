@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static ru.operation.handler.Handled.ok;
+import static ru.operation.handler.Handled.done;
 import static ru.operation.processor.Processed.of;
 
 import java.io.IOException;
@@ -28,7 +28,7 @@ public class AroundProcessorTest {
         Processor<String, String> around =
                 AroundProcessor.<String, String>builder()
                         .beforeHandler(new SimpleHandler<>(s -> order.add("before")))
-                        .processor(
+                        .delegate(
                                 new SimpleProcessor<>(
                                         s -> {
                                             order.add("main");
@@ -38,7 +38,7 @@ public class AroundProcessorTest {
                                 result -> {
                                     order.add("after");
                                     seenAfter.set(result);
-                                    return ok();
+                                    return done();
                                 })
                         .build();
 
@@ -53,7 +53,7 @@ public class AroundProcessorTest {
     public void returnsMainProcessorResult() {
         Processor<String, Integer> around =
                 AroundProcessor.<String, Integer>builder()
-                        .processor(new SimpleProcessor<>(String::length))
+                        .delegate(new SimpleProcessor<>(String::length))
                         .build();
 
         assertEquals(of(3), around.process("abc"));
@@ -65,7 +65,7 @@ public class AroundProcessorTest {
         Processor<String, String> skippedBefore =
                 AroundProcessor.<String, String>builder()
                         .beforeHandler(input -> Handled.skipped())
-                        .processor(
+                        .delegate(
                                 input -> {
                                     coreCalled.set(true);
                                     return Processed.error(new IllegalStateException("core"));
@@ -80,8 +80,8 @@ public class AroundProcessorTest {
 
         Processor<String, String> doneAfter =
                 AroundProcessor.<String, String>builder()
-                        .processor(input -> Processed.skipped())
-                        .afterHandler(result -> ok())
+                        .delegate(input -> Processed.skipped())
+                        .afterHandler(result -> done())
                         .build();
 
         assertTrue(doneAfter.process("x").isSkipped());
@@ -95,7 +95,7 @@ public class AroundProcessorTest {
         Processor<String, String> around =
                 AroundProcessor.<String, String>builder()
                         .beforeHandler(input -> Handled.error(hook))
-                        .processor(
+                        .delegate(
                                 input -> {
                                     coreCalled.set(true);
                                     return of("ok");
@@ -103,7 +103,7 @@ public class AroundProcessorTest {
                         .afterHandler(
                                 result -> {
                                     afterCalled.set(true);
-                                    return ok();
+                                    return done();
                                 })
                         .build();
 
@@ -120,7 +120,7 @@ public class AroundProcessorTest {
         IllegalStateException hook = new IllegalStateException("hook");
         Processor<String, String> around =
                 AroundProcessor.<String, String>builder()
-                        .processor(input -> of("ok"))
+                        .delegate(input -> of("ok"))
                         .afterHandler(result -> Handled.error(hook))
                         .build();
 
@@ -137,7 +137,7 @@ public class AroundProcessorTest {
         IllegalStateException hook = new IllegalStateException("hook");
         Processor<String, String> around =
                 AroundProcessor.<String, String>builder()
-                        .processor(input -> Processed.error(core))
+                        .delegate(input -> Processed.error(core))
                         .afterHandler(result -> Handled.error(hook))
                         .build();
 

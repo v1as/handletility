@@ -150,7 +150,7 @@ public class HandlerComposeTest {
                     throw new IllegalStateException("boom");
                 };
         Handler<String> composed =
-                Handlers.compose(raw).onException(failed -> Handled.ok()).build();
+                Handlers.compose(raw).onException(failure -> Handled.done()).build();
 
         assertTrue(composed.handle("x").isDone());
     }
@@ -178,10 +178,10 @@ public class HandlerComposeTest {
         Handler<String> composed =
                 Handlers.compose(consumer)
                         .onException(
-                                failed -> {
-                                    assertInstanceOf(IOException.class, failed.exception());
-                                    assertEquals("checked", failed.exception().getMessage());
-                                    return Handled.ok();
+                                failure -> {
+                                    assertInstanceOf(IOException.class, failure.exception());
+                                    assertEquals("checked", failure.exception().getMessage());
+                                    return Handled.done();
                                 })
                         .build();
 
@@ -203,12 +203,12 @@ public class HandlerComposeTest {
                         .after(
                                 result -> {
                                     afterCalled.set(true);
-                                    return Handled.ok();
+                                    return Handled.done();
                                 })
                         .onException(
-                                failed -> {
+                                failure -> {
                                     onExceptionCalled.set(true);
-                                    return Handled.ok();
+                                    return Handled.done();
                                 })
                         .build();
 
@@ -233,9 +233,9 @@ public class HandlerComposeTest {
                                             throw new IllegalStateException("hook");
                                         }))
                         .onException(
-                                failed -> {
+                                failure -> {
                                     onExceptionCalled.set(true);
-                                    return Handled.ok();
+                                    return Handled.done();
                                 })
                         .build();
 
@@ -278,9 +278,9 @@ public class HandlerComposeTest {
                 Handlers.compose((String s) -> coreCalled.set(true))
                         .before(before)
                         .onException(
-                                failed -> {
-                                    seen.set(failed.exception());
-                                    return Handled.ok();
+                                failure -> {
+                                    seen.set(failure.exception());
+                                    return Handled.done();
                                 })
                         .build();
 
@@ -301,9 +301,9 @@ public class HandlerComposeTest {
                 Handlers.compose((String s) -> {})
                         .after(after)
                         .onException(
-                                failed -> {
-                                    seen.set(failed.exception());
-                                    return Handled.error(failed.exception());
+                                failure -> {
+                                    seen.set(failure.exception());
+                                    return Handled.error(failure.exception());
                                 })
                         .build();
 
@@ -371,9 +371,9 @@ public class HandlerComposeTest {
                                     throw new IOException("pred");
                                 })
                         .onException(
-                                failed -> {
-                                    seen.set(failed.exception());
-                                    return Handled.ok();
+                                failure -> {
+                                    seen.set(failure.exception());
+                                    return Handled.done();
                                 })
                         .build();
 
@@ -435,7 +435,7 @@ public class HandlerComposeTest {
 
         @Override
         public Handled handle(String input) {
-            return Handled.ok();
+            return Handled.done();
         }
     }
 }

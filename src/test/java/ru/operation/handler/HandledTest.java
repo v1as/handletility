@@ -17,10 +17,10 @@ import ru.operation.processor.Processed;
 public class HandledTest {
 
     @Test
-    public void okIsDone() {
-        assertTrue(Handled.ok().isDone());
+    public void doneIsDone() {
+        assertTrue(Handled.done().isDone());
         assertFalse(Handled.skipped().isDone());
-        assertSame(Handled.ok(), Handled.ok());
+        assertSame(Handled.done(), Handled.done());
     }
 
     @Test
@@ -39,13 +39,13 @@ public class HandledTest {
 
     @Test
     public void throwIfErrorPassesThroughOkAndSkipped() {
-        assertSame(Handled.ok(), Handled.ok().throwIfError());
+        assertSame(Handled.done(), Handled.done().throwIfError());
         assertSame(Handled.skipped(), Handled.skipped().throwIfError());
     }
 
     @Test
     public void requireDoneRejectsSkip() {
-        Handled.ok().requireDone();
+        Handled.done().requireDone();
 
         HandlerException skipped =
                 assertThrows(HandlerException.class, Handled.skipped()::requireDone);
@@ -59,9 +59,9 @@ public class HandledTest {
 
     @Test
     public void thenGetSuppliesOnlyWhenHandled() {
-        assertEquals("ok", Handled.ok().thenGet(() -> "ok").requireDone());
-        assertTrue(Handled.ok().thenGet(() -> null).isDone());
-        assertFalse(Handled.ok().thenGet(() -> null).hasValue());
+        assertEquals("ok", Handled.done().thenGet(() -> "ok").requireDone());
+        assertTrue(Handled.done().thenGet(() -> null).isDone());
+        assertFalse(Handled.done().thenGet(() -> null).hasValue());
 
         assertTrue(Handled.skipped().thenGet(Assertions::fail).isSkipped());
 
@@ -71,7 +71,7 @@ public class HandledTest {
         assertSame(boom, error.exception());
 
         Processed<String> failed =
-                Handled.ok()
+                Handled.done()
                         .thenGet(
                                 () -> {
                                     throw new IllegalStateException("nope");

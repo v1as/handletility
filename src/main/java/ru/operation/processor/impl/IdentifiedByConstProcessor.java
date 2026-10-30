@@ -12,7 +12,7 @@ import ru.operation.processor.Processor;
 public class IdentifiedByConstProcessor<K, I, O> implements IdentifiedProcessor<K, I, O> {
 
     @NonNull private final K identifier;
-    @NonNull private final Processor<I, O> processor;
+    @NonNull private final Processor<I, O> delegate;
 
     @Override
     public K getIdentifier() {
@@ -21,11 +21,11 @@ public class IdentifiedByConstProcessor<K, I, O> implements IdentifiedProcessor<
 
     @Override
     public Processed<O> process(I input) {
-        return processor.process(input);
+        return delegate.process(input);
     }
 
     @Override
     public String toString() {
-        return "Identified[" + identifier + "](" + processor + ")";
+        return "Identified[" + identifier + "](" + delegate + ")";
     }
 }

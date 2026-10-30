@@ -12,7 +12,7 @@ import ru.operation.util.function.ThrowableFunction;
 @RequiredArgsConstructor
 public class SimpleProcessor<I, O> extends AbstractProcessor<I, O> {
 
-    @NonNull private final Predicate<I> check;
+    @NonNull private final Predicate<I> predicate;
     @NonNull private final ThrowableFunction<I, O> transform;
 
     public SimpleProcessor(ThrowableFunction<I, O> transform) {
@@ -21,7 +21,7 @@ public class SimpleProcessor<I, O> extends AbstractProcessor<I, O> {
 
     @Override
     protected boolean check(I input) {
-        return check.test(input);
+        return predicate.test(input);
     }
 
     @Override
