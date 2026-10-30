@@ -38,7 +38,7 @@ public record Handled(ResultState state, Exception exception) {
         return state == ResultState.DONE;
     }
 
-    public Handled orElseThrow() {
+    public Handled throwIfError() {
         if (!isError()) {
             return this;
         }

@@ -30,22 +30,23 @@ public class ProcessedTest {
         assertTrue(error.isError());
         assertFalse(error.hasValue());
         assertEquals(ResultState.ERROR, error.state());
-        assertSame(error.exception(), assertThrows(ProcessorException.class, error::orElseThrow));
+        assertSame(error.exception(), assertThrows(ProcessorException.class, error::throwIfError));
     }
 
     @Test
-    public void orElseThrowKeepsRuntimeAndCheckedMessage() {
+    public void throwIfErrorKeepsRuntimeAndCheckedMessage() {
         IllegalStateException runtime = new IllegalStateException("boom");
         assertSame(
                 runtime,
                 assertThrows(
-                        IllegalStateException.class, () -> Processed.error(runtime).orElseThrow()));
+                        IllegalStateException.class,
+                        () -> Processed.error(runtime).throwIfError()));
 
         IOException checked = new IOException("disk");
         ProcessorException wrapped =
                 assertThrows(
                         ProcessorException.class,
-                        () -> Processed.<Integer>error(checked).orElseThrow());
+                        () -> Processed.<Integer>error(checked).throwIfError());
         assertEquals("disk", wrapped.getMessage());
         assertSame(checked, wrapped.getCause());
     }
@@ -65,7 +66,7 @@ public class ProcessedTest {
                             return Processed.of("next");
                         });
         assertEquals(1, calls.get());
-        assertEquals("next", chained.orElseThrow());
+        assertEquals("next", chained.throwIfError());
 
         assertFalse(Processed.<String>skipped().flatMap(v -> Processed.of("nope")).isDone());
     }
@@ -85,7 +86,7 @@ public class ProcessedTest {
 
         Processed<Integer> chained =
                 Processed.of("42").flatMap(new SimpleProcessor<>(Integer::valueOf));
-        assertEquals(42, chained.orElseThrow());
+        assertEquals(42, chained.throwIfError());
 
         assertTrue(
                 Processed.<String>error("x")

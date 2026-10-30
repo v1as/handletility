@@ -100,7 +100,8 @@ public class HandlerListModifiersTest {
         IOException checked = new IOException("disk");
         Handled checkedResult = new HandlerList<>(List.of(input -> error(checked))).handle("x");
         assertSame(checked, checkedResult.exception());
-        HandlerException wrapped = assertThrows(HandlerException.class, checkedResult::orElseThrow);
+        HandlerException wrapped =
+                assertThrows(HandlerException.class, checkedResult::throwIfError);
         assertEquals("disk", wrapped.getMessage());
         assertSame(checked, wrapped.getCause());
         assertEquals(0, wrapped.getSuppressed().length);
@@ -108,7 +109,7 @@ public class HandlerListModifiersTest {
         IllegalStateException runtime = new IllegalStateException("disk");
         Handled runtimeResult = new HandlerList<>(List.of(input -> error(runtime))).handle("x");
         assertSame(runtime, runtimeResult.exception());
-        assertSame(runtime, assertThrows(IllegalStateException.class, runtimeResult::orElseThrow));
+        assertSame(runtime, assertThrows(IllegalStateException.class, runtimeResult::throwIfError));
     }
 
     @Test
@@ -128,7 +129,7 @@ public class HandlerListModifiersTest {
         assertSame(first, aggregated.getCause());
         assertEquals("disk; bad", aggregated.getMessage());
         assertEquals(0, aggregated.getSuppressed().length);
-        assertSame(aggregated, assertThrows(HandlerException.class, result::orElseThrow));
+        assertSame(aggregated, assertThrows(HandlerException.class, result::throwIfError));
     }
 
     @Test

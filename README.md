@@ -62,7 +62,7 @@ Processor<String, String> doubleAsString =
 Handler<String> parseThenPersist =
         Processors.of(json -> gson.fromJson(json, Order.class)).thenHandle(persist);
 
-// Processed: map / flatMap / thenHandle / orElseThrow
+// Processed: map / flatMap / thenHandle / throwIfError
 Handled handled =
         parseAmount
                 .process(order)
@@ -70,7 +70,7 @@ Handled handled =
                 .flatMap(Processors.compose(cents -> taxService.apply(cents)).build())
                 .thenHandle(Handlers.compose((Integer c) -> charge(c)).build());
 
-Integer cents = parseAmount.process(order).orElseThrow();
+Integer cents = parseAmount.process(order).throwIfError();
 Optional<Integer> maybe = parseAmount.process(order).toOptional();
 ```
 
@@ -118,7 +118,7 @@ Processor<String, Integer> parse =
         new SimpleProcessor<>(s -> s.matches("\\d+"), Integer::valueOf);
 
 Processed<Integer> out = parse.process("42");
-Integer value = out.orElseThrow(); // 42
+Integer value = out.throwIfError(); // 42
 ```
 
 ### Именование, логирование, MDC (compose)

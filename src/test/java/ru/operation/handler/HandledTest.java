@@ -21,28 +21,28 @@ public class HandledTest {
     }
 
     @Test
-    public void orElseThrowOnError() {
+    public void throwIfErrorOnError() {
         HandlerException error = new HandlerException("boom");
         assertSame(
                 error,
-                assertThrows(HandlerException.class, () -> Handled.error(error).orElseThrow()));
+                assertThrows(HandlerException.class, () -> Handled.error(error).throwIfError()));
 
         IOException checked = new IOException("disk");
         HandlerException wrapped =
-                assertThrows(HandlerException.class, () -> Handled.error(checked).orElseThrow());
+                assertThrows(HandlerException.class, () -> Handled.error(checked).throwIfError());
         assertEquals("disk", wrapped.getMessage());
         assertSame(checked, wrapped.getCause());
     }
 
     @Test
-    public void orElseThrowPassesThroughOkAndSkipped() {
-        assertSame(Handled.ok(), Handled.ok().orElseThrow());
-        assertSame(Handled.skipped(), Handled.skipped().orElseThrow());
+    public void throwIfErrorPassesThroughOkAndSkipped() {
+        assertSame(Handled.ok(), Handled.ok().throwIfError());
+        assertSame(Handled.skipped(), Handled.skipped().throwIfError());
     }
 
     @Test
     public void thenGetSuppliesOnlyWhenHandled() {
-        assertEquals("ok", Handled.ok().thenGet(() -> "ok").orElseThrow());
+        assertEquals("ok", Handled.ok().thenGet(() -> "ok").throwIfError());
         assertTrue(Handled.ok().thenGet(() -> null).isDone());
         assertFalse(Handled.ok().thenGet(() -> null).hasValue());
 

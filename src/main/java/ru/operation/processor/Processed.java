@@ -86,7 +86,7 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
         return state == DONE;
     }
 
-    public T orElseThrow() {
+    public T throwIfError() {
         if (!isError()) {
             return value;
         }

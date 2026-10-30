@@ -49,7 +49,7 @@ public class ProcessorListTest {
                 new ProcessorList<String, String>(List.of(input -> error(checked))).process("x");
         assertSame(checked, checkedResult.exception());
         ProcessorException wrapped =
-                assertThrows(ProcessorException.class, checkedResult::orElseThrow);
+                assertThrows(ProcessorException.class, checkedResult::throwIfError);
         assertEquals("disk", wrapped.getMessage());
         assertSame(checked, wrapped.getCause());
         assertEquals(0, wrapped.getSuppressed().length);
@@ -58,7 +58,7 @@ public class ProcessorListTest {
         Processed<String> runtimeResult =
                 new ProcessorList<String, String>(List.of(input -> error(runtime))).process("x");
         assertSame(runtime, runtimeResult.exception());
-        assertSame(runtime, assertThrows(IllegalStateException.class, runtimeResult::orElseThrow));
+        assertSame(runtime, assertThrows(IllegalStateException.class, runtimeResult::throwIfError));
     }
 
     @Test
@@ -78,7 +78,7 @@ public class ProcessorListTest {
         assertSame(first, aggregated.getCause());
         assertEquals("disk; bad", aggregated.getMessage());
         assertEquals(0, aggregated.getSuppressed().length);
-        assertSame(aggregated, assertThrows(ProcessorException.class, result::orElseThrow));
+        assertSame(aggregated, assertThrows(ProcessorException.class, result::throwIfError));
     }
 
     @Test
