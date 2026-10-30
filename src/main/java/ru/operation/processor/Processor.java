@@ -42,16 +42,12 @@ public interface Processor<I, O> {
 
     /**
      * Keeps a successful output only if {@code predicate} holds; otherwise {@link
-     * Processed#skipped()}. Skip/error from this processor propagate unchanged.
+     * Processed#skipped()}. Skip/error from this processor propagate unchanged. Delegates to
+     * {@link Processed#filter}: an exception from {@code predicate} becomes {@link
+     * Processed#error(Exception)}.
      */
     default Processor<I, O> filter(Predicate<? super O> predicate) {
-        return input -> {
-            Processed<O> result = process(input);
-            if (result.isError() || result.isSkipped()) {
-                return result;
-            }
-            return predicate.test(result.value()) ? result : Processed.skipped();
-        };
+        return input -> process(input).filter(predicate);
     }
 
     /** Continues with a handler ({@link Processed#thenHandle}). */

@@ -80,6 +80,47 @@ public class ProcessedTest {
     }
 
     @Test
+    public void mapTurnsExceptionIntoError() {
+        IllegalStateException boom = new IllegalStateException("boom");
+        Processed<Integer> result =
+                Processed.of(1)
+                        .map(
+                                n -> {
+                                    throw boom;
+                                });
+
+        assertTrue(result.isError());
+        assertSame(boom, result.exception());
+    }
+
+    @Test
+    public void mapDoesNotCatchError() {
+        assertThrows(
+                AssertionError.class,
+                () ->
+                        Processed.of(1)
+                                .map(
+                                        n -> {
+                                            throw new AssertionError("boom");
+                                        }));
+    }
+
+    @Test
+    public void filterSkipsOnFalseAndTurnsExceptionIntoError() {
+        assertTrue(Processed.of(1).filter(n -> false).isSkipped());
+
+        IllegalStateException boom = new IllegalStateException("boom");
+        Processed<Integer> error =
+                Processed.of(1)
+                        .filter(
+                                n -> {
+                                    throw boom;
+                                });
+        assertTrue(error.isError());
+        assertSame(boom, error.exception());
+    }
+
+    @Test
     public void mapAndFlatMap() {
         assertEquals(4, Processed.of(2).map(n -> n * 2).value());
         assertFalse(Processed.<Integer>skipped().map(n -> n * 2).hasValue());
