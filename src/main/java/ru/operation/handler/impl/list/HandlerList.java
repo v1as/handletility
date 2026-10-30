@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.Singular;
 import ru.operation.Failed;
 import ru.operation.handler.AbstractHandler;
@@ -30,7 +31,7 @@ public class HandlerList<I> extends AbstractHandler<I> {
 
     @Builder
     public HandlerList(
-            @Singular List<? extends Handler<I>> handlers,
+            @NonNull @Singular List<? extends Handler<I>> handlers,
             @Singular Set<HandlerModifier> modifiers,
             Handler<Failed<I>> exceptionHandler) {
         this.handlers = handlers;

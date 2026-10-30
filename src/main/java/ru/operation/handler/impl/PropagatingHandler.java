@@ -1,7 +1,7 @@
 package ru.operation.handler.impl;
 
-import static ru.operation.util.Checks.notNull;
-
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
 import ru.operation.util.function.ThrowableConsumer;
@@ -10,13 +10,10 @@ import ru.operation.util.function.ThrowableConsumer;
  * Runs a consumer and lets exceptions escape, so an outer catching wrapper can map them. Unlike
  * {@link SimpleHandler}, this does not turn failures into {@link Handled#error(Exception)} itself.
  */
+@RequiredArgsConstructor
 public class PropagatingHandler<I> implements Handler<I> {
 
-    private final ThrowableConsumer<I> consumer;
-
-    public PropagatingHandler(ThrowableConsumer<I> consumer) {
-        this.consumer = notNull(consumer, "consumer");
-    }
+    @NonNull private final ThrowableConsumer<I> consumer;
 
     @Override
     public Handled handle(I input) {

@@ -1,6 +1,7 @@
 package ru.operation.processor.impl.wrap;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
@@ -9,8 +10,8 @@ import ru.operation.processor.Processor;
 @RequiredArgsConstructor
 public class NamedProcessor<I, O> implements Processor<I, O> {
 
-    @Getter private final String name;
-    private final Processor<I, O> delegate;
+    @NonNull @Getter private final String name;
+    @NonNull private final Processor<I, O> delegate;
 
     @Override
     public Processed<O> process(I input) {

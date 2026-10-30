@@ -1,8 +1,9 @@
 package ru.operation.processor.impl;
 
 import static ru.operation.processor.Processed.skipped;
-import static ru.operation.util.Checks.notNull;
 
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
 import ru.operation.util.function.ThrowablePredicate;
@@ -12,15 +13,11 @@ import ru.operation.util.function.ThrowablePredicate;
  * Processed#skipped()} and does not call the delegate. Exceptions from the predicate propagate
  * unchanged, including checked ones.
  */
+@RequiredArgsConstructor
 public class WhenProcessor<I, O> implements Processor<I, O> {
 
-    private final ThrowablePredicate<I> predicate;
-    private final Processor<I, O> delegate;
-
-    public WhenProcessor(ThrowablePredicate<I> predicate, Processor<I, O> delegate) {
-        this.predicate = notNull(predicate, "predicate");
-        this.delegate = notNull(delegate, "delegate");
-    }
+    @NonNull private final ThrowablePredicate<I> predicate;
+    @NonNull private final Processor<I, O> delegate;
 
     @Override
     public Processed<O> process(I input) {

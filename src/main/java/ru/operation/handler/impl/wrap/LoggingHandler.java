@@ -2,8 +2,8 @@ package ru.operation.handler.impl.wrap;
 
 import static org.slf4j.LoggerFactory.getLogger;
 import static ru.operation.util.Checks.isNullOrEmpty;
-import static ru.operation.util.Checks.notNull;
 
+import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.event.Level;
 import ru.operation.handler.Handled;
@@ -36,9 +36,10 @@ public class LoggingHandler<I> implements Handler<I> {
      * {@code loggerType} names the SLF4J logger; {@code null} uses the delegate's class. {@code
      * name} is an optional suffix.
      */
-    public LoggingHandler(Handler<I> delegate, Class<?> loggerType, String name, Level level) {
-        this.delegate = notNull(delegate, "delegate");
-        this.level = notNull(level, "level");
+    public LoggingHandler(
+            @NonNull Handler<I> delegate, Class<?> loggerType, String name, @NonNull Level level) {
+        this.delegate = delegate;
+        this.level = level;
         Class<?> type = loggerType != null ? loggerType : delegate.getClass();
         this.log =
                 isNullOrEmpty(name)

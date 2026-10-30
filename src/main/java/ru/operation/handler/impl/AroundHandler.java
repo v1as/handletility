@@ -1,6 +1,6 @@
 package ru.operation.handler.impl;
 
-import static ru.operation.handler.impl.AlwaysSkippedHandler.alwaysSkippedHandler;
+import static ru.operation.handler.Handled.skipped;
 
 import lombok.Builder;
 import lombok.NonNull;
@@ -24,9 +24,9 @@ public class AroundHandler<I> implements Handler<I> {
 
     public AroundHandler(
             Handler<I> beforeHandler, @NonNull Handler<I> handler, Handler<Handled> afterHandler) {
-        this.beforeHandler = beforeHandler != null ? beforeHandler : alwaysSkippedHandler();
+        this.beforeHandler = beforeHandler != null ? beforeHandler : input -> skipped();
         this.handler = handler;
-        this.afterHandler = afterHandler != null ? afterHandler : alwaysSkippedHandler();
+        this.afterHandler = afterHandler != null ? afterHandler : input -> skipped();
     }
 
     @Override

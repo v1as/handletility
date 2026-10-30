@@ -1,6 +1,6 @@
 package ru.operation.processor.impl;
 
-import static ru.operation.handler.impl.AlwaysSkippedHandler.alwaysSkippedHandler;
+import static ru.operation.handler.Handled.skipped;
 
 import lombok.Builder;
 import lombok.NonNull;
@@ -28,9 +28,9 @@ public class AroundProcessor<I, O> implements Processor<I, O> {
             Handler<I> beforeHandler,
             @NonNull Processor<I, O> processor,
             Handler<Processed<O>> afterHandler) {
-        this.beforeHandler = beforeHandler != null ? beforeHandler : alwaysSkippedHandler();
+        this.beforeHandler = beforeHandler != null ? beforeHandler : input -> skipped();
         this.processor = processor;
-        this.afterHandler = afterHandler != null ? afterHandler : alwaysSkippedHandler();
+        this.afterHandler = afterHandler != null ? afterHandler : input -> skipped();
     }
 
     @Override

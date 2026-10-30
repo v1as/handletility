@@ -1,6 +1,7 @@
 package ru.operation.handler.impl;
 
 import java.util.function.Predicate;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import ru.operation.handler.AbstractHandler;
 import ru.operation.handler.Handled;
@@ -9,11 +10,11 @@ import ru.operation.util.function.ThrowableConsumer;
 @RequiredArgsConstructor
 public class SimpleHandler<I> extends AbstractHandler<I> {
 
-    private final Predicate<I> check;
-    private final ThrowableConsumer<I> consumer;
+    @NonNull private final Predicate<I> check;
+    @NonNull private final ThrowableConsumer<I> consumer;
 
     public SimpleHandler(ThrowableConsumer<I> consumer) {
-        this(SimpleHandler::alwaysTrue, consumer);
+        this(input -> true, consumer);
     }
 
     @Override
@@ -25,9 +26,5 @@ public class SimpleHandler<I> extends AbstractHandler<I> {
     protected Handled handleInternal(I input) throws Exception {
         consumer.accept(input);
         return Handled.ok();
-    }
-
-    private static <T> boolean alwaysTrue(T item) {
-        return true;
     }
 }

@@ -4,6 +4,7 @@ import static ru.operation.handler.Handled.error;
 import static ru.operation.handler.Handled.ok;
 import static ru.operation.handler.Handled.skipped;
 
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
@@ -13,7 +14,7 @@ import ru.operation.processor.Processor;
 @RequiredArgsConstructor
 public class ProcessingHandler<I, O> implements Handler<I> {
 
-    private final Processor<I, O> processor;
+    @NonNull private final Processor<I, O> processor;
 
     @Override
     public Handled handle(I input) {

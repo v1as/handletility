@@ -1,5 +1,6 @@
 package ru.operation.processor.impl;
 
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import ru.operation.processor.AbstractProcessor;
 import ru.operation.processor.Processed;
@@ -12,8 +13,8 @@ import ru.operation.processor.Processor;
 @RequiredArgsConstructor
 public class MappedProcessor<T, I, O> extends AbstractProcessor<T, O> {
 
-    private final Processor<T, I> mapper;
-    private final Processor<I, O> delegate;
+    @NonNull private final Processor<T, I> mapper;
+    @NonNull private final Processor<I, O> delegate;
 
     @Override
     protected Processed<O> processInternal(T input) {

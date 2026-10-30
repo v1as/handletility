@@ -1,5 +1,6 @@
 package ru.operation.handler.impl;
 
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import ru.operation.handler.AbstractHandler;
 import ru.operation.handler.Handled;
@@ -13,8 +14,8 @@ import ru.operation.processor.Processor;
 @RequiredArgsConstructor
 public class MappedHandler<T, I> extends AbstractHandler<T> {
 
-    private final Processor<T, I> mapper;
-    private final Handler<I> delegate;
+    @NonNull private final Processor<T, I> mapper;
+    @NonNull private final Handler<I> delegate;
 
     @Override
     protected Handled handleInternal(T input) {

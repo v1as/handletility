@@ -5,6 +5,7 @@ import static ru.operation.util.Checks.notNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import lombok.NonNull;
 import org.slf4j.event.Level;
 import ru.operation.Failed;
 import ru.operation.MdcEntry;
@@ -37,7 +38,7 @@ public final class ProcessorCompose<I, O> {
     private ThrowablePredicate<I> when;
     private final List<MdcEntry<I>> mdcEntries = new ArrayList<>();
 
-    private ProcessorCompose(Processor<I, O> core) {
+    private ProcessorCompose(@NonNull Processor<I, O> core) {
         this.core = core;
     }
 
