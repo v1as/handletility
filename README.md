@@ -63,7 +63,7 @@ Processor<String, String> doubleAsString =
 Handler<String> parseThenPersist =
         Processors.of(json -> gson.fromJson(json, Order.class)).thenHandle(persist);
 
-// Processed: map / flatMap / thenHandle / throwIfError
+// Processed: map / flatMap / thenHandle / throwIfError / requireDone
 Handled handled =
         parseAmount
                 .process(order)
@@ -71,8 +71,7 @@ Handled handled =
                 .flatMap(Processors.compose(cents -> taxService.apply(cents)).build())
                 .thenHandle(Handlers.compose((Integer c) -> charge(c)).build());
 
-Integer cents = parseAmount.process(order).throwIfError();
-Optional<Integer> maybe = parseAmount.process(order).toOptional();
+Integer cents = parseAmount.process(order).requireDone();
 ```
 
 Слои compose при `build()`: `Mdc(Logging(Catching(When(Around(core)))))`. `When` и `Around` в стеке только если слот задан. Исключение из функционального core и из consumer-хука доходит до `Catching` и вашего `.onException` (исходный тип, в том числе checked), не throws. `Error` не ловится. `Handlers.of` / `Processors.of` и `Simple*` сами переводят исключение в `ERROR` и до `onException` не доходят — и как ядро, и как before/after. `ERROR` хука останавливает операцию результатом.
@@ -119,7 +118,7 @@ Processor<String, Integer> parse =
         new SimpleProcessor<>(s -> s.matches("\\d+"), Integer::valueOf);
 
 Processed<Integer> out = parse.process("42");
-Integer value = out.throwIfError(); // 42
+Integer value = out.requireDone(); // 42
 ```
 
 ### Именование, логирование, MDC (compose)

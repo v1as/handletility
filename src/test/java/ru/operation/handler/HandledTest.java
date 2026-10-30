@@ -2,6 +2,7 @@ package ru.operation.handler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -43,8 +44,22 @@ public class HandledTest {
     }
 
     @Test
+    public void requireDoneRejectsSkip() {
+        Handled.ok().requireDone();
+
+        HandlerException skipped =
+                assertThrows(HandlerException.class, Handled.skipped()::requireDone);
+        assertNull(skipped.getCause());
+
+        HandlerException error = new HandlerException("boom");
+        assertSame(
+                error,
+                assertThrows(HandlerException.class, () -> Handled.error(error).requireDone()));
+    }
+
+    @Test
     public void thenGetSuppliesOnlyWhenHandled() {
-        assertEquals("ok", Handled.ok().thenGet(() -> "ok").throwIfError());
+        assertEquals("ok", Handled.ok().thenGet(() -> "ok").requireDone());
         assertTrue(Handled.ok().thenGet(() -> null).isDone());
         assertFalse(Handled.ok().thenGet(() -> null).hasValue());
 
