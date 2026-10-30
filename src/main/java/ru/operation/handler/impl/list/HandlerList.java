@@ -1,7 +1,5 @@
 package ru.operation.handler.impl.list;
 
-import static ru.operation.ResultState.DONE;
-import static ru.operation.ResultState.ERROR;
 import static ru.operation.handler.Handled.error;
 import static ru.operation.handler.Handled.ok;
 import static ru.operation.handler.Handled.skipped;
@@ -57,17 +55,15 @@ public class HandlerList<I> extends AbstractHandler<I> {
             } catch (Exception e) {
                 handled = exceptionHandler.handle(new Failed<>(input, e));
             }
-            if (DONE.equals(handled.state())) {
+            if (handled.isHandled()) {
                 done = true;
                 if (!should(CONTINUE_ON_DONE)) {
                     return handled;
                 }
             }
-            if (ERROR.equals(handled.state())) {
+            if (handled.isError()) {
                 failed = true;
-                if (handled.exception() != null) {
-                    errors.add(handled.exception());
-                }
+                errors.add(handled.exception());
                 if (!should(CONTINUE_ON_ERROR)) {
                     return error(combine(errors));
                 }
@@ -83,9 +79,6 @@ public class HandlerList<I> extends AbstractHandler<I> {
     }
 
     private static Exception combine(List<Exception> errors) {
-        if (errors.isEmpty()) {
-            return null;
-        }
         if (errors.size() == 1) {
             return errors.get(0);
         }

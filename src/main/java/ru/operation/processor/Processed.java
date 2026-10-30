@@ -83,11 +83,8 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
 
     @SuppressWarnings("unchecked")
     public <O> Processed<O> flatMap(Processor<T, O> processor) {
-        if (isError()) {
+        if (isError() || isSkipped()) {
             return (Processed<O>) this;
-        }
-        if (isSkipped()) {
-            return skipped();
         }
         return processor.process(value);
     }

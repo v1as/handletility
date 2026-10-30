@@ -47,10 +47,9 @@ public class AroundHandler<I> implements Handler<I> {
     }
 
     private static void suppressCoreFailure(Exception hookFailure, Exception coreFailure) {
-        if (hookFailure == null || coreFailure == null || hookFailure == coreFailure) {
-            return;
+        if (hookFailure != coreFailure) {
+            hookFailure.addSuppressed(coreFailure);
         }
-        hookFailure.addSuppressed(coreFailure);
     }
 
     @Override

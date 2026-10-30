@@ -1,7 +1,5 @@
 package ru.operation.processor.impl.list;
 
-import static ru.operation.ResultState.DONE;
-import static ru.operation.ResultState.ERROR;
 import static ru.operation.processor.Processed.error;
 import static ru.operation.processor.Processed.skipped;
 import static ru.operation.processor.impl.list.ProcessorModifier.CONTINUE_ON_ERROR;
@@ -51,14 +49,12 @@ public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
                     "Processor '{}' has result '{}'",
                     processor.getClass().getSimpleName(),
                     processed);
-            if (DONE.equals(processed.state())) {
+            if (processed.isDone()) {
                 return processed;
             }
-            if (ERROR.equals(processed.state())) {
+            if (processed.isError()) {
                 failed = true;
-                if (processed.exception() != null) {
-                    errors.add(processed.exception());
-                }
+                errors.add(processed.exception());
                 if (!effectiveModifiers.contains(CONTINUE_ON_ERROR)) {
                     return error(combine(errors));
                 }
@@ -71,9 +67,6 @@ public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
     }
 
     private static Exception combine(List<Exception> errors) {
-        if (errors.isEmpty()) {
-            return null;
-        }
         if (errors.size() == 1) {
             return errors.get(0);
         }
