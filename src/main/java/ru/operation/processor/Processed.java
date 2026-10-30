@@ -6,6 +6,7 @@ import static ru.operation.ResultState.SKIPPED;
 
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import ru.operation.ResultState;
 import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
@@ -58,12 +59,21 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
         return Optional.ofNullable(value);
     }
 
+    /**
+     * Maps a successful payload. Skip and error propagate and {@code transform} is not called.
+     * {@code null} from {@code transform} is {@link #of(Object) DONE with a null payload}. An
+     * exception from {@code transform} is {@link #error(Exception)}. {@link Error} is not caught.
+     */
     @SuppressWarnings("unchecked")
     public <O> Processed<O> map(Function<T, O> transform) {
         if (isError() || isSkipped()) {
             return (Processed<O>) this;
         }
-        return new Processed<>(transform.apply(value), state, exception);
+        try {
+            return of(transform.apply(value));
+        } catch (Exception e) {
+            return error(e);
+        }
     }
 
     /** {@code true} when the payload is non-null ({@link ResultState#DONE} may still hold {@code null}). */
@@ -80,6 +90,23 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
             return skipped();
         }
         return processor.process(value);
+    }
+
+    /**
+     * Keeps a successful payload when {@code predicate} holds; otherwise {@link #skipped()}. Skip
+     * and error propagate and the predicate is not called. An exception from {@code predicate} is
+     * {@link #error(Exception)}. {@link Error} is not caught. A done {@code null} payload is passed
+     * to the predicate.
+     */
+    public Processed<T> filter(Predicate<? super T> predicate) {
+        if (isError() || isSkipped()) {
+            return this;
+        }
+        try {
+            return predicate.test(value) ? this : skipped();
+        } catch (Exception e) {
+            return error(e);
+        }
     }
 
     public Handled thenHandle(Handler<T> handler) {

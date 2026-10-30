@@ -2,6 +2,7 @@ package ru.operation.processor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -117,6 +118,36 @@ public class ProcessorThenTest {
         Processor<String, String> skipping = input -> Processed.skipped();
 
         assertTrue(skipping.or(skipping).process("x").isSkipped());
+    }
+
+    @Test
+    public void thenApplyTurnsExceptionIntoError() {
+        IllegalStateException boom = new IllegalStateException("boom");
+        Processed<Integer> result =
+                Processors.<String, Integer>of(s -> 1)
+                        .<Integer>thenApply(
+                                n -> {
+                                    throw boom;
+                                })
+                        .process("x");
+
+        assertTrue(result.isError());
+        assertSame(boom, result.exception());
+    }
+
+    @Test
+    public void filterTurnsExceptionIntoError() {
+        IllegalStateException boom = new IllegalStateException("boom");
+        Processed<Integer> result =
+                Processors.<String, Integer>of((String s) -> 1)
+                        .filter(
+                                n -> {
+                                    throw boom;
+                                })
+                        .process("x");
+
+        assertTrue(result.isError());
+        assertSame(boom, result.exception());
     }
 
     @Test
