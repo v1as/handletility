@@ -16,8 +16,9 @@ import ru.operation.processor.Processed;
 public class HandledTest {
 
     @Test
-    public void okIsHandled() {
-        assertTrue(Handled.ok().isHandled());
+    public void okIsDone() {
+        assertTrue(Handled.ok().isDone());
+        assertFalse(Handled.skipped().isDone());
         assertSame(Handled.ok(), Handled.ok());
     }
 

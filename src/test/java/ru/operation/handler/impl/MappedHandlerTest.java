@@ -20,7 +20,7 @@ public class MappedHandlerTest {
 
     @Test
     public void shouldHandle() {
-        assertTrue(handler.handle("2").isHandled());
+        assertTrue(handler.handle("2").isDone());
         assertEquals(2, sum[0]);
     }
 

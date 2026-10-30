@@ -14,7 +14,7 @@ public class NamedHandlerTest {
         var named = new NamedHandler<>("persist", core);
 
         assertEquals("persist", named.getName());
-        assertTrue(named.handle("ok").isHandled());
+        assertTrue(named.handle("ok").isDone());
         assertEquals("Named[persist](" + core + ")", named.toString());
     }
 }

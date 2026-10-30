@@ -21,7 +21,7 @@ public record Handled(ResultState state, Exception exception) {
     }
 
     private static final Handled OK = new Handled(ResultState.DONE, null);
-    public static final Handled SKIPPED = new Handled(ResultState.SKIPPED, null);
+    private static final Handled SKIPPED = new Handled(ResultState.SKIPPED, null);
 
     public static Handled error(String reason) {
         return error(new HandlerException(reason));
@@ -47,7 +47,7 @@ public record Handled(ResultState state, Exception exception) {
         return state == ResultState.SKIPPED;
     }
 
-    public boolean isHandled() {
+    public boolean isDone() {
         return state == ResultState.DONE;
     }
 
@@ -62,7 +62,7 @@ public record Handled(ResultState state, Exception exception) {
     }
 
     /**
-     * Continues with a value when this outcome is handled. Skip and error propagate. {@code null}
+     * Continues with a value when this outcome is done. Skip and error propagate. {@code null}
      * {@code null} from {@code next} is {@link Processed#of(Object) DONE with a null payload}; an
      * exception from {@code next} is {@link Processed#error(Exception)}.
      */

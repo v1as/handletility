@@ -32,7 +32,7 @@ public class MdcHandlerTest {
 
         Handled result = handler.handle("42");
 
-        assertTrue(result.isHandled());
+        assertTrue(result.isDone());
         assertEquals("req-42", seen.get());
         assertNull(MDC.get("requestId"));
     }
@@ -68,7 +68,7 @@ public class MdcHandlerTest {
                                     userId.set(MDC.get("userId"));
                                 }));
 
-        assertTrue(handler.handle("1").isHandled());
+        assertTrue(handler.handle("1").isDone());
         assertEquals("r-1", requestId.get());
         assertEquals("u-1", userId.get());
         assertNull(MDC.get("requestId"));
@@ -90,7 +90,7 @@ public class MdcHandlerTest {
                         .mdc("b", s -> "B")
                         .build();
 
-        assertTrue(handler.handle("x").isHandled());
+        assertTrue(handler.handle("x").isDone());
         assertEquals("A", a.get());
         assertEquals("B", b.get());
         assertTrue(handler.toString().contains("Mdc([a, b],"));
@@ -105,7 +105,7 @@ public class MdcHandlerTest {
                         String::toUpperCase,
                         new SimpleHandler<String>(input -> seen.set(MDC.get("requestId"))));
 
-        assertTrue(handler.handle("ab").isHandled());
+        assertTrue(handler.handle("ab").isDone());
         assertEquals("AB", seen.get());
     }
 }
