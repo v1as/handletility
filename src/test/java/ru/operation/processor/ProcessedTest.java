@@ -51,6 +51,34 @@ public class ProcessedTest {
     }
 
     @Test
+    public void doneNullPayloadChainsAndDiffersFromSkipped() {
+        Processed<String> doneNull = Processed.of("x").map(s -> (String) null);
+        assertTrue(doneNull.isDone());
+        assertFalse(doneNull.isSkipped());
+        assertFalse(doneNull.hasValue());
+
+        AtomicInteger calls = new AtomicInteger();
+        Processed<String> chained =
+                doneNull.flatMap(
+                        v -> {
+                            calls.incrementAndGet();
+                            return Processed.of("next");
+                        });
+        assertEquals(1, calls.get());
+        assertEquals("next", chained.orElseThrow());
+
+        assertFalse(Processed.<String>skipped().flatMap(v -> Processed.of("nope")).isDone());
+    }
+
+    @Test
+    public void simpleProcessorNullIsDone() {
+        Processed<String> result = new SimpleProcessor<String, String>(s -> null).process("in");
+        assertTrue(result.isDone());
+        assertFalse(result.isSkipped());
+        assertFalse(result.hasValue());
+    }
+
+    @Test
     public void mapAndFlatMap() {
         assertEquals(4, Processed.of(2).map(n -> n * 2).value());
         assertFalse(Processed.<Integer>skipped().map(n -> n * 2).hasValue());

@@ -1,7 +1,6 @@
 package ru.operation.processor.impl;
 
 import static ru.operation.processor.Processed.of;
-import static ru.operation.processor.Processed.skipped;
 
 import java.util.function.Predicate;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +25,6 @@ public class SimpleProcessor<I, O> extends AbstractProcessor<I, O> {
 
     @Override
     protected Processed<O> processInternal(I input) throws Exception {
-        O transformed = transform.apply(input);
-        return transformed == null ? skipped() : of(transformed);
+        return of(transform.apply(input));
     }
 }

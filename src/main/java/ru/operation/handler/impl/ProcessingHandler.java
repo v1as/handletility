@@ -21,7 +21,7 @@ public class ProcessingHandler<I, O> implements Handler<I> {
         if (processed.isError()) {
             return error(processed.exception());
         }
-        if (!processed.hasValue()) {
+        if (processed.isSkipped()) {
             return skipped();
         }
         return ok();

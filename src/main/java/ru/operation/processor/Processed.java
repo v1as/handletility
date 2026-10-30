@@ -11,8 +11,8 @@ import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
 
 /**
- * Result of a {@link Processor}: a value (when {@link ResultState#DONE}), or a skip/error without a
- * value.
+ * Result of a {@link Processor}. {@link ResultState#DONE} may carry a {@code null} payload; {@link
+ * #hasValue()} is {@code true} only for a non-null payload. Skip and error never carry a value.
  */
 public record Processed<T>(T value, ResultState state, Exception exception) {
 
@@ -42,13 +42,13 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
 
     @SuppressWarnings("unchecked")
     public <O> Processed<O> map(Function<T, O> transform) {
-        if (!hasValue()) {
+        if (isError() || isSkipped()) {
             return (Processed<O>) this;
         }
         return new Processed<>(transform.apply(value), state, exception);
     }
 
-    /** {@code true} when a value is present ({@code value != null}). */
+    /** {@code true} when the payload is non-null ({@link ResultState#DONE} may still hold {@code null}). */
     public boolean hasValue() {
         return value != null;
     }
@@ -58,7 +58,7 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
         if (isError()) {
             return (Processed<O>) this;
         }
-        if (!hasValue()) {
+        if (isSkipped()) {
             return skipped();
         }
         return processor.process(value);
@@ -68,7 +68,7 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
         if (isError()) {
             return Handled.error(exception);
         }
-        if (!hasValue()) {
+        if (isSkipped()) {
             return Handled.skipped();
         }
         return handler.handle(value);

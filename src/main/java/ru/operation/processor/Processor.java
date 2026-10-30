@@ -33,7 +33,7 @@ public interface Processor<I, O> {
     default Processor<I, O> filter(Predicate<? super O> predicate) {
         return input -> {
             Processed<O> result = process(input);
-            if (!result.hasValue()) {
+            if (result.isError() || result.isSkipped()) {
                 return result;
             }
             return predicate.test(result.value()) ? result : Processed.skipped();

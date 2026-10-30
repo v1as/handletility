@@ -11,10 +11,7 @@ public final class Processors {
 
     private Processors() {}
 
-    /**
-     * Bare processor from a {@link ThrowableFunction} (null result → {@link
-     * Processed#skipped()}).
-     */
+    /** Bare processor from a {@link ThrowableFunction} ({@code null} result → {@link Processed#of}). */
     public static <I, O> Processor<I, O> of(ThrowableFunction<I, O> transform) {
         return new SimpleProcessor<>(notNull(transform, "transform"));
     }
@@ -24,7 +21,7 @@ public final class Processors {
     }
 
     /**
-     * Compose entry for a function (null result → {@link Processed#skipped()}). Exceptions
+     * Compose entry for a function ({@code null} result → {@link Processed#of}). Exceptions
      * propagate to {@link ProcessorCompose#onException}; {@link #of} keeps them inside {@link
      * SimpleProcessor}.
      */

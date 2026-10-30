@@ -345,11 +345,14 @@ public class ProcessorComposeTest {
     }
 
     @Test
-    public void composeFunctionNullBecomesSkipped() {
+    public void composeFunctionNullIsDoneWithoutPayload() {
         ThrowableFunction<String, String> transform = s -> null;
         Processor<String, String> composed = Processors.compose(transform).build();
 
-        assertTrue(composed.process("x").isSkipped());
+        Processed<String> result = composed.process("x");
+        assertTrue(result.isDone());
+        assertFalse(result.isSkipped());
+        assertFalse(result.hasValue());
     }
 
     @Test

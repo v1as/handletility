@@ -1,6 +1,7 @@
 package ru.operation.handler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -42,7 +43,8 @@ public class HandledTest {
     @Test
     public void thenGetSuppliesOnlyWhenHandled() {
         assertEquals("ok", Handled.ok().thenGet(() -> "ok").orElseThrow());
-        assertTrue(Handled.ok().thenGet(() -> null).isSkipped());
+        assertTrue(Handled.ok().thenGet(() -> null).isDone());
+        assertFalse(Handled.ok().thenGet(() -> null).hasValue());
 
         assertTrue(Handled.skipped().thenGet(Assertions::fail).isSkipped());
 
