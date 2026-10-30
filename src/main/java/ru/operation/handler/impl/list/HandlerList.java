@@ -55,7 +55,7 @@ public class HandlerList<I> extends AbstractHandler<I> {
             } catch (Exception e) {
                 handled = exceptionHandler.handle(new Failed<>(input, e));
             }
-            if (handled.isHandled()) {
+            if (handled.isDone()) {
                 done = true;
                 if (!should(CONTINUE_ON_DONE)) {
                     return handled;

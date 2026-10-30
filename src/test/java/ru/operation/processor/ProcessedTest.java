@@ -139,7 +139,7 @@ public class ProcessedTest {
     public void thenHandleAndToOptional() {
         AtomicInteger sum = new AtomicInteger();
         Handled handled = Processed.of(3).thenHandle(new SimpleHandler<>(n -> sum.addAndGet(n)));
-        assertTrue(handled.isHandled());
+        assertTrue(handled.isDone());
         assertEquals(3, sum.get());
 
         assertTrue(Processed.<Integer>skipped().thenHandle(n -> Handled.ok()).isSkipped());

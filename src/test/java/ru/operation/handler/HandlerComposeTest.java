@@ -64,7 +64,7 @@ public class HandlerComposeTest {
                         .mdc("requestId", s -> "req-" + s)
                         .build();
 
-        assertTrue(composed.handle("7").isHandled());
+        assertTrue(composed.handle("7").isDone());
         assertEquals("req-7", seen.get());
     }
 
@@ -96,7 +96,7 @@ public class HandlerComposeTest {
                         .mdc("k", s -> "v")
                         .build();
 
-        assertTrue(composed.handle("x").isHandled());
+        assertTrue(composed.handle("x").isDone());
         assertEquals(List.of("before", "main", "after"), order);
         assertTrue(composed.toString().contains("Around("));
         assertTrue(composed.toString().contains("Catching("));
@@ -125,7 +125,7 @@ public class HandlerComposeTest {
                                 })
                         .build();
 
-        assertTrue(composed.handle("x").isHandled());
+        assertTrue(composed.handle("x").isDone());
         assertEquals(List.of("before", "main", "after"), order);
     }
 
@@ -152,7 +152,7 @@ public class HandlerComposeTest {
         Handler<String> composed =
                 Handlers.compose(raw).onException(failed -> Handled.ok()).build();
 
-        assertTrue(composed.handle("x").isHandled());
+        assertTrue(composed.handle("x").isDone());
     }
 
     @Test
@@ -185,7 +185,7 @@ public class HandlerComposeTest {
                                 })
                         .build();
 
-        assertTrue(composed.handle("x").isHandled());
+        assertTrue(composed.handle("x").isDone());
     }
 
     @Test
@@ -284,7 +284,7 @@ public class HandlerComposeTest {
                                 })
                         .build();
 
-        assertTrue(composed.handle("x").isHandled());
+        assertTrue(composed.handle("x").isDone());
         assertFalse(coreCalled.get());
         assertInstanceOf(IllegalStateException.class, seen.get());
         assertEquals("hook", seen.get().getMessage());
@@ -357,7 +357,7 @@ public class HandlerComposeTest {
                         .when(s -> "x".equals(s))
                         .build();
 
-        assertTrue(composed.handle("x").isHandled());
+        assertTrue(composed.handle("x").isDone());
         assertEquals(List.of("before", "main", "after"), order);
     }
 
@@ -377,7 +377,7 @@ public class HandlerComposeTest {
                                 })
                         .build();
 
-        assertTrue(composed.handle("x").isHandled());
+        assertTrue(composed.handle("x").isDone());
         assertInstanceOf(IOException.class, seen.get());
         assertEquals("pred", seen.get().getMessage());
     }
@@ -386,7 +386,7 @@ public class HandlerComposeTest {
     public void whenWithoutAroundStillWrapsCore() {
         Handler<String> composed = Handlers.compose((String s) -> {}).when(s -> true).build();
 
-        assertTrue(composed.handle("x").isHandled());
+        assertTrue(composed.handle("x").isDone());
         assertTrue(composed.toString().contains("Catching(When("));
         assertFalse(composed.toString().contains("Around("));
     }
@@ -403,7 +403,7 @@ public class HandlerComposeTest {
                         .when(s -> true)
                         .build();
 
-        assertTrue(composed.handle("x").isHandled());
+        assertTrue(composed.handle("x").isDone());
         assertEquals(List.of("main"), order);
     }
 
@@ -417,7 +417,7 @@ public class HandlerComposeTest {
         appender.start();
         root.addAppender(appender);
         try {
-            assertTrue(composed.handle("x").isHandled());
+            assertTrue(composed.handle("x").isDone());
         } finally {
             root.detachAppender(appender);
         }

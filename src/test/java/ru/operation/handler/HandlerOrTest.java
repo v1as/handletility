@@ -30,7 +30,7 @@ public class HandlerOrTest {
 
         Handled result = first.or(second).or(third).handle("marko");
 
-        assertTrue(result.isHandled());
+        assertTrue(result.isDone());
         assertEquals(List.of("first", "second"), seen);
     }
 
@@ -44,7 +44,7 @@ public class HandlerOrTest {
                 };
 
         Handler<String> done = input -> Handled.ok();
-        assertTrue(done.or(next).handle("x").isHandled());
+        assertTrue(done.or(next).handle("x").isDone());
         assertTrue(seen.isEmpty());
 
         Handler<String> failing = input -> Handled.error(new IllegalStateException("boom"));

@@ -34,7 +34,7 @@ public class HandlerListModifiersTest {
                                     return ok();
                                 }));
 
-        assertTrue(list.handle("x").isHandled());
+        assertTrue(list.handle("x").isDone());
         assertEquals(List.of("first"), called);
     }
 
@@ -56,7 +56,7 @@ public class HandlerListModifiersTest {
                         .modifier(HandlerModifier.CONTINUE_ON_DONE)
                         .build();
 
-        assertTrue(list.handle("x").isHandled());
+        assertTrue(list.handle("x").isDone());
         assertEquals(List.of("first", "second"), called);
     }
 

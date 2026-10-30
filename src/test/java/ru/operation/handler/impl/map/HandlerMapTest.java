@@ -55,10 +55,10 @@ public class HandlerMapTest {
         assertTrue(handler.handle("3").isSkipped());
         assertEquals(-1, store[0]);
 
-        assertTrue(handler.handle("1").isHandled());
+        assertTrue(handler.handle("1").isDone());
         assertEquals(1, store[0]);
 
-        assertTrue(handler.handle("2").isHandled());
+        assertTrue(handler.handle("2").isDone());
         assertEquals(2, store[0]);
     }
 
@@ -67,13 +67,13 @@ public class HandlerMapTest {
         HandlerMap<String, String> handler =
                 new HandlerMap<>(List.of(firstHandler, secondHandler), identityKey, forthHandler);
 
-        assertTrue(handler.handle("abc").isHandled());
+        assertTrue(handler.handle("abc").isDone());
         assertEquals(4, store[0]);
 
-        assertTrue(handler.handle("1").isHandled());
+        assertTrue(handler.handle("1").isDone());
         assertEquals(1, store[0]);
 
-        assertTrue(handler.handle("2").isHandled());
+        assertTrue(handler.handle("2").isDone());
         assertEquals(2, store[0]);
     }
 
@@ -112,7 +112,7 @@ public class HandlerMapTest {
                             return ok();
                         });
 
-        assertTrue(handler.handle("weird").isHandled());
+        assertTrue(handler.handle("weird").isDone());
         assertTrue(defaultCalled.get());
     }
 }

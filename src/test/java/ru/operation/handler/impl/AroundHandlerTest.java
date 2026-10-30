@@ -51,7 +51,7 @@ public class AroundHandlerTest {
     public void returnsMainHandlerResult() {
         Handler<String> around = AroundHandler.<String>builder().handler(input -> ok()).build();
 
-        assertTrue(around.handle("ok").isHandled());
+        assertTrue(around.handle("ok").isDone());
     }
 
     @Test

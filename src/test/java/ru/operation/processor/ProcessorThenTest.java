@@ -38,7 +38,7 @@ public class ProcessorThenTest {
                 Processors.<String, Integer>of(Integer::parseInt)
                         .thenHandle(Handlers.of(seen::add));
 
-        assertTrue(handler.handle("7").isHandled());
+        assertTrue(handler.handle("7").isDone());
         assertEquals(List.of(7), seen);
     }
 
