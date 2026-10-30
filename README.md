@@ -1,257 +1,273 @@
 # handletility
 
-Java-библиотека для построения **обработчиков** (`Handler`) и **преобразователей** (`Processor`) с единообразной моделью результата: `DONE` / `SKIPPED` / `ERROR`.
+`Handler<I>` выполняет действие над входом: списывает платёж, сохраняет заказ, отправляет письмо. Назад приходит исход этого действия — `Handled`.
 
-Подходит для пайплайнов команд, маршрутизации по ключу, цепочек side-effect’ов и трансформаций без разрастания `if/else` и try/catch.
+`Processor<I, O>` по входу считает значение: число из строки, сумму из заказа. Назад приходит `Processed<O>`: исход и, когда расчёт удался, само значение.
 
-## Демо
+Исход и у действия, и у расчёта — одно из трёх состояний.
 
-Один сценарий — почти весь синтаксис API:
+**Done** — шаг завершился. У процессора есть payload, и этот payload может быть `null`.
 
-```java
-record Order(String id, String userId, String payload) {}
+**Skipped** — шаг к этому входу не относится. Тот же вход может уйти другому шагу.
 
-// Function → ProcessorCompose: имя в логах, MDC, hooks, recover
-Processor<Order, Integer> parseAmount =
-        Processors.compose((Order o) -> Integer.valueOf(o.payload()))
-                .named("parseAmount")
-                .logging(Level.DEBUG)
-                .mdc("orderId", Order::id)
-                .mdc("userId", Order::userId)
-                .when(o -> o.payload() != null) // false → SKIPPED, hooks не бегут
-                .before(o -> metrics.mark("parse.start"))
-                .after(result -> metrics.mark(result.isDone() ? "parse.ok" : "parse.fail"))
-                .onException(failed -> Processed.of(0)) // recover
-                .build();
+**Error** — шаг сломался. Исключение лежит на результате.
 
-// Consumer → HandlerCompose: тот же стек обёрток
-Handler<Order> persist =
-        Handlers.compose((Order o) -> repository.save(o))
-                .named("persist")
-                .logging()
-                .mdc("orderId", Order::id)
-                .before(audit::before)
-                .after(handled -> audit.after(handled))
-                .onException(failed -> Handled.error(failed.exception()))
-                .build();
-
-// Цепочка handler’ов + модификаторы остановки
-Handler<Order> pipeline =
-        HandlerList.<Order>builder()
-                .handler(persist)
-                .handler(Handlers.compose(o -> notify(o)).build())
-                .modifier(HandlerModifier.CONTINUE_ON_DONE)
-                .modifier(HandlerModifier.CONTINUE_ON_ERROR)
-                .build();
-
-// Маршрутизация по ключу
-Handler<Order> router =
-        HandlerMap.<String, Order>handlerMap()
-                .handler(new IdentifiedByConstHandler<>("create", Handlers.compose(this::create).build()))
-                .handler(new IdentifiedByConstHandler<>("cancel", Handlers.compose(this::cancel).build()))
-                .keyExtractor(new SimpleProcessor<>(Order::payload))
-                .defaultHandler(o -> Handled.skipped())
-                .build();
-
-// Processor chain: of / thenCompose / thenApply / or / thenHandle
-// then* и filter пробрасывают skip/error; or на SKIPPED пробует следующий процессор на том же входе
-Processor<String, String> doubleAsString =
-        Processors.of(Integer::parseInt)
-                .thenCompose(Processors.of(n -> n * 2))
-                .thenApply(Object::toString);
-
-Handler<String> parseThenPersist =
-        Processors.of(json -> gson.fromJson(json, Order.class)).thenHandle(persist);
-
-// Processed: map / flatMap / thenHandle / throwIfError / requireDone
-Handled handled =
-        parseAmount
-                .process(order)
-                .map(amount -> amount * 100)
-                .flatMap(Processors.compose(cents -> taxService.apply(cents)).build())
-                .thenHandle(Handlers.compose((Integer c) -> charge(c)).build());
-
-Integer cents = parseAmount.process(order).requireDone();
-```
-
-Слои compose при `build()`: `Mdc(Logging(Catching(When(Around(core)))))`. `When` и `Around` в стеке только если слот задан. Исключение из функционального core и из consumer-хука доходит до `Catching` и вашего `.onException` (исходный тип, в том числе checked), не throws. `Error` не ловится. `Handlers.of` / `Processors.of` и `Simple*` сами переводят исключение в `ERROR` и до `onException` не доходят — и как ядро, и как before/after. `ERROR` хука останавливает операцию результатом.
-
-## Требования
-
-- Java 17+
-- Gradle 8.8 (wrapper в репозитории)
-
-## Подключение
-
-Maven Central (`groupId` = `io.github.v1as`):
+Java 17. На classpath нужен SLF4J.
 
 ```gradle
 dependencies {
-    implementation 'io.github.v1as:handletility:0.0.1'
+    implementation 'io.github.v1as:handletility:0.0.5'
 }
 ```
 
-Локально:
-
-```bash
-./gradlew publishToMavenLocal
+```xml
+<dependency>
+  <groupId>io.github.v1as</groupId>
+  <artifactId>handletility</artifactId>
+  <version>0.0.5</version>
+</dependency>
 ```
 
-## Быстрый старт
-
-### Handler
+## Один вызов — три ответа
 
 ```java
-Handler<String> print =
-        new SimpleHandler<>(s -> !s.isBlank(), System.out::println);
+record Payment(String method, int cents) {}
 
-Handled result = print.handle("hello");
-// DONE → Handled.ok()
-// не подходит check → SKIPPED
-// исключение → ERROR
+Handler<Payment> card =
+        new SimpleHandler<>(
+                payment -> "card".equals(payment.method()),
+                payment -> {
+                    if (payment.cents() < 0) {
+                        throw new IllegalArgumentException("negative");
+                    }
+                    gateway.charge(payment);
+                });
+
+card.handle(new Payment("card", 500));    // done
+card.handle(new Payment("wallet", 500));  // skipped
+card.handle(new Payment("card", -1));     // error, исключение лежит на Handled
 ```
 
-### Processor
-
 ```java
-Processor<String, Integer> parse =
-        new SimpleProcessor<>(s -> s.matches("\\d+"), Integer::valueOf);
+Processor<String, Integer> cents =
+        new SimpleProcessor<>(
+                raw -> !raw.isBlank(),
+                raw -> Integer.valueOf(raw) * 100);
 
-Processed<Integer> out = parse.process("42");
-Integer value = out.requireDone(); // 42
+cents.process("42");    // done, 4200
+cents.process("   ");   // skipped
+cents.process("nope");  // error
 ```
 
-### Именование, логирование, MDC (compose)
+`SimpleHandler` и `SimpleProcessor` кладут брошенное исключение в error. `Handlers.of` и `Processors.of` — то же самое, с проверкой, которая всегда проходит.
 
-Порядок слоёв при `build()` фиксирован: `Mdc(Logging(Catching(When(Around(core)))))` — MDC снаружи logging, чтобы в логах был контекст; Catching всегда есть и ловит `Exception` (не `Error`). `When` стоит внутри Catching и снаружи Around: предикат ложен → `SKIPPED`, before/after и core не вызываются. `When`, `Around`, logging и MDC опускаются, если слот не задан. Результат — `Handler` / `Processor`.
-
-`.named(...)` — опциональный суффикс логгера. Сам логгер — класс ядра, переданного в `compose`, например `CreateNoteCommandHandler[note]`. Если имя не задано, суффикс не добавляется.  
-`.when(ThrowablePredicate)` — входной guard; повторный вызов затирает предыдущий. Исключение из предиката, в том числе checked, идёт в `.onException` исходным типом. Это не `Processor.filter`: `filter` режет успешный выход.  
-`.before(...)` / `.after(...)` — hooks вокруг core (внутри `When`): before получает input, after — результат (`Handled` / `Processed`). `DONE` и `SKIPPED` на результат ядра не влияют, `SKIPPED` у before ядро не отменяет. `ERROR` хука останавливает операцию и возвращается как результат: провал before не вызывает ядро и after; провал after не отдаёт успешный результат ядра. Если ядро уже завершилось ошибкой, наружу идёт ошибка after, а исключение ядра подавляется на ней. Исключение из consumer-хука уходит в `.onException`.  
-`.onException(...)` — кастомный маппинг `Failed` → результат (можно recover в `ok()` / успешный `Processed`); без вызова — `LoggingException*` (warn + `ERROR`). Для `compose(функция)` и consumer-хуков исключение доходит сюда. `of()` и явный `Simple*` держат свою границу `ERROR` и этот слот не вызывают.
-
-Цепочка типов — на самом `Processor` (не в compose): `Processors.of(fn).thenCompose(...).thenApply(...).filter(...).or(...).thenHandle(...)`. `thenApply`, `thenCompose`, `filter` и `thenHandle` пробрасывают skip/error, как у `Processed`; `filter` при неуспехе предиката даёт `SKIPPED`. `or` — следующая попытка на том же входе, если текущий шаг вернул `SKIPPED`: `DONE` и `ERROR` цепочку останавливают, как `ProcessorList` без модификаторов.
+## Skipped отдаёт тот же вход следующему кандидату
 
 ```java
-Handler<Request> traced = Handlers.compose(delegate) // или Consumer<Request>
-        .named("persist")             // суффикс логгера; без него суффикса нет
-        .logging()                    // DEBUG по умолчанию; или .logging(Level.TRACE)
-        .mdc("requestId", Request::id)
-        .mdc("userId", Request::userId)
-        .when(req -> req.id() != null) // false → SKIPPED, hooks не бегут
-        .before(auditBefore)          // Handler или Consumer
-        .after(auditAfter)            // Handler<Handled> или Consumer<Handled>
-        .onException(failed -> Handled.error(failed.exception())) // опционально
-        .build();
+Handler<Payment> wallet =
+        new SimpleHandler<>(
+                payment -> "wallet".equals(payment.method()),
+                payment -> wallets.draw(payment));
+
+Handler<Payment> charge = card.or(wallet);
+
+charge.handle(new Payment("wallet", 500)); // card пропустил, wallet списал
+charge.handle(new Payment("card", 500));   // card завершился
+charge.handle(new Payment("card", -1));    // ошибка card — результат всего charge
+charge.handle(new Payment("cash", 500));   // skipped: пропустили оба
 ```
 
-Для кастомного `Processor` (SKIP/ERROR): `new MdcEntry<>("key", processor)` или `.mdc(entry)`.
+Done и error заканчивают цепочку. Цепочка остаётся skipped, только когда пропустил каждый кандидат. Следующий кандидат вызывается после skip.
 
-Аналогично для процессоров (`Function` / `Processor` на входе, hooks — `Handler`/`Consumer`):
+`Processor.or` устроен так же:
 
 ```java
-Processor<String, String> pipeline =
-        Processors.of(Integer::parseInt)
-                .thenCompose(Processors.of(n -> n * 2))
-                .thenApply(Object::toString);
+Processor<String, Integer> decimal =
+        raw ->
+                raw.chars().allMatch(Character::isDigit)
+                        ? Processed.of(Integer.parseInt(raw))
+                        : Processed.skipped();
 
-Processor<String, String> traced =
-        Processors.compose(pipeline)
-                .before(pre)
-                .after(post)                  // Handler|Consumer<Processed<?>>
-                .onException(failed -> Processed.error(failed.exception()))
-                .logging()
+Processor<String, Integer> hex =
+        raw ->
+                raw.startsWith("0x")
+                        ? Processed.of(Integer.parseInt(raw.substring(2), 16))
+                        : Processed.skipped();
+
+Processor<String, Integer> amount = decimal.or(hex);
+
+amount.process("42");    // 42
+amount.process("0x2A");  // 42
+amount.process("nope");  // skipped
+```
+
+## Дальше проходит только done
+
+```java
+Processor<String, Integer> positive =
+        Processors.of(Integer::parseInt).filter(n -> n > 0);
+
+Processor<String, String> printed = positive.thenApply(n -> Integer.toString(n * 2));
+
+printed.process("21");    // done, "42"
+printed.process("0");     // skipped: filter закрыл цепочку
+printed.process("nope");  // error: предикат filter не вызывается
+
+Handler<String> save = printed.thenHandle(Handlers.of(repository::save));
+save.handle("0");         // skipped
+```
+
+`map`, `flatMap`, `filter`, `thenApply`, `thenCompose` и `thenHandle` проносят skip и error дальше и не вызывают следующий шаг.
+
+Done с `null` вперёд идёт. Skip — нет:
+
+```java
+Processor<Order, String> code = order -> Processed.of(order.couponCode());
+Processor<Order, Integer> discount =
+        code.thenApply(coupon -> coupon == null ? 0 : rates.get(coupon));
+// couponCode() == null → done, шаг со ставкой выполняется и возвращает 0
+
+Processor<Order, String> presentCode =
+        order ->
+                order.couponCode() == null
+                        ? Processed.skipped()
+                        : Processed.of(order.couponCode());
+Processor<Order, Integer> discountIfPresent = presentCode.thenApply(rates::get);
+// couponCode() == null → skipped, rates.get не вызывается
+```
+
+Ответ действия можно продолжить значением:
+
+```java
+Processed<Receipt> receipt =
+        Handlers.of(orders::save)
+                .handle(order)
+                .thenGet(() -> receipts.issue(order));
+// save бросил → error, issue не вызывается
+```
+
+## Несколько обработчиков — одна политика
+
+По умолчанию список останавливается на первом done и на первом error. Skip переходит к следующему.
+
+```java
+Handler<Event> dispatch =
+        HandlerList.<Event>builder()
+                .handler(security)
+                .handler(notify)
+                .handler(index)
                 .build();
 ```
 
-Обёртки вручную: `IdentifiedByConst*`, `Around*`, `Catching*`, `When*`, `Propagating*`, `Named*` (только для логов), `Logging*`, `Mdc*` / `MdcEntry`.
-
-### Цепочка handler’ов
+`CONTINUE_ON_DONE` не даёт done остановить список: это рассылка действий. `CONTINUE_ON_ERROR` не даёт error остановить список. С обоими выполняется каждый обработчик. Если среди ответов был сбой, итогом становится error: одно исключение возвращается как есть, несколько собираются в одно.
 
 ```java
-Handler<String> pipeline = HandlerList.<String>builder()
-        .handler(new SimpleHandler<>(log::info))
-        .handler(new SimpleHandler<>(this::persist))
-        .modifier(HandlerModifier.CONTINUE_ON_DONE)   // не останавливаться на первом DONE
-        .modifier(HandlerModifier.CONTINUE_ON_ERROR)  // собирать ошибки дальше
-        .build();
+Handler<Event> fanout =
+        HandlerList.<Event>builder()
+                .handler(audit)
+                .handler(notify)
+                .handler(index)
+                .modifier(HandlerModifier.CONTINUE_ON_DONE)
+                .modifier(HandlerModifier.CONTINUE_ON_ERROR)
+                .build();
 ```
 
-По умолчанию `HandlerList` останавливается на первом `DONE` и на первом `ERROR`.
-
-`Handler.or` — следующая попытка на том же входе при `SKIPPED`. `DONE` и `ERROR` останавливают цепочку, как список без модификаторов. `CONTINUE_ON_DONE` и `CONTINUE_ON_ERROR` остаются только у `HandlerList`.
+`ProcessorList` по умолчанию — это `or` для набора: результатом становится первое done-значение, skip пробует следующий процессор, error останавливает список, пока не задан `CONTINUE_ON_ERROR`. `combiner` проходит все процессоры и сливает payload всех done слева направо; skip в склейку не входит, один done возвращается как есть. `CONTINUE_ON_ERROR` и в свёртке только про ошибку: обход продолжается, но если ошибка была, итогом становится error без слитого значения.
 
 ```java
-Handler<String> firstApplicable =
-        ((Handler<String>) input -> input.isBlank() ? Handled.skipped() : Handled.ok())
-                .or(Handlers.of(log::info));
+Processor<User, List<String>> validate =
+        ProcessorList.<User, List<String>>processorList()
+                .processor(this::checkName)
+                .processor(this::checkAge)
+                .combiner(
+                        (left, right) -> {
+                            List<String> all = new ArrayList<>(left);
+                            all.addAll(right);
+                            return all;
+                        })
+                .build();
 ```
 
-### Маршрутизация по ключу
+## Ключ выбирает операцию
 
 ```java
-Handler<Command> router = HandlerMap.<String, Command>handlerMap()
-        .handler(new HelloCommand())   // IdentifiedHandler<"hello", Command>
-        .handler(new ByeCommand())
-        .keyExtractor(new SimpleProcessor<>(Command::name))
-        .defaultHandler(cmd -> Handled.skipped())
-        .build();
+record Command(String name) {}
+
+Handler<Command> commands =
+        HandlerMap.<String, Command>handlerMap()
+                .handler(Handlers.of(this::create).identifiedBy("create"))
+                .handler(Handlers.of(this::cancel).identifiedBy("cancel"))
+                .keyExtractor(
+                        command ->
+                                command.name() == null
+                                        ? Processed.error("no name")
+                                        : Processed.of(command.name()))
+                .defaultHandler(command -> Handled.skipped())
+                .build();
+
+commands.handle(new Command("create")); // create
+commands.handle(new Command("rename")); // defaultHandler → skipped
+commands.handle(new Command(null));     // error ключа
 ```
 
-Аналог для процессоров — `ProcessorMap` + `IdentifiedProcessor`.
+На неизвестное имя вызывается `defaultHandler`: в примере он отвечает skipped. Если чтение ключа закончилось error, этот error становится результатом вызова, а `defaultHandler` не вызывается.
 
-### Цепочка Processor / Handler
+`ProcessorMap` устроен так же и выбирает `IdentifiedProcessor`. Ключ задаётся через `Processor.identifiedBy`.
+
+## Обвязка остаётся снаружи функции
 
 ```java
-// of + then* / filter: мягкая семантика (skip/error пробрасываются; filter → SKIPPED)
-// or: тот же вход, пока SKIPPED; первый DONE или ERROR останавливает цепочку
-Processor<String, Integer> doubled =
-        Processors.of(Integer::parseInt)
-                .filter(n -> n > 0)
-                .thenCompose(Processors.of(n -> n * 2));
+record Order(String id, String rawAmount) {}
 
-Processor<String, Integer> positiveOrZero =
-        Processors.<String, Integer>of(Integer::parseInt)
-                .filter(n -> n > 0)
-                .or(input -> Processed.of(0));
+Processor<Order, Integer> readAmount =
+        Processors.compose((Order order) -> Integer.valueOf(order.rawAmount()))
+                .named("amount")
+                .logging()
+                .mdc("orderId", Order::id)
+                .when(order -> order.rawAmount() != null)
+                .before(order -> metrics.mark("amount.start"))
+                .after(result -> metrics.mark(result.state().name()))
+                .onException(failed -> Processed.of(0))
+                .build();
 
-Handler<String> asIntThenHandle =
-        Processors.of(Integer::valueOf).thenHandle(Handlers.of(n -> sum.addAndGet(n)));
-
-// Явные обёртки с тем же контрактом
-Handler<String> mapped =
-        new MappedHandler<>(Processors.of(Integer::valueOf), Handlers.of(n -> sum.addAndGet(n)));
+readAmount.process(new Order("a1", null));   // skipped: when остановил вызов
+readAmount.process(new Order("a1", "15"));   // done, 15
+readAmount.process(new Order("a1", "nope")); // done, 0 — восстановил onException
 ```
 
-`Processed` умеет продолжать цепочку:
+`when` — страж на входе. Ложный страж — это skip: before, after и ядро не выполняются. `filter` — страж на успешном выходе.
+
+`onException` получает исключение функции и может вернуть done. Когда функция бросает, `after` не выполняется.
+
+`before` и `after` — тоже `Handler`. Их done и skipped оставляют результат ядра на месте. Их error становится результатом операции, и сломанный `before` ядро не запускает.
+
+`named` добавляет суффикс к имени логгера, `logging` пишет исход вызова, `mdc` на время вызова кладёт id заказа в MDC.
+
+У `Processors.of` брошенное исключение уже записано как error, поэтому восстановление живёт на `compose`.
+
+## На границе три состояния ещё различимы
 
 ```java
-Processed.of(value)
-        .flatMap(nextProcessor)
-        .thenHandle(sideEffectHandler);
+Processed<Integer> result = readAmount.process(order);
+
+result.isDone();     // payload — result.value(), в том числе null
+result.hasValue();   // true только у непустого payload
+result.isSkipped();
+result.isError();    // result.exception()
+
+Integer cents = readAmount.process(order).requireDone();
 ```
 
-### Before / after
+`requireDone()` возвращает payload done, включая `null`. Error бросается: runtime — как есть, checked оборачивается в `ProcessorException`. Skip бросает `ProcessorException("skipped")` без cause: значения нет.
 
-`AroundHandler` / `AroundProcessor` — before(input) → main → after(result). `DONE` и `SKIPPED` хука результат main не подменяют. `ERROR` хука возвращается как результат операции. Исключение хука пробрасывается как есть. Hooks — `Handler` (у processor тоже).
+`throwIfError()` бросает эту ошибку и возвращает тот же `Processed` и для done, и для skipped.
 
-## Структура пакета
-
+```java
+Handled handled = charge.handle(payment);
+handled.throwIfError(); // при done и skipped возвращается тот же Handled
+handled.requireDone();  // при done возвращается; skip и error бросают
 ```
-ru.operation
-├── handler/          # Handler, Handled, AbstractHandler, Handlers, HandlerCompose
-│   └── impl/
-│       ├── wrap/     # NamedHandler, LoggingHandler
-│       ├── list/     # HandlerList, modifiers
-│       └── map/      # HandlerMap
-├── processor/        # Processor, Processed, AbstractProcessor, Processors, ProcessorCompose
-│   └── impl/
-│       ├── wrap/     # NamedProcessor, LoggingProcessor
-│       ├── list/     # ProcessorList
-│       └── map/      # ProcessorMap
-├── identifier/       # IdentifyProcessor, Identified
-└── util/             # Checks, Colls, ThrowableConsumer
-```
+
 ## Лицензия
 
 [Apache License 2.0](LICENSE)
