@@ -62,6 +62,17 @@ public record Handled(ResultState state, Exception exception) {
     }
 
     /**
+     * Requires {@link ResultState#DONE}. {@code ERROR} is thrown via {@link #throwIfError()}. {@code
+     * SKIPPED} throws {@link HandlerException} without a cause.
+     */
+    public void requireDone() {
+        throwIfError();
+        if (isSkipped()) {
+            throw new HandlerException("skipped");
+        }
+    }
+
+    /**
      * Continues with a value when this outcome is done. Skip and error propagate. {@code null}
      * {@code null} from {@code next} is {@link Processed#of(Object) DONE with a null payload}; an
      * exception from {@code next} is {@link Processed#error(Exception)}.

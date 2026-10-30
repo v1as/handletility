@@ -4,7 +4,6 @@ import static ru.operation.ResultState.DONE;
 import static ru.operation.ResultState.ERROR;
 import static ru.operation.ResultState.SKIPPED;
 
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import ru.operation.ResultState;
@@ -53,10 +52,6 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
     @SuppressWarnings("unchecked")
     public static <O> Processed<O> skipped() {
         return (Processed<O>) SKIPPED_RESULT;
-    }
-
-    public Optional<T> toOptional() {
-        return Optional.ofNullable(value);
     }
 
     /**
@@ -128,14 +123,31 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
         return state == DONE;
     }
 
-    public T throwIfError() {
+    /**
+     * Throws on {@code ERROR} (runtime as-is, checked wrapped in {@link ProcessorException}). Done and
+     * skip are returned as this result.
+     */
+    public Processed<T> throwIfError() {
         if (!isError()) {
-            return value;
+            return this;
         }
         if (exception instanceof RuntimeException runtime) {
             throw runtime;
         }
         throw new ProcessorException(exception.getMessage(), exception);
+    }
+
+    /**
+     * Returns the payload of a {@link ResultState#DONE} result, including {@code null}. {@code ERROR}
+     * is thrown via {@link #throwIfError()}. {@code SKIPPED} throws {@link ProcessorException} without
+     * a cause.
+     */
+    public T requireDone() {
+        throwIfError();
+        if (isSkipped()) {
+            throw new ProcessorException("skipped");
+        }
+        return value;
     }
 
     @Override

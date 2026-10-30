@@ -2,6 +2,7 @@ package ru.operation.processor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -66,7 +67,7 @@ public class ProcessedTest {
                             return Processed.of("next");
                         });
         assertEquals(1, calls.get());
-        assertEquals("next", chained.throwIfError());
+        assertEquals("next", chained.requireDone());
 
         assertFalse(Processed.<String>skipped().flatMap(v -> Processed.of("nope")).isDone());
     }
@@ -127,7 +128,7 @@ public class ProcessedTest {
 
         Processed<Integer> chained =
                 Processed.of("42").flatMap(new SimpleProcessor<>(Integer::valueOf));
-        assertEquals(42, chained.throwIfError());
+        assertEquals(42, chained.requireDone());
 
         assertTrue(
                 Processed.<String>error("x")
@@ -136,15 +137,39 @@ public class ProcessedTest {
     }
 
     @Test
-    public void thenHandleAndToOptional() {
+    public void thenHandle() {
         AtomicInteger sum = new AtomicInteger();
         Handled handled = Processed.of(3).thenHandle(new SimpleHandler<>(n -> sum.addAndGet(n)));
         assertTrue(handled.isDone());
         assertEquals(3, sum.get());
 
         assertTrue(Processed.<Integer>skipped().thenHandle(n -> Handled.ok()).isSkipped());
-        assertEquals("a", Processed.of("a").toOptional().orElseThrow());
-        assertTrue(Processed.<String>skipped().toOptional().isEmpty());
+    }
+
+    @Test
+    public void throwIfErrorPassesThroughDoneAndSkipped() {
+        Processed<String> done = Processed.of("a");
+        assertSame(done, done.throwIfError());
+
+        Processed<String> doneNull = Processed.of((String) null);
+        assertSame(doneNull, doneNull.throwIfError());
+        assertNull(doneNull.value());
+
+        assertSame(Processed.<String>skipped(), Processed.<String>skipped().throwIfError());
+    }
+
+    @Test
+    public void requireDoneReturnsPayloadAndRejectsSkip() {
+        assertEquals("a", Processed.of("a").requireDone());
+        assertNull(Processed.of((String) null).requireDone());
+
+        ProcessorException skipped =
+                assertThrows(
+                        ProcessorException.class, () -> Processed.<String>skipped().requireDone());
+        assertNull(skipped.getCause());
+
+        Processed<String> error = Processed.error("disk");
+        assertSame(error.exception(), assertThrows(ProcessorException.class, error::requireDone));
     }
 
     @Test
