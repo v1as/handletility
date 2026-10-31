@@ -64,8 +64,9 @@ public final class ProcessorCompose<I, O> {
     /**
      * Skips before, after and the core when {@code predicate} is false ({@link
      * Processed#skipped()}). A later call replaces the previous predicate. A predicate exception,
-     * including a checked one, reaches {@link #onException} as the original type. This is an input
-     * guard; {@link Processor#filter} checks a successful output.
+     * including a checked one, reaches {@link #onException} as the original type. {@link
+     * Processors#filter} starts a chain from the input and keeps that input as payload. {@link
+     * Processor#filter} checks a successful output.
      */
     public ProcessorCompose<I, O> when(ThrowablePredicate<I> predicate) {
         this.when = notNull(predicate, "predicate");

@@ -34,14 +34,15 @@ dependencies {
 record Payment(String method, int cents) {}
 
 Handler<Payment> card =
-        new SimpleHandler<>(
-                payment -> "card".equals(payment.method()),
-                payment -> {
-                    if (payment.cents() < 0) {
-                        throw new IllegalArgumentException("negative");
-                    }
-                    gateway.charge(payment);
-                });
+        Processors.<Payment>filter(payment -> "card".equals(payment.method()))
+                .thenHandle(
+                        Handlers.of(
+                                payment -> {
+                                    if (payment.cents() < 0) {
+                                        throw new IllegalArgumentException("negative");
+                                    }
+                                    gateway.charge(payment);
+                                }));
 
 card.handle(new Payment("card", 500));    // done
 card.handle(new Payment("wallet", 500));  // skipped
@@ -50,24 +51,22 @@ card.handle(new Payment("card", -1));     // error, исключение леж�
 
 ```java
 Processor<String, Integer> cents =
-        new SimpleProcessor<>(
-                raw -> !raw.isBlank(),
-                raw -> Integer.valueOf(raw) * 100);
+        Processors.<String>filter(raw -> !raw.isBlank())
+                .thenApply(raw -> Integer.valueOf(raw) * 100);
 
 cents.process("42");    // done, 4200
 cents.process("   ");   // skipped
 cents.process("nope");  // error
 ```
 
-`SimpleHandler` и `SimpleProcessor` кладут брошенное исключение в error. `Handlers.of` и `Processors.of` — то же самое, с проверкой, которая всегда проходит.
+`Handlers.of` и `Processors.of` кладут брошенное исключение в error. Неподходящий вход отсекает `Processors.filter`: это skip, и следующий шаг не вызывается.
 
 ## Skipped отдаёт тот же вход следующему кандидату
 
 ```java
 Handler<Payment> wallet =
-        new SimpleHandler<>(
-                payment -> "wallet".equals(payment.method()),
-                payment -> wallets.draw(payment));
+        Processors.<Payment>filter(payment -> "wallet".equals(payment.method()))
+                .thenHandle(Handlers.of(payment -> wallets.draw(payment)));
 
 Handler<Payment> charge = card.or(wallet);
 
@@ -235,7 +234,7 @@ readAmount.process(new Order("a1", "15"));   // done, 15
 readAmount.process(new Order("a1", "nope")); // done, 0 — восстановил onException
 ```
 
-`when` — страж на входе. Ложный страж — это skip: before, after и ядро не выполняются. `filter` — страж на успешном выходе.
+`Processors.filter` проверяет значение в начале цепочки и при успехе передаёт дальше тот же вход. `Processor.filter` проверяет уже успешный выход. `when` в compose стоит снаружи before, after и ядра: ложный предикат пропускает их все, а checked-исключение предиката доходит до `onException`.
 
 `onException` получает исключение функции и может вернуть done. Когда функция бросает, `after` не выполняется.
 

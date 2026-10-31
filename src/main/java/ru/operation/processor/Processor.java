@@ -45,7 +45,8 @@ public interface Processor<I, O> {
      * Keeps a successful output only if {@code predicate} holds; otherwise {@link
      * Processed#skipped()}. Skip/error from this processor propagate unchanged. Delegates to
      * {@link Processed#filter}: an exception from {@code predicate} becomes {@link
-     * Processed#error(Exception)}.
+     * Processed#error(Exception)}. {@link Processors#filter(Predicate)} is the same check on the
+     * input and starts a chain.
      */
     default Processor<I, O> filter(Predicate<? super O> predicate) {
         return input -> process(input).filter(predicate);

@@ -62,6 +62,52 @@ public class ProcessorThenTest {
     }
 
     @Test
+    public void filterStartsChainWithTheSameInput() {
+        List<String> seen = new ArrayList<>();
+        String input = "ab";
+        Processor<String, String> admitted =
+                Processors.<String>filter(value -> value.startsWith("a"));
+        Processor<String, String> pipeline =
+                admitted.thenApply(
+                        value -> {
+                            seen.add(value);
+                            return value.toUpperCase();
+                        });
+
+        assertSame(input, admitted.process(input).value());
+        assertEquals("AB", pipeline.process(input).value());
+        assertEquals(List.of(input), seen);
+
+        assertTrue(pipeline.process("b").isSkipped());
+        assertEquals(List.of(input), seen);
+
+        Processed<String> acceptedNull = Processors.<String>filter(value -> true).process(null);
+        assertTrue(acceptedNull.isDone());
+        assertNull(acceptedNull.value());
+    }
+
+    @Test
+    public void filterOnInputTurnsExceptionIntoError() {
+        IllegalStateException boom = new IllegalStateException("boom");
+        List<String> seen = new ArrayList<>();
+        Processed<String> result =
+                Processors.<String>filter(
+                                value -> {
+                                    throw boom;
+                                })
+                        .thenApply(
+                                value -> {
+                                    seen.add(value);
+                                    return value;
+                                })
+                        .process("x");
+
+        assertTrue(result.isError());
+        assertSame(boom, result.exception());
+        assertTrue(seen.isEmpty());
+    }
+
+    @Test
     public void orTriesNextOnlyOnSkip() {
         List<String> seen = new ArrayList<>();
         Processor<String, String> first =

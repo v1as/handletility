@@ -12,10 +12,11 @@ import org.junit.jupiter.api.Test;
 import ru.operation.handler.AbstractHandler;
 import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
+import ru.operation.handler.Handlers;
 import ru.operation.handler.IdentifiedHandler;
 import ru.operation.handler.impl.AroundHandler;
-import ru.operation.handler.impl.SimpleHandler;
 import ru.operation.handler.impl.map.HandlerMap;
+import ru.operation.processor.Processors;
 import ru.operation.processor.impl.SimpleProcessor;
 
 public class HandlerListTest {
@@ -43,8 +44,9 @@ public class HandlerListTest {
                                                                         Command::name))
                                                         .build())
                                         .handler(
-                                                new SimpleHandler<>(
-                                                        Objects::nonNull, System.out::println))
+                                                Processors.<Command>filter(Objects::nonNull)
+                                                        .thenHandle(
+                                                                Handlers.of(System.out::println)))
                                         .build())
                         .build();
 
