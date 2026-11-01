@@ -11,9 +11,10 @@ import ru.operation.util.function.ThrowableConsumer;
  * Side-effect operation over an input. Prefer extending {@link AbstractHandler} for check,
  * exception handling and logging.
  *
- * <p>{@link #or} tries the next handler on the same input when this one returns {@link
- * Handled#skipped()} and stops on done or error. {@link #thenProcess} runs a processor on that
- * same input when this handler returns {@link Handled#done()}.
+ * <p>{@link #and} runs the next handler on the same input when this one returns {@link
+ * Handled#done()} and stops on skip or error. {@link #or} tries the next handler on the same input
+ * when this one returns {@link Handled#skipped()} and stops on done or error. {@link #thenProcess}
+ * runs a processor on that same input when this handler returns {@link Handled#done()}.
  */
 @FunctionalInterface
 public interface Handler<I> {
@@ -35,6 +36,24 @@ public interface Handler<I> {
                 return next.process(input);
             }
             return Processed.skipped();
+        };
+    }
+
+    /**
+     * Runs {@code next} on the same input when this handler returns {@link Handled#done()}. Skip and
+     * error are returned unchanged and {@code next} is not called. The chain result is the outcome
+     * of {@code next}.
+     */
+    default Handler<I> and(Handler<? super I> next) {
+        return input -> {
+            Handled result = handle(input);
+            if (result.isError()) {
+                return result;
+            }
+            if (result.isDone()) {
+                return next.handle(input);
+            }
+            return result;
         };
     }
 

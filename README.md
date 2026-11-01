@@ -100,6 +100,42 @@ amount.process("0x2A");  // 42
 amount.process("nope");  // skipped
 ```
 
+## Оба шага обязательны
+
+```java
+Handler<Payment> receipt = Handler.of(payment -> mailer.sendReceipt(payment));
+
+Handler<Payment> chargeThenReceipt = card.and(receipt);
+
+chargeThenReceipt.handle(new Payment("card", 500));   // card done, receipt вызван
+chargeThenReceipt.handle(new Payment("wallet", 500)); // card skipped, receipt не вызван
+chargeThenReceipt.handle(new Payment("card", -1));    // ошибка card, receipt не вызван
+```
+
+```java
+record Order(String rawAmount, String rawCurrency) {}
+record Money(int cents, String currency) {}
+
+Processor<Order, Integer> cents =
+        order ->
+                order.rawAmount() == null
+                        ? Processed.skipped()
+                        : Processed.done(Integer.valueOf(order.rawAmount()));
+
+Processor<Order, String> currency =
+        order ->
+                order.rawCurrency() == null
+                        ? Processed.skipped()
+                        : Processed.done(order.rawCurrency());
+
+Processor<Order, Money> money =
+        cents.and(currency, (amount, code) -> new Money(amount, code));
+
+money.process(new Order("15", "EUR")); // done, Money(15, "EUR")
+money.process(new Order(null, "EUR")); // skipped: cents пропустил, currency не вызван
+money.process(new Order("15", null));  // cents done, currency skipped → skipped
+```
+
 ## Дальше проходит только done
 
 ```java

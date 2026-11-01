@@ -7,6 +7,7 @@ import java.util.function.Predicate;
 import ru.operation.handler.Handler;
 import ru.operation.processor.impl.FilterProcessor;
 import ru.operation.processor.impl.FunctionProcessor;
+import ru.operation.util.function.ThrowableBiFunction;
 import ru.operation.util.function.ThrowableFunction;
 
 /**
@@ -14,9 +15,9 @@ import ru.operation.util.function.ThrowableFunction;
  * exception handling and logging.
  *
  * <p>{@link #thenApply}, {@link #thenCompose}, {@link #filter} and {@link #thenHandle} follow {@link
- * Processed}: skip and error propagate, and later steps are not invoked. {@link #or} is the
- * opposite on skip: it tries the next processor on the same input and still stops on done or
- * error.
+ * Processed}: skip and error propagate, and later steps are not invoked. {@link #and} runs the next
+ * processor on the same input only after done and folds both payloads. {@link #or} tries the next
+ * processor on the same input after skip and still stops on done or error.
  */
 @FunctionalInterface
 public interface Processor<I, O> {
@@ -48,6 +49,38 @@ public interface Processor<I, O> {
                 return result;
             }
             return next.process(input);
+        };
+    }
+
+    /**
+     * Runs {@code next} on the same input when this processor is {@link Processed#done(Object)}. Skip
+     * and error stop the chain and {@code next} is not called. When {@code next} is done, {@code
+     * combiner} receives both payloads, including {@code null}, and its result is {@link
+     * Processed#done(Object)}. A skip or error from {@code next} is the chain result. An exception
+     * from {@code combiner} is {@link Processed#error(Exception)}. {@link Error} is not caught.
+     */
+    default <Q, R> Processor<I, R> and(
+            Processor<? super I, Q> next,
+            ThrowableBiFunction<? super O, ? super Q, ? extends R> combiner) {
+        return input -> {
+            Processed<O> result = process(input);
+            if (result.isError()) {
+                return Processed.error(result.exception());
+            }
+            if (result.isDone()) {
+                Processed<Q> nextResult = next.process(input);
+                if (nextResult.isError()) {
+                    return Processed.error(nextResult.exception());
+                }
+                if (nextResult.isDone()) {
+                    try {
+                        return Processed.done(combiner.apply(result.value(), nextResult.value()));
+                    } catch (Exception exception) {
+                        return Processed.error(exception);
+                    }
+                }
+            }
+            return Processed.skipped();
         };
     }
 

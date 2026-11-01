@@ -63,8 +63,7 @@ public class ProcessorThenTest {
     public void filterStartsChainWithTheSameInput() {
         List<String> seen = new ArrayList<>();
         String input = "ab";
-        Processor<String, String> admitted =
-                Processor.<String>when(value -> value.startsWith("a"));
+        Processor<String, String> admitted = Processor.<String>when(value -> value.startsWith("a"));
         Processor<String, String> pipeline =
                 admitted.thenApply(
                         value -> {
