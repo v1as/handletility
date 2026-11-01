@@ -84,13 +84,13 @@ Done и error заканчивают цепочку. Цепочка остаёт
 Processor<String, Integer> decimal =
         raw ->
                 raw.chars().allMatch(Character::isDigit)
-                        ? Processed.of(Integer.parseInt(raw))
+                        ? Processed.done(Integer.parseInt(raw))
                         : Processed.skipped();
 
 Processor<String, Integer> hex =
         raw ->
                 raw.startsWith("0x")
-                        ? Processed.of(Integer.parseInt(raw.substring(2), 16))
+                        ? Processed.done(Integer.parseInt(raw.substring(2), 16))
                         : Processed.skipped();
 
 Processor<String, Integer> amount = decimal.or(hex);
@@ -121,7 +121,7 @@ save.handle("0");         // skipped
 Done с `null` вперёд идёт. Skip — нет:
 
 ```java
-Processor<Order, String> code = order -> Processed.of(order.couponCode());
+Processor<Order, String> code = order -> Processed.done(order.couponCode());
 Processor<Order, Integer> discount =
         code.thenApply(coupon -> coupon == null ? 0 : rates.get(coupon));
 // couponCode() == null → done, шаг со ставкой выполняется и возвращает 0
@@ -130,7 +130,7 @@ Processor<Order, String> presentCode =
         order ->
                 order.couponCode() == null
                         ? Processed.skipped()
-                        : Processed.of(order.couponCode());
+                        : Processed.done(order.couponCode());
 Processor<Order, Integer> discountIfPresent = presentCode.thenApply(rates::get);
 // couponCode() == null → skipped, rates.get не вызывается
 ```
@@ -141,7 +141,7 @@ Processor<Order, Integer> discountIfPresent = presentCode.thenApply(rates::get);
 Processed<Receipt> receipt =
         Handlers.of(orders::save)
                 .handle(order)
-                .thenGet(() -> receipts.issue(order));
+                .thenSupply(() -> receipts.issue(order));
 // save бросил → error, issue не вызывается
 ```
 
@@ -193,14 +193,14 @@ Processor<User, List<String>> validate =
 record Command(String name) {}
 
 Handler<Command> commands =
-        HandlerMap.<String, Command>handlerMap()
+        RoutingHandler.<String, Command>routingHandler()
                 .handler(Handlers.of(this::create).identifiedBy("create"))
                 .handler(Handlers.of(this::cancel).identifiedBy("cancel"))
                 .keyExtractor(
                         command ->
                                 command.name() == null
                                         ? Processed.error("no name")
-                                        : Processed.of(command.name()))
+                                        : Processed.done(command.name()))
                 .defaultHandler(command -> Handled.skipped())
                 .build();
 
@@ -211,7 +211,7 @@ commands.handle(new Command(null));     // error ключа
 
 На неизвестное имя вызывается `defaultHandler`: в примере он отвечает skipped. Если чтение ключа закончилось error, этот error становится результатом вызова, а `defaultHandler` не вызывается.
 
-`ProcessorMap` устроен так же и выбирает `IdentifiedProcessor`. Ключ задаётся через `Processor.identifiedBy`.
+`RoutingProcessor` устроен так же и выбирает `IdentifiedProcessor`. Ключ задаётся через `Processor.identifiedBy`.
 
 ## Обвязка остаётся снаружи функции
 
@@ -226,7 +226,7 @@ Processor<Order, Integer> readAmount =
                 .when(order -> order.rawAmount() != null)
                 .before(order -> metrics.mark("amount.start"))
                 .after(result -> metrics.mark(result.state().name()))
-                .onException(failure -> Processed.of(0))
+                .onException(failure -> Processed.done(0))
                 .build();
 
 readAmount.process(new Order("a1", null));   // skipped: when остановил вызов

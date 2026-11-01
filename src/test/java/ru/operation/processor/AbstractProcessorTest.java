@@ -23,7 +23,7 @@ public class AbstractProcessorTest {
                     @Override
                     protected Processed<String> processInternal(String input) {
                         called.set(true);
-                        return Processed.of(input);
+                        return Processed.done(input);
                     }
                 };
 
@@ -48,7 +48,7 @@ public class AbstractProcessorTest {
                     @Override
                     protected Processed<String> processInternal(String input) {
                         called.set(true);
-                        return Processed.of(input);
+                        return Processed.done(input);
                     }
                 };
 

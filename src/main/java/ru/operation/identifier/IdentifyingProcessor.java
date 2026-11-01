@@ -21,8 +21,7 @@ public class IdentifyingProcessor<K, T extends Identified<K>, I> extends Abstrac
     public IdentifyingProcessor(
             @NonNull List<T> candidates, @NonNull Processor<I, K> keyExtractor) {
         this.keyToItem =
-                candidates.stream()
-                        .collect(Collectors.toMap(Identified::getIdentifier, identity()));
+                candidates.stream().collect(Collectors.toMap(Identified::identifier, identity()));
         this.keyExtractor = keyExtractor;
         this.candidates = candidates;
     }

@@ -13,17 +13,17 @@ import ru.operation.Failure;
 import ru.operation.MdcEntry;
 import ru.operation.handler.impl.AroundHandler;
 import ru.operation.handler.impl.CatchingHandler;
+import ru.operation.handler.impl.ConditionalHandler;
 import ru.operation.handler.impl.LoggingExceptionHandler;
 import ru.operation.handler.impl.MdcHandler;
-import ru.operation.handler.impl.PropagatingHandler;
-import ru.operation.handler.impl.WhenHandler;
+import ru.operation.handler.impl.ThrowingHandler;
 import ru.operation.handler.impl.wrap.LoggingHandler;
 import ru.operation.util.function.ThrowableConsumer;
 import ru.operation.util.function.ThrowablePredicate;
 
 /**
  * Builds a handler stack with a fixed wrap order on {@link #build()}: {@code
- * Mdc(Logging(Catching(When(Around(core)))))}. MDC wraps logging so log lines see MDC values.
+ * Mdc(Logging(Catching(Conditional(Around(core)))))}. MDC wraps logging so log lines see MDC values.
  * Catching always converts {@link Exception} to {@link Handled} ERROR (or custom {@link
  * #onException}). {@link #when} sits inside catching and outside around, so a failed predicate
  * skips before/after and the core. When, around, logging and MDC are omitted when not configured.
@@ -80,7 +80,7 @@ public final class HandlerCompose<I> {
     }
 
     public HandlerCompose<I> before(ThrowableConsumer<I> before) {
-        return before(new PropagatingHandler<>(notNull(before, "before consumer")));
+        return before(new ThrowingHandler<>(notNull(before, "before consumer")));
     }
 
     /**
@@ -94,7 +94,7 @@ public final class HandlerCompose<I> {
     }
 
     public HandlerCompose<I> after(ThrowableConsumer<Handled> after) {
-        return after(new PropagatingHandler<>(notNull(after, "after consumer")));
+        return after(new ThrowingHandler<>(notNull(after, "after consumer")));
     }
 
     /**
@@ -130,7 +130,7 @@ public final class HandlerCompose<I> {
             result = new AroundHandler<>(beforeHandler, result, afterHandler);
         }
         if (when != null) {
-            result = new WhenHandler<>(when, result);
+            result = new ConditionalHandler<>(when, result);
         }
         result = new CatchingHandler<>(result, exceptionMapping);
         if (loggingLevel != null) {

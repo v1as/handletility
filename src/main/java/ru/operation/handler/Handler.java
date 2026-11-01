@@ -1,6 +1,5 @@
 package ru.operation.handler;
 
-import ru.operation.handler.impl.IdentifiedByConstHandler;
 import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
 
@@ -9,7 +8,7 @@ import ru.operation.processor.Processor;
  * exception handling and logging.
  *
  * <p>{@link #or} tries the next handler on the same input when this one returns {@link
- * Handled#skipped()} and stops on done or error. {@link #thenCompose} runs a processor on that
+ * Handled#skipped()} and stops on done or error. {@link #thenProcess} runs a processor on that
  * same input when this handler returns {@link Handled#done()}.
  */
 @FunctionalInterface
@@ -22,7 +21,7 @@ public interface Handler<I> {
      * same input. {@link Handled#skipped()} and {@link Handled#error(Exception)} become that outcome
      * on {@link Processed}, and {@code next} is not called.
      */
-    default <O> Processor<I, O> thenCompose(Processor<? super I, O> next) {
+    default <O> Processor<I, O> thenProcess(Processor<? super I, O> next) {
         return input -> {
             Handled handled = handle(input);
             if (handled.isError()) {
@@ -49,6 +48,6 @@ public interface Handler<I> {
 
     /** Identifies this handler by a constant routing key. */
     default <K> IdentifiedHandler<K, I> identifiedBy(K identifier) {
-        return new IdentifiedByConstHandler<>(identifier, this);
+        return new ConstantIdentifiedHandler<>(identifier, this);
     }
 }

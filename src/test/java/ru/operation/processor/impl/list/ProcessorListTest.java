@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static ru.operation.processor.Processed.done;
 import static ru.operation.processor.Processed.error;
-import static ru.operation.processor.Processed.of;
 import static ru.operation.processor.Processed.skipped;
 
 import java.io.IOException;
@@ -23,9 +23,9 @@ public class ProcessorListTest {
     @Test
     public void should_process_after_skip() {
         Processor<String, String> handlers =
-                new ProcessorList<>(List.of(value -> skipped(), value -> of("polo")));
+                new ProcessorList<>(List.of(value -> skipped(), value -> done("polo")));
         Processed<String> result = handlers.process("marko");
-        assertEquals(of("polo"), result);
+        assertEquals(done("polo"), result);
     }
 
     @Test
@@ -33,7 +33,7 @@ public class ProcessorListTest {
         Processor<String, Integer> list =
                 ProcessorList.<String, Integer>processorList()
                         .processor(input -> error("first"))
-                        .processor(input -> of(7))
+                        .processor(input -> done(7))
                         .modifier(ProcessorModifier.CONTINUE_ON_ERROR)
                         .build();
 
@@ -88,37 +88,37 @@ public class ProcessorListTest {
                 folding(
                         List.of(
                                 input -> skipped(),
-                                input -> of("a"),
+                                input -> done("a"),
                                 input -> skipped(),
-                                input -> of("b")),
+                                input -> done("b")),
                         (left, right) -> left + right,
                         false);
 
-        assertEquals(of("ab"), list.process("x"));
+        assertEquals(done("ab"), list.process("x"));
     }
 
     @Test
     public void foldReturnsSingleDoneWithoutCombining() {
         Processor<String, String> list =
                 folding(
-                        List.of(input -> skipped(), input -> of(null)),
+                        List.of(input -> skipped(), input -> done(null)),
                         (left, right) -> {
                             throw new AssertionError("combined");
                         },
                         false);
 
-        assertEquals(of(null), list.process("x"));
+        assertEquals(done(null), list.process("x"));
     }
 
     @Test
     public void foldCombinesDoneLeftToRight() {
         Processor<String, String> list =
                 folding(
-                        List.of(input -> of("a"), input -> of("b"), input -> of("c")),
+                        List.of(input -> done("a"), input -> done("b"), input -> done("c")),
                         (left, right) -> "(" + left + right + ")",
                         false);
 
-        assertEquals(of("((ab)c)"), list.process("x"));
+        assertEquals(done("((ab)c)"), list.process("x"));
     }
 
     @Test
@@ -128,11 +128,11 @@ public class ProcessorListTest {
         Processor<String, String> list =
                 folding(
                         List.of(
-                                input -> of("a"),
+                                input -> done("a"),
                                 input -> error(disk),
                                 input -> {
                                     later[0] = true;
-                                    return of("b");
+                                    return done("b");
                                 }),
                         (left, right) -> left + right,
                         false);
@@ -149,9 +149,9 @@ public class ProcessorListTest {
         Processor<String, String> list =
                 folding(
                         List.of(
-                                input -> of("a"),
+                                input -> done("a"),
                                 input -> error(first),
-                                input -> of("b"),
+                                input -> done("b"),
                                 input -> error(second)),
                         (left, right) -> left + right,
                         true);
@@ -170,11 +170,11 @@ public class ProcessorListTest {
         Processor<String, String> list =
                 folding(
                         List.of(
-                                input -> of("a"),
-                                input -> of("b"),
+                                input -> done("a"),
+                                input -> done("b"),
                                 input -> {
                                     later[0] = true;
-                                    return of("c");
+                                    return done("c");
                                 }),
                         (left, right) -> {
                             throw merge;
@@ -193,12 +193,12 @@ public class ProcessorListTest {
         Processor<String, String> list =
                 folding(
                         List.of(
-                                input -> of("a"),
+                                input -> done("a"),
                                 input -> error(disk),
-                                input -> of("b"),
+                                input -> done("b"),
                                 input -> {
                                     later[0] = true;
-                                    return of("c");
+                                    return done("c");
                                 }),
                         (left, right) -> {
                             if ("b".equals(right)) {

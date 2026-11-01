@@ -1,4 +1,4 @@
-package ru.operation.handler.impl.map;
+package ru.operation.handler.impl.routing;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -12,28 +12,16 @@ import org.junit.jupiter.api.Test;
 import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
 import ru.operation.handler.Handlers;
-import ru.operation.handler.impl.IdentifiedByConstHandler;
-import ru.operation.processor.impl.SimpleProcessor;
+import ru.operation.handler.IdentifiedHandler;
+import ru.operation.processor.impl.FunctionProcessor;
 
-public class HandlerMapTest {
+public class RoutingHandlerTest {
 
     private final int[] store = {-1};
 
-    private final IdentifiedByConstHandler<String, String> firstHandler =
-            new IdentifiedByConstHandler<>(
-                    "1",
-                    (input) -> {
-                        store[0] = 1;
-                        return done();
-                    });
+    private final IdentifiedHandler<String, String> firstHandler = marking(1).identifiedBy("1");
 
-    private final IdentifiedByConstHandler<String, String> secondHandler =
-            new IdentifiedByConstHandler<>(
-                    "2",
-                    (input) -> {
-                        store[0] = 2;
-                        return done();
-                    });
+    private final IdentifiedHandler<String, String> secondHandler = marking(2).identifiedBy("2");
 
     private final Handler<String> forthHandler =
             (input) -> {
@@ -41,13 +29,20 @@ public class HandlerMapTest {
                 return done();
             };
 
-    private final SimpleProcessor<String, String> identityKey = new SimpleProcessor<>(s -> s);
+    private final FunctionProcessor<String, String> identityKey = new FunctionProcessor<>(s -> s);
+
+    private Handler<String> marking(int mark) {
+        return input -> {
+            store[0] = mark;
+            return done();
+        };
+    }
 
     @Test
     public void shouldHandleWithNoDefault() {
         Handler<String> handler =
                 Handlers.compose(
-                                new HandlerMap<>(
+                                new RoutingHandler<>(
                                         List.of(firstHandler, secondHandler), identityKey, null))
                         .logging()
                         .build();
@@ -64,8 +59,9 @@ public class HandlerMapTest {
 
     @Test
     public void shouldHandleWithDefault() {
-        HandlerMap<String, String> handler =
-                new HandlerMap<>(List.of(firstHandler, secondHandler), identityKey, forthHandler);
+        RoutingHandler<String, String> handler =
+                new RoutingHandler<>(
+                        List.of(firstHandler, secondHandler), identityKey, forthHandler);
 
         assertTrue(handler.handle("abc").isDone());
         assertEquals(4, store[0]);
@@ -81,10 +77,10 @@ public class HandlerMapTest {
     public void keyExtractionErrorDoesNotCallDefault() {
         IllegalStateException failure = new IllegalStateException("broken parse");
         AtomicBoolean defaultCalled = new AtomicBoolean();
-        HandlerMap<String, String> handler =
-                new HandlerMap<>(
+        RoutingHandler<String, String> handler =
+                new RoutingHandler<>(
                         List.of(firstHandler),
-                        new SimpleProcessor<>(
+                        new FunctionProcessor<>(
                                 input -> {
                                     throw failure;
                                 }),
@@ -103,10 +99,10 @@ public class HandlerMapTest {
     @Test
     public void skippedKeyUsesDefault() {
         AtomicBoolean defaultCalled = new AtomicBoolean();
-        HandlerMap<String, String> handler =
-                new HandlerMap<>(
+        RoutingHandler<String, String> handler =
+                new RoutingHandler<>(
                         List.of(firstHandler),
-                        new SimpleProcessor<>(input -> null),
+                        new FunctionProcessor<>(input -> null),
                         input -> {
                             defaultCalled.set(true);
                             return done();

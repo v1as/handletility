@@ -2,8 +2,8 @@ package ru.operation.handler;
 
 import static ru.operation.util.Checks.notNull;
 
-import ru.operation.handler.impl.PropagatingHandler;
-import ru.operation.handler.impl.SimpleHandler;
+import ru.operation.handler.impl.ConsumerHandler;
+import ru.operation.handler.impl.ThrowingHandler;
 import ru.operation.util.function.ThrowableConsumer;
 
 /** Facade for composing handlers with naming, logging and MDC wrappers. */
@@ -13,7 +13,7 @@ public final class Handlers {
 
     /** Bare handler from a {@link ThrowableConsumer}. */
     public static <I> Handler<I> of(ThrowableConsumer<I> consumer) {
-        return new SimpleHandler<>(notNull(consumer, "consumer"));
+        return new ConsumerHandler<>(notNull(consumer, "consumer"));
     }
 
     public static <I> HandlerCompose<I> compose(Handler<I> core) {
@@ -22,9 +22,9 @@ public final class Handlers {
 
     /**
      * Compose entry for a consumer. Exceptions propagate to {@link HandlerCompose#onException};
-     * {@link #of} keeps them inside {@link SimpleHandler}.
+     * {@link #of} keeps them inside {@link ConsumerHandler}.
      */
     public static <I> HandlerCompose<I> compose(ThrowableConsumer<I> consumer) {
-        return compose(new PropagatingHandler<>(notNull(consumer, "consumer")));
+        return compose(new ThrowingHandler<>(notNull(consumer, "consumer")));
     }
 }

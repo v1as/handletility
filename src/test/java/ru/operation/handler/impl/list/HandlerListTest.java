@@ -15,9 +15,9 @@ import ru.operation.handler.Handler;
 import ru.operation.handler.Handlers;
 import ru.operation.handler.IdentifiedHandler;
 import ru.operation.handler.impl.AroundHandler;
-import ru.operation.handler.impl.map.HandlerMap;
+import ru.operation.handler.impl.routing.RoutingHandler;
 import ru.operation.processor.Processors;
-import ru.operation.processor.impl.SimpleProcessor;
+import ru.operation.processor.impl.FunctionProcessor;
 
 public class HandlerListTest {
 
@@ -36,11 +36,11 @@ public class HandlerListTest {
                         .delegate(
                                 HandlerList.<Command>builder()
                                         .handler(
-                                                HandlerMap.<String, Command>handlerMap()
+                                                RoutingHandler.<String, Command>routingHandler()
                                                         .handler(new HelloCommand())
                                                         .handler(new ByeCommand())
                                                         .keyExtractor(
-                                                                new SimpleProcessor<>(
+                                                                new FunctionProcessor<>(
                                                                         Command::name))
                                                         .build())
                                         .handler(
@@ -74,7 +74,7 @@ public class HandlerListTest {
         private final String name;
 
         @Override
-        public String getIdentifier() {
+        public String identifier() {
             return name;
         }
     }

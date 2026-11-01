@@ -1,30 +1,30 @@
-package ru.operation.processor.impl;
+package ru.operation.handler.impl;
 
-import static ru.operation.processor.Processed.skipped;
+import static ru.operation.handler.Handled.skipped;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import ru.operation.processor.Processed;
-import ru.operation.processor.Processor;
+import ru.operation.handler.Handled;
+import ru.operation.handler.Handler;
 import ru.operation.util.function.ThrowablePredicate;
 
 /**
  * Runs {@code delegate} only when {@code predicate} holds. A failed check returns {@link
- * Processed#skipped()} and does not call the delegate. Exceptions from the predicate propagate
+ * Handled#skipped()} and does not call the delegate. Exceptions from the predicate propagate
  * unchanged, including checked ones.
  */
 @RequiredArgsConstructor
-public class WhenProcessor<I, O> implements Processor<I, O> {
+public class ConditionalHandler<I> implements Handler<I> {
 
     @NonNull private final ThrowablePredicate<I> predicate;
-    @NonNull private final Processor<I, O> delegate;
+    @NonNull private final Handler<I> delegate;
 
     @Override
-    public Processed<O> process(I input) {
+    public Handled handle(I input) {
         if (!test(input)) {
             return skipped();
         }
-        return delegate.process(input);
+        return delegate.handle(input);
     }
 
     private boolean test(I input) {
@@ -42,6 +42,6 @@ public class WhenProcessor<I, O> implements Processor<I, O> {
 
     @Override
     public String toString() {
-        return "When(" + delegate + ")";
+        return "Conditional(" + delegate + ")";
     }
 }

@@ -24,9 +24,9 @@ public class AroundHandlerTest {
         AtomicReference<Handled> seenAfter = new AtomicReference<>();
         Handler<String> around =
                 AroundHandler.<String>builder()
-                        .beforeHandler(new SimpleHandler<>((String s) -> order.add("before")))
+                        .beforeHandler(new ConsumerHandler<>((String s) -> order.add("before")))
                         .delegate(
-                                new SimpleHandler<>(
+                                new ConsumerHandler<>(
                                         s -> {
                                             order.add("main");
                                             throw new IllegalStateException("boom");

@@ -1,7 +1,7 @@
 package ru.operation.processor.impl.list;
 
+import static ru.operation.processor.Processed.done;
 import static ru.operation.processor.Processed.error;
-import static ru.operation.processor.Processed.of;
 import static ru.operation.processor.Processed.skipped;
 import static ru.operation.processor.impl.list.ProcessorModifier.CONTINUE_ON_ERROR;
 
@@ -96,7 +96,7 @@ public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
             return error(combine(errors));
         }
         if (hasDone) {
-            return of(accumulator);
+            return done(accumulator);
         }
         return skipped();
     }

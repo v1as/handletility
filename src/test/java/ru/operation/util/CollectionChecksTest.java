@@ -8,27 +8,27 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-public class CollectionsTest {
+public class CollectionChecksTest {
 
     @Test
     public void isNullOrEmpty() {
-        assertTrue(Collections.isNullOrEmpty(null));
-        assertTrue(Collections.isNullOrEmpty(List.of()));
-        assertFalse(Collections.isNullOrEmpty(List.of(1)));
+        assertTrue(CollectionChecks.isNullOrEmpty(null));
+        assertTrue(CollectionChecks.isNullOrEmpty(List.of()));
+        assertFalse(CollectionChecks.isNullOrEmpty(List.of(1)));
     }
 
     @Test
     public void copyNonEmptyCopies() {
-        assertEquals(List.of("a"), Collections.copyNonEmpty(List.of("a"), "items"));
+        assertEquals(List.of("a"), CollectionChecks.copyNonEmpty(List.of("a"), "items"));
     }
 
     @Test
     public void copyNonEmptyRejectsNullOrEmpty() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> Collections.copyNonEmpty(null, "mdc entries"));
+                () -> CollectionChecks.copyNonEmpty(null, "mdc entries"));
         assertThrows(
                 IllegalArgumentException.class,
-                () -> Collections.copyNonEmpty(List.of(), "mdc entries"));
+                () -> CollectionChecks.copyNonEmpty(List.of(), "mdc entries"));
     }
 }

@@ -12,17 +12,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import ru.operation.ResultState;
 import ru.operation.handler.Handled;
-import ru.operation.handler.impl.SimpleHandler;
-import ru.operation.processor.impl.SimpleProcessor;
+import ru.operation.handler.impl.ConsumerHandler;
+import ru.operation.processor.impl.FunctionProcessor;
 
 public class ProcessedTest {
 
     @Test
     public void stateHelpers() {
-        assertTrue(Processed.of(1).isDone());
-        assertTrue(Processed.of(1).hasValue());
-        assertFalse(Processed.of(1).isError());
-        assertFalse(Processed.of(1).isSkipped());
+        assertTrue(Processed.done(1).isDone());
+        assertTrue(Processed.done(1).hasValue());
+        assertFalse(Processed.done(1).isError());
+        assertFalse(Processed.done(1).isSkipped());
 
         assertTrue(Processed.skipped().isSkipped());
         assertFalse(Processed.skipped().hasValue());
@@ -54,7 +54,7 @@ public class ProcessedTest {
 
     @Test
     public void doneNullPayloadChainsAndDiffersFromSkipped() {
-        Processed<String> doneNull = Processed.of("x").map(s -> (String) null);
+        Processed<String> doneNull = Processed.done("x").map(s -> (String) null);
         assertTrue(doneNull.isDone());
         assertFalse(doneNull.isSkipped());
         assertFalse(doneNull.hasValue());
@@ -64,17 +64,17 @@ public class ProcessedTest {
                 doneNull.flatMap(
                         v -> {
                             calls.incrementAndGet();
-                            return Processed.of("next");
+                            return Processed.done("next");
                         });
         assertEquals(1, calls.get());
         assertEquals("next", chained.requireDone());
 
-        assertFalse(Processed.<String>skipped().flatMap(v -> Processed.of("nope")).isDone());
+        assertFalse(Processed.<String>skipped().flatMap(v -> Processed.done("nope")).isDone());
     }
 
     @Test
     public void simpleProcessorNullIsDone() {
-        Processed<String> result = new SimpleProcessor<String, String>(s -> null).process("in");
+        Processed<String> result = new FunctionProcessor<String, String>(s -> null).process("in");
         assertTrue(result.isDone());
         assertFalse(result.isSkipped());
         assertFalse(result.hasValue());
@@ -84,7 +84,7 @@ public class ProcessedTest {
     public void mapTurnsExceptionIntoError() {
         IllegalStateException boom = new IllegalStateException("boom");
         Processed<Integer> result =
-                Processed.of(1)
+                Processed.done(1)
                         .map(
                                 n -> {
                                     throw boom;
@@ -99,7 +99,7 @@ public class ProcessedTest {
         assertThrows(
                 AssertionError.class,
                 () ->
-                        Processed.of(1)
+                        Processed.done(1)
                                 .map(
                                         n -> {
                                             throw new AssertionError("boom");
@@ -108,11 +108,11 @@ public class ProcessedTest {
 
     @Test
     public void filterSkipsOnFalseAndTurnsExceptionIntoError() {
-        assertTrue(Processed.of(1).filter(n -> false).isSkipped());
+        assertTrue(Processed.done(1).filter(n -> false).isSkipped());
 
         IllegalStateException boom = new IllegalStateException("boom");
         Processed<Integer> error =
-                Processed.of(1)
+                Processed.done(1)
                         .filter(
                                 n -> {
                                     throw boom;
@@ -123,23 +123,24 @@ public class ProcessedTest {
 
     @Test
     public void mapAndFlatMap() {
-        assertEquals(4, Processed.of(2).map(n -> n * 2).value());
+        assertEquals(4, Processed.done(2).map(n -> n * 2).value());
         assertFalse(Processed.<Integer>skipped().map(n -> n * 2).hasValue());
 
         Processed<Integer> chained =
-                Processed.of("42").flatMap(new SimpleProcessor<>(Integer::valueOf));
+                Processed.done("42").flatMap(new FunctionProcessor<>(Integer::valueOf));
         assertEquals(42, chained.requireDone());
 
         assertTrue(
                 Processed.<String>error("x")
-                        .flatMap(new SimpleProcessor<>(Integer::valueOf))
+                        .flatMap(new FunctionProcessor<>(Integer::valueOf))
                         .isError());
     }
 
     @Test
     public void thenHandle() {
         AtomicInteger sum = new AtomicInteger();
-        Handled handled = Processed.of(3).thenHandle(new SimpleHandler<>(n -> sum.addAndGet(n)));
+        Handled handled =
+                Processed.done(3).thenHandle(new ConsumerHandler<>(n -> sum.addAndGet(n)));
         assertTrue(handled.isDone());
         assertEquals(3, sum.get());
 
@@ -148,10 +149,10 @@ public class ProcessedTest {
 
     @Test
     public void throwIfErrorPassesThroughDoneAndSkipped() {
-        Processed<String> done = Processed.of("a");
+        Processed<String> done = Processed.done("a");
         assertSame(done, done.throwIfError());
 
-        Processed<String> doneNull = Processed.of((String) null);
+        Processed<String> doneNull = Processed.done((String) null);
         assertSame(doneNull, doneNull.throwIfError());
         assertNull(doneNull.value());
 
@@ -160,8 +161,8 @@ public class ProcessedTest {
 
     @Test
     public void requireDoneReturnsPayloadAndRejectsSkip() {
-        assertEquals("a", Processed.of("a").requireDone());
-        assertNull(Processed.of((String) null).requireDone());
+        assertEquals("a", Processed.done("a").requireDone());
+        assertNull(Processed.done((String) null).requireDone());
 
         ProcessorException skipped =
                 assertThrows(

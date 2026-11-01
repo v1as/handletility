@@ -10,19 +10,19 @@ import org.slf4j.event.Level;
 import ru.operation.Failure;
 import ru.operation.MdcEntry;
 import ru.operation.handler.Handler;
-import ru.operation.handler.impl.PropagatingHandler;
+import ru.operation.handler.impl.ThrowingHandler;
 import ru.operation.processor.impl.AroundProcessor;
 import ru.operation.processor.impl.CatchingProcessor;
+import ru.operation.processor.impl.ConditionalProcessor;
 import ru.operation.processor.impl.LoggingExceptionProcessor;
 import ru.operation.processor.impl.MdcProcessor;
-import ru.operation.processor.impl.WhenProcessor;
 import ru.operation.processor.impl.wrap.LoggingProcessor;
 import ru.operation.util.function.ThrowableConsumer;
 import ru.operation.util.function.ThrowablePredicate;
 
 /**
  * Builds a processor stack with a fixed wrap order on {@link #build()}: {@code
- * Mdc(Logging(Catching(When(Around(core)))))}. MDC wraps logging so log lines see MDC values.
+ * Mdc(Logging(Catching(Conditional(Around(core)))))}. MDC wraps logging so log lines see MDC values.
  * Catching always converts {@link Exception} to {@link Processed} ERROR (or custom {@link
  * #onException}). {@link #when} sits inside catching and outside around, so a failed predicate
  * skips before/after and the core. When, around, logging and MDC are omitted when not configured.
@@ -84,7 +84,7 @@ public final class ProcessorCompose<I, O> {
     }
 
     public ProcessorCompose<I, O> before(ThrowableConsumer<I> before) {
-        return before(new PropagatingHandler<>(notNull(before, "before consumer")));
+        return before(new ThrowingHandler<>(notNull(before, "before consumer")));
     }
 
     /**
@@ -98,7 +98,7 @@ public final class ProcessorCompose<I, O> {
     }
 
     public ProcessorCompose<I, O> after(ThrowableConsumer<Processed<O>> after) {
-        return after(new PropagatingHandler<>(notNull(after, "after consumer")));
+        return after(new ThrowingHandler<>(notNull(after, "after consumer")));
     }
 
     /**
@@ -135,7 +135,7 @@ public final class ProcessorCompose<I, O> {
             result = new AroundProcessor<>(beforeHandler, result, afterHandler);
         }
         if (when != null) {
-            result = new WhenProcessor<>(when, result);
+            result = new ConditionalProcessor<>(when, result);
         }
         result = new CatchingProcessor<>(result, exceptionMapping);
         if (loggingLevel != null) {

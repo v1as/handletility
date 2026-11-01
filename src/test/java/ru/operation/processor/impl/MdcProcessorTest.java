@@ -24,7 +24,7 @@ public class MdcProcessorTest {
                 new MdcProcessor<>(
                         "traceId",
                         input -> "t-" + input,
-                        new SimpleProcessor<String, String>(
+                        new FunctionProcessor<String, String>(
                                 input -> {
                                     seen.set(MDC.get("traceId"));
                                     return input.toUpperCase();

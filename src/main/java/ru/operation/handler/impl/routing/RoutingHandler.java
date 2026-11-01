@@ -1,4 +1,4 @@
-package ru.operation.handler.impl.map;
+package ru.operation.handler.impl.routing;
 
 import static ru.operation.handler.Handled.error;
 import static ru.operation.handler.Handled.skipped;
@@ -20,13 +20,13 @@ import ru.operation.processor.Processor;
  * key-extraction error is returned as-is and does not call {@code defaultHandler}. Skip and an
  * unknown key do.
  */
-public class HandlerMap<K, I> extends AbstractHandler<I> {
+public class RoutingHandler<K, I> extends AbstractHandler<I> {
 
     private final IdentifyingProcessor<K, ? extends IdentifiedHandler<K, I>, I> lookup;
     private final Handler<I> defaultHandler;
 
-    @Builder(builderMethodName = "handlerMap")
-    public HandlerMap(
+    @Builder(builderMethodName = "routingHandler")
+    public RoutingHandler(
             @NonNull @Singular List<? extends IdentifiedHandler<K, I>> handlers,
             @NonNull Processor<I, K> keyExtractor,
             Handler<I> defaultHandler) {

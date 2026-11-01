@@ -1,6 +1,6 @@
 package ru.operation.processor.impl;
 
-import static ru.operation.util.Collections.copyNonEmpty;
+import static ru.operation.util.CollectionChecks.copyNonEmpty;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -74,10 +74,10 @@ public record Handled(ResultState state, Exception exception) {
 
     /**
      * Continues with a value when this outcome is done. Skip and error propagate. {@code null}
-     * {@code null} from {@code next} is {@link Processed#of(Object) DONE with a null payload}; an
+     * {@code null} from {@code next} is {@link Processed#done(Object) DONE with a null payload}; an
      * exception from {@code next} is {@link Processed#error(Exception)}.
      */
-    public <O> Processed<O> thenGet(ThrowableSupplier<O> next) {
+    public <O> Processed<O> thenSupply(ThrowableSupplier<O> next) {
         if (isError()) {
             return Processed.error(exception);
         }
@@ -85,7 +85,7 @@ public record Handled(ResultState state, Exception exception) {
             return Processed.skipped();
         }
         try {
-            return Processed.of(next.get());
+            return Processed.done(next.get());
         } catch (Exception e) {
             return Processed.error(e);
         }

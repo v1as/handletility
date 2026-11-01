@@ -1,4 +1,4 @@
-package ru.operation.processor.impl.map;
+package ru.operation.processor.impl.routing;
 
 import static ru.operation.processor.Processed.error;
 import static ru.operation.processor.Processed.skipped;
@@ -16,12 +16,12 @@ import ru.operation.processor.Processor;
  * key-extraction error is returned as-is and does not call {@code defaultProcessor}. Skip and an
  * unknown key do.
  */
-public class ProcessorMap<K, I, O> extends AbstractProcessor<I, O> {
+public class RoutingProcessor<K, I, O> extends AbstractProcessor<I, O> {
 
     private final IdentifyingProcessor<K, ? extends IdentifiedProcessor<K, I, O>, I> lookup;
     private final Processor<I, O> defaultProcessor;
 
-    public <T extends IdentifiedProcessor<K, I, O>> ProcessorMap(
+    public <T extends IdentifiedProcessor<K, I, O>> RoutingProcessor(
             @NonNull List<T> processors,
             @NonNull Processor<I, K> keyExtractor,
             Processor<I, O> defaultProcessor) {

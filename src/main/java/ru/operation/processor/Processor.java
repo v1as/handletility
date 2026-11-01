@@ -3,7 +3,6 @@ package ru.operation.processor;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import ru.operation.handler.Handler;
-import ru.operation.processor.impl.IdentifiedByConstProcessor;
 
 /**
  * Transforms {@code I} into {@code O}. Prefer extending {@link AbstractProcessor} for check,
@@ -59,6 +58,6 @@ public interface Processor<I, O> {
 
     /** Identifies this processor by a constant routing key. */
     default <K> IdentifiedProcessor<K, I, O> identifiedBy(K identifier) {
-        return new IdentifiedByConstProcessor<>(identifier, this);
+        return new ConstantIdentifiedProcessor<>(identifier, this);
     }
 }

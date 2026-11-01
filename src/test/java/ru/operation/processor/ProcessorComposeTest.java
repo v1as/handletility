@@ -21,9 +21,9 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import ru.operation.handler.Handled;
-import ru.operation.handler.impl.SimpleHandler;
+import ru.operation.handler.impl.ConsumerHandler;
+import ru.operation.processor.impl.FunctionProcessor;
 import ru.operation.processor.impl.MdcProcessor;
-import ru.operation.processor.impl.SimpleProcessor;
 import ru.operation.processor.impl.wrap.LoggingProcessor;
 import ru.operation.util.function.ThrowableConsumer;
 import ru.operation.util.function.ThrowableFunction;
@@ -37,7 +37,7 @@ public class ProcessorComposeTest {
 
     @Test
     public void buildOrderIsLoggingMdcCore() {
-        Processor<String, String> core = new SimpleProcessor<>(String::toUpperCase);
+        Processor<String, String> core = new FunctionProcessor<>(String::toUpperCase);
         Processor<String, String> composed =
                 Processors.compose(core)
                         .mdc("traceId", s -> "t-" + s)
@@ -52,7 +52,7 @@ public class ProcessorComposeTest {
     @Test
     public void loggingWithoutName() {
         Processor<String, String> composed =
-                Processors.compose(new SimpleProcessor<String, String>(s -> s)).logging().build();
+                Processors.compose(new FunctionProcessor<String, String>(s -> s)).logging().build();
 
         assertInstanceOf(LoggingProcessor.class, composed);
         assertTrue(composed.toString().startsWith("Logging(DEBUG, Catching("));
@@ -63,7 +63,7 @@ public class ProcessorComposeTest {
         AtomicReference<String> seen = new AtomicReference<>();
         Processor<String, String> composed =
                 Processors.compose(
-                                new SimpleProcessor<String, String>(
+                                new FunctionProcessor<String, String>(
                                         input -> {
                                             seen.set(MDC.get("traceId"));
                                             return input;
@@ -82,12 +82,12 @@ public class ProcessorComposeTest {
         List<String> order = new ArrayList<>();
         Processor<String, String> composed =
                 Processors.compose(
-                                new SimpleProcessor<String, String>(
+                                new FunctionProcessor<String, String>(
                                         s -> {
                                             order.add("main");
                                             return s.toUpperCase();
                                         }))
-                        .before(new SimpleHandler<>(s -> order.add("before")))
+                        .before(new ConsumerHandler<>(s -> order.add("before")))
                         .after(
                                 result -> {
                                     order.add("after");
@@ -150,7 +150,7 @@ public class ProcessorComposeTest {
                     throw new IllegalStateException("boom");
                 };
         Processor<String, String> composed =
-                Processors.compose(raw).onException(failure -> Processed.of("recovered")).build();
+                Processors.compose(raw).onException(failure -> Processed.done("recovered")).build();
 
         Processed<String> result = composed.process("x");
         assertTrue(result.isDone());
@@ -184,7 +184,7 @@ public class ProcessorComposeTest {
                                 failure -> {
                                     assertInstanceOf(IOException.class, failure.exception());
                                     assertEquals("checked", failure.exception().getMessage());
-                                    return Processed.of("recovered");
+                                    return Processed.done("recovered");
                                 })
                         .build();
 
@@ -205,7 +205,7 @@ public class ProcessorComposeTest {
                                     return s;
                                 })
                         .before(
-                                new SimpleHandler<String>(
+                                new ConsumerHandler<String>(
                                         s -> {
                                             throw new IllegalStateException("hook");
                                         }))
@@ -217,7 +217,7 @@ public class ProcessorComposeTest {
                         .onException(
                                 failure -> {
                                     onExceptionCalled.set(true);
-                                    return Processed.of("recovered");
+                                    return Processed.done("recovered");
                                 })
                         .build();
 
@@ -238,14 +238,14 @@ public class ProcessorComposeTest {
         Processor<String, String> composed =
                 Processors.compose((String s) -> "ok")
                         .after(
-                                new SimpleHandler<Processed<String>>(
+                                new ConsumerHandler<Processed<String>>(
                                         result -> {
                                             throw new IllegalStateException("hook");
                                         }))
                         .onException(
                                 failure -> {
                                     onExceptionCalled.set(true);
-                                    return Processed.of("recovered");
+                                    return Processed.done("recovered");
                                 })
                         .build();
 
@@ -295,7 +295,7 @@ public class ProcessorComposeTest {
                         .onException(
                                 failure -> {
                                     seen.set(failure.exception());
-                                    return Processed.of("recovered");
+                                    return Processed.done("recovered");
                                 })
                         .build();
 
@@ -320,7 +320,7 @@ public class ProcessorComposeTest {
                         .onException(
                                 failure -> {
                                     seen.set(failure.exception());
-                                    return Processed.of("recovered");
+                                    return Processed.done("recovered");
                                 })
                         .build();
 
@@ -354,7 +354,7 @@ public class ProcessorComposeTest {
         assertTrue(composed.process("x").isSkipped());
         assertFalse(coreCalled.get());
         assertEquals(List.of(), order);
-        assertTrue(composed.toString().contains("Catching(When(Around("));
+        assertTrue(composed.toString().contains("Catching(Conditional(Around("));
     }
 
     @Test
@@ -393,7 +393,7 @@ public class ProcessorComposeTest {
                         .onException(
                                 failure -> {
                                     seen.set(failure.exception());
-                                    return Processed.of("recovered");
+                                    return Processed.done("recovered");
                                 })
                         .build();
 
@@ -410,7 +410,7 @@ public class ProcessorComposeTest {
                 Processors.compose((String s) -> s).when(s -> true).build();
 
         assertEquals("x", composed.process("x").value());
-        assertTrue(composed.toString().contains("Catching(When("));
+        assertTrue(composed.toString().contains("Catching(Conditional("));
         assertFalse(composed.toString().contains("Around("));
     }
 
@@ -466,7 +466,7 @@ public class ProcessorComposeTest {
                         .orElseThrow());
     }
 
-    private static final class ParseAmountProcessor extends SimpleProcessor<String, Integer> {
+    private static final class ParseAmountProcessor extends FunctionProcessor<String, Integer> {
 
         private ParseAmountProcessor() {
             super(Integer::valueOf);

@@ -12,7 +12,7 @@ import org.slf4j.MDC;
 import ru.operation.MdcEntry;
 import ru.operation.handler.Handled;
 import ru.operation.handler.Handlers;
-import ru.operation.processor.impl.SimpleProcessor;
+import ru.operation.processor.impl.FunctionProcessor;
 
 public class MdcHandlerTest {
 
@@ -28,7 +28,7 @@ public class MdcHandlerTest {
                 new MdcHandler<>(
                         "requestId",
                         input -> "req-" + input,
-                        new SimpleHandler<String>(input -> seen.set(MDC.get("requestId"))));
+                        new ConsumerHandler<String>(input -> seen.set(MDC.get("requestId"))));
 
         Handled result = handler.handle("42");
 
@@ -45,7 +45,7 @@ public class MdcHandlerTest {
                 new MdcHandler<>(
                         "requestId",
                         input -> "new",
-                        new SimpleHandler<String>(input -> seen.set(MDC.get("requestId"))));
+                        new ConsumerHandler<String>(input -> seen.set(MDC.get("requestId"))));
 
         handler.handle("x");
 
@@ -61,8 +61,8 @@ public class MdcHandlerTest {
                 new MdcHandler<>(
                         List.of(
                                 MdcEntry.of("requestId", s -> "r-" + s),
-                                new MdcEntry<>("userId", new SimpleProcessor<>(s -> "u-" + s))),
-                        new SimpleHandler<String>(
+                                new MdcEntry<>("userId", new FunctionProcessor<>(s -> "u-" + s))),
+                        new ConsumerHandler<String>(
                                 input -> {
                                     requestId.set(MDC.get("requestId"));
                                     userId.set(MDC.get("userId"));
@@ -81,7 +81,7 @@ public class MdcHandlerTest {
         AtomicReference<String> b = new AtomicReference<>();
         var handler =
                 Handlers.compose(
-                                new SimpleHandler<String>(
+                                new ConsumerHandler<String>(
                                         input -> {
                                             a.set(MDC.get("a"));
                                             b.set(MDC.get("b"));
@@ -103,7 +103,7 @@ public class MdcHandlerTest {
                 new MdcHandler<>(
                         "requestId",
                         String::toUpperCase,
-                        new SimpleHandler<String>(input -> seen.set(MDC.get("requestId"))));
+                        new ConsumerHandler<String>(input -> seen.set(MDC.get("requestId"))));
 
         assertTrue(handler.handle("ab").isDone());
         assertEquals("AB", seen.get());

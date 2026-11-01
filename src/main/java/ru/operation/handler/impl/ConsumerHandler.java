@@ -7,7 +7,7 @@ import ru.operation.handler.Handled;
 import ru.operation.util.function.ThrowableConsumer;
 
 @RequiredArgsConstructor
-public class SimpleHandler<I> extends AbstractHandler<I> {
+public class ConsumerHandler<I> extends AbstractHandler<I> {
 
     @NonNull private final ThrowableConsumer<I> consumer;
 

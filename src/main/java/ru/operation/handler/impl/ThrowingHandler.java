@@ -8,10 +8,10 @@ import ru.operation.util.function.ThrowableConsumer;
 
 /**
  * Runs a consumer and lets exceptions escape, so an outer catching wrapper can map them. Unlike
- * {@link SimpleHandler}, this does not turn failures into {@link Handled#error(Exception)} itself.
+ * {@link ConsumerHandler}, this does not turn failures into {@link Handled#error(Exception)} itself.
  */
 @RequiredArgsConstructor
-public class PropagatingHandler<I> implements Handler<I> {
+public class ThrowingHandler<I> implements Handler<I> {
 
     @NonNull private final ThrowableConsumer<I> consumer;
 
@@ -32,6 +32,6 @@ public class PropagatingHandler<I> implements Handler<I> {
 
     @Override
     public String toString() {
-        return "Propagating(" + consumer + ")";
+        return "Throwing(" + consumer + ")";
     }
 }

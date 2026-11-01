@@ -12,16 +12,16 @@ import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
 import ru.operation.processor.Processors;
 
-public class HandlerThenComposeTest {
+public class HandlerThenProcessTest {
 
     @Test
-    public void thenComposePassesTheSameInputWhenDone() {
+    public void thenProcessPassesTheSameInputWhenDone() {
         List<String> seen = new ArrayList<>();
         String input = "a1";
         AtomicReference<String> received = new AtomicReference<>();
         Processor<String, String> issue =
                 Handlers.of((String order) -> seen.add("save"))
-                        .thenCompose(
+                        .thenProcess(
                                 Processors.of(
                                         order -> {
                                             received.set(order);
@@ -37,7 +37,7 @@ public class HandlerThenComposeTest {
     }
 
     @Test
-    public void thenComposePropagatesSkipAndError() {
+    public void thenProcessPropagatesSkipAndError() {
         List<String> seen = new ArrayList<>();
         Processor<String, String> next =
                 Processors.of(
@@ -47,11 +47,11 @@ public class HandlerThenComposeTest {
                         });
 
         Handler<String> skipping = input -> Handled.skipped();
-        assertTrue(skipping.thenCompose(next).process("x").isSkipped());
+        assertTrue(skipping.thenProcess(next).process("x").isSkipped());
 
         IllegalStateException boom = new IllegalStateException("boom");
         Handler<String> failing = input -> Handled.error(boom);
-        Processed<String> error = failing.thenCompose(next).process("x");
+        Processed<String> error = failing.thenProcess(next).process("x");
 
         assertTrue(error.isError());
         assertSame(boom, error.exception());

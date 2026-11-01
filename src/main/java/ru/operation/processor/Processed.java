@@ -45,7 +45,7 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
         return new Processed<>(null, ResultState.ERROR, exception);
     }
 
-    public static <O> Processed<O> of(O value) {
+    public static <O> Processed<O> done(O value) {
         return new Processed<>(value, DONE, null);
     }
 
@@ -56,7 +56,7 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
 
     /**
      * Maps a successful payload. Skip and error propagate and {@code transform} is not called.
-     * {@code null} from {@code transform} is {@link #of(Object) DONE with a null payload}. An
+     * {@code null} from {@code transform} is {@link #done(Object) DONE with a null payload}. An
      * exception from {@code transform} is {@link #error(Exception)}. {@link Error} is not caught.
      */
     @SuppressWarnings("unchecked")
@@ -65,7 +65,7 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
             return (Processed<O>) this;
         }
         try {
-            return of(transform.apply(value));
+            return done(transform.apply(value));
         } catch (Exception e) {
             return error(e);
         }

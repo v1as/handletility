@@ -3,10 +3,10 @@ package ru.operation.util;
 import java.util.Collection;
 import java.util.List;
 
-/** Collection helpers. */
-public final class Collections {
+/** Collection argument checks. */
+public final class CollectionChecks {
 
-    private Collections() {}
+    private CollectionChecks() {}
 
     public static boolean isNullOrEmpty(Collection<?> collection) {
         return collection == null || collection.isEmpty();

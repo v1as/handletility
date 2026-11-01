@@ -60,7 +60,7 @@ public class HandlerOrTest {
         IdentifiedHandler<String, String> identified =
                 Handlers.<String>of(seen::add).identifiedBy("audit");
 
-        assertEquals("audit", identified.getIdentifier());
+        assertEquals("audit", identified.identifier());
         assertTrue(identified.handle("marko").isDone());
         assertEquals(List.of("marko"), seen);
     }

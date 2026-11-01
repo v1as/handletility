@@ -118,12 +118,12 @@ public class ProcessorThenTest {
         Processor<String, String> second =
                 input -> {
                     seen.add("second");
-                    return Processed.of(input + "-ok");
+                    return Processed.done(input + "-ok");
                 };
         Processor<String, String> third =
                 input -> {
                     seen.add("third");
-                    return Processed.of("nope");
+                    return Processed.done("nope");
                 };
 
         Processed<String> result = first.or(second).or(third).process("marko");
@@ -138,14 +138,14 @@ public class ProcessorThenTest {
         Processor<String, String> next =
                 input -> {
                     seen.add("next");
-                    return Processed.of("other");
+                    return Processed.done("other");
                 };
 
-        Processor<String, String> done = input -> Processed.of("kept");
+        Processor<String, String> done = input -> Processed.done("kept");
         assertEquals("kept", done.or(next).process("x").value());
         assertTrue(seen.isEmpty());
 
-        Processor<String, String> empty = input -> Processed.of(null);
+        Processor<String, String> empty = input -> Processed.done(null);
         Processed<String> doneWithNull = empty.or(next).process("x");
         assertTrue(doneWithNull.isDone());
         assertNull(doneWithNull.value());
@@ -201,7 +201,7 @@ public class ProcessorThenTest {
         IdentifiedProcessor<String, String, Integer> identified =
                 Processors.<String, Integer>of(Integer::parseInt).identifiedBy("parse");
 
-        assertEquals("parse", identified.getIdentifier());
+        assertEquals("parse", identified.identifier());
         assertEquals(42, identified.process("42").value());
     }
 
