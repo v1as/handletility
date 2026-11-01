@@ -4,6 +4,7 @@ import static ru.operation.util.Checks.notNull;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
+import ru.operation.Failure;
 import ru.operation.handler.Handler;
 import ru.operation.processor.impl.FilterProcessor;
 import ru.operation.processor.impl.FunctionProcessor;
@@ -17,7 +18,8 @@ import ru.operation.util.function.ThrowableFunction;
  * <p>{@link #thenApply}, {@link #thenCompose}, {@link #filter} and {@link #thenHandle} follow {@link
  * Processed}: skip and error propagate, and later steps are not invoked. {@link #and} runs the next
  * processor on the same input only after done and folds both payloads. {@link #or} tries the next
- * processor on the same input after skip and still stops on done or error.
+ * processor on the same input after skip and still stops on done or error. {@link #recover} turns an
+ * error into {@link Processed#done(Object)} from the original input and the exception.
  */
 @FunctionalInterface
 public interface Processor<I, O> {
@@ -81,6 +83,27 @@ public interface Processor<I, O> {
                 }
             }
             return Processed.skipped();
+        };
+    }
+
+    /**
+     * Turns {@link Processed#error(Exception)} into {@link Processed#done(Object)}. {@code
+     * recovery} receives the original input and the exception and its value, including {@code null},
+     * is the payload. Done and skip are returned unchanged and {@code recovery} is not called. An
+     * exception from {@code recovery} is {@link Processed#error(Exception)}. {@link Error} is not
+     * caught.
+     */
+    default Processor<I, O> recover(ThrowableFunction<Failure<I>, O> recovery) {
+        return input -> {
+            Processed<O> result = process(input);
+            if (result.isError()) {
+                try {
+                    return Processed.done(recovery.apply(new Failure<>(input, result.exception())));
+                } catch (Exception exception) {
+                    return Processed.error(exception);
+                }
+            }
+            return result;
         };
     }
 

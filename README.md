@@ -136,6 +136,33 @@ money.process(new Order(null, "EUR")); // skipped: cents пропустил, cur
 money.process(new Order("15", null));  // cents done, currency skipped → skipped
 ```
 
+## Сбой становится значением
+
+```java
+record Charged(String method, int cents, String failure) {}
+
+Processor<Payment, Charged> charge =
+        Processor.<Payment>when(payment -> "card".equals(payment.method()))
+                .thenApply(
+                        payment -> {
+                            if (payment.cents() < 0) {
+                                throw new IllegalArgumentException("negative");
+                            }
+                            gateway.charge(payment);
+                            return new Charged(payment.method(), payment.cents(), null);
+                        })
+                .recover(
+                        failure ->
+                                new Charged(
+                                        failure.input().method(),
+                                        failure.input().cents(),
+                                        failure.exception().getMessage()));
+
+charge.process(new Payment("card", 500));   // done, failure null
+charge.process(new Payment("wallet", 500)); // skipped
+charge.process(new Payment("card", -1));    // done, failure "negative"
+```
+
 ## Дальше проходит только done
 
 ```java
