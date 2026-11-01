@@ -29,7 +29,7 @@ import ru.operation.util.function.ThrowablePredicate;
  * #onException}). {@link #when} sits inside catching and outside around, so a failed predicate
  * skips before/after and the core. When, around, logging and MDC are omitted when not configured.
  */
-public final class ProcessorCompose<I, O> {
+public final class ProcessorBuilder<I, O> {
 
     private final Processor<I, O> core;
     private String name;
@@ -40,33 +40,33 @@ public final class ProcessorCompose<I, O> {
     private ThrowablePredicate<I> when;
     private final List<MdcEntry<I>> mdcEntries = new ArrayList<>();
 
-    private ProcessorCompose(@NonNull Processor<I, O> core) {
+    private ProcessorBuilder(@NonNull Processor<I, O> core) {
         this.core = core;
     }
 
-    public static <I, O> ProcessorCompose<I, O> from(Processor<I, O> core) {
-        return new ProcessorCompose<>(notNull(core, "core"));
+    public static <I, O> ProcessorBuilder<I, O> from(Processor<I, O> core) {
+        return new ProcessorBuilder<>(notNull(core, "core"));
     }
 
     /**
-     * Compose entry for a function ({@code null} result → {@link Processed#done}). Exceptions
+     * Builder entry for a function ({@code null} result → {@link Processed#done}). Exceptions
      * propagate to {@link #onException}. {@link Processor#of} keeps them inside the processor.
      */
-    public static <I, O> ProcessorCompose<I, O> from(ThrowableFunction<I, O> transform) {
+    public static <I, O> ProcessorBuilder<I, O> from(ThrowableFunction<I, O> transform) {
         return from(new ThrowingProcessor<>(notNull(transform, "transform")));
     }
 
     /** Optional logger suffix. The logger is the core's class. Absent means no suffix. */
-    public ProcessorCompose<I, O> named(String name) {
+    public ProcessorBuilder<I, O> named(String name) {
         this.name = notNull(name, "name");
         return this;
     }
 
-    public ProcessorCompose<I, O> logging() {
+    public ProcessorBuilder<I, O> logging() {
         return logging(Level.DEBUG);
     }
 
-    public ProcessorCompose<I, O> logging(Level level) {
+    public ProcessorBuilder<I, O> logging(Level level) {
         this.loggingLevel = notNull(level, "logging level");
         return this;
     }
@@ -78,7 +78,7 @@ public final class ProcessorCompose<I, O> {
      * Processor.when} starts a chain from the input and keeps that input as payload. The instance
      * {@code filter} checks a successful output.
      */
-    public ProcessorCompose<I, O> when(ThrowablePredicate<I> predicate) {
+    public ProcessorBuilder<I, O> when(ThrowablePredicate<I> predicate) {
         this.when = notNull(predicate, "predicate");
         return this;
     }
@@ -88,12 +88,12 @@ public final class ProcessorCompose<I, O> {
      * ERROR} skips the core and after and becomes the operation result. A thrown exception reaches
      * {@link #onException}.
      */
-    public ProcessorCompose<I, O> before(Handler<I> before) {
+    public ProcessorBuilder<I, O> before(Handler<I> before) {
         this.beforeHandler = notNull(before, "before handler");
         return this;
     }
 
-    public ProcessorCompose<I, O> before(ThrowableConsumer<I> before) {
+    public ProcessorBuilder<I, O> before(ThrowableConsumer<I> before) {
         return before(new ThrowingHandler<>(notNull(before, "before consumer")));
     }
 
@@ -102,12 +102,12 @@ public final class ProcessorCompose<I, O> {
      * {@code ERROR} becomes the operation result. If the main result is already an error, that
      * exception is suppressed on this failure. A thrown exception reaches {@link #onException}.
      */
-    public ProcessorCompose<I, O> after(Handler<Processed<O>> after) {
+    public ProcessorBuilder<I, O> after(Handler<Processed<O>> after) {
         this.afterHandler = notNull(after, "after handler");
         return this;
     }
 
-    public ProcessorCompose<I, O> after(ThrowableConsumer<Processed<O>> after) {
+    public ProcessorBuilder<I, O> after(ThrowableConsumer<Processed<O>> after) {
         return after(new ThrowingHandler<>(notNull(after, "after consumer")));
     }
 
@@ -116,22 +116,22 @@ public final class ProcessorCompose<I, O> {
      * interface). May recover to a successful {@link Processed} or return {@link
      * Processed#error(Exception)}.
      */
-    public ProcessorCompose<I, O> onException(Processor<Failure<I>, O> onException) {
+    public ProcessorBuilder<I, O> onException(Processor<Failure<I>, O> onException) {
         this.onException = notNull(onException, "onException");
         return this;
     }
 
-    public <T> ProcessorCompose<I, O> mdc(String key, Function<I, T> valueExtractor) {
+    public <T> ProcessorBuilder<I, O> mdc(String key, Function<I, T> valueExtractor) {
         mdcEntries.add(MdcEntry.of(key, valueExtractor));
         return this;
     }
 
-    public ProcessorCompose<I, O> mdc(MdcEntry<I> entry) {
+    public ProcessorBuilder<I, O> mdc(MdcEntry<I> entry) {
         mdcEntries.add(notNull(entry, "mdc entry"));
         return this;
     }
 
-    public ProcessorCompose<I, O> mdc(List<MdcEntry<I>> entries) {
+    public ProcessorBuilder<I, O> mdc(List<MdcEntry<I>> entries) {
         mdcEntries.addAll(notNull(entries, "mdc entries"));
         return this;
     }

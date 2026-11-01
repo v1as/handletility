@@ -219,7 +219,7 @@ commands.handle(new Command(null));     // error ключа
 record Order(String id, String rawAmount) {}
 
 Processor<Order, Integer> readAmount =
-        ProcessorCompose.from((Order order) -> Integer.valueOf(order.rawAmount()))
+        ProcessorBuilder.from((Order order) -> Integer.valueOf(order.rawAmount()))
                 .named("amount")
                 .logging()
                 .mdc("orderId", Order::id)
@@ -234,7 +234,7 @@ readAmount.process(new Order("a1", "15"));   // done, 15
 readAmount.process(new Order("a1", "nope")); // done, 0 — восстановил onException
 ```
 
-Статический `Processor.when` проверяет вход в начале цепочки и при успехе передаёт дальше тот же вход. Метод экземпляра `filter` проверяет уже успешный выход. `when` в `ProcessorCompose` стоит снаружи before, after и ядра: ложный предикат пропускает их все, а checked-исключение предиката доходит до `onException`.
+Статический `Processor.when` проверяет вход в начале цепочки и при успехе передаёт дальше тот же вход. Метод экземпляра `filter` проверяет уже успешный выход. `when` в `ProcessorBuilder` стоит снаружи before, after и ядра: ложный предикат пропускает их все, а checked-исключение предиката доходит до `onException`.
 
 `onException` получает исключение функции и может вернуть done. Когда функция бросает, `after` не выполняется.
 
@@ -242,7 +242,7 @@ readAmount.process(new Order("a1", "nope")); // done, 0 — восстанови
 
 `named` добавляет суффикс к имени логгера, `logging` пишет исход вызова, `mdc` на время вызова кладёт id заказа в MDC.
 
-У `Processor.of` брошенное исключение уже записано как error, поэтому восстановление живёт на `compose`.
+У `Processor.of` брошенное исключение уже записано как error, поэтому восстановление живёт на билдере.
 
 ## На границе три состояния ещё различимы
 

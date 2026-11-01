@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 
 /**
  * Template for handlers: optional {@link #check(Object)} and exception → {@link
- * ru.operation.ResultState#ERROR}. Naming and outcome logging belong in wrappers / compose.
+ * ru.operation.ResultState#ERROR}. Naming and outcome logging belong in wrappers / builder.
  */
 public abstract class AbstractHandler<I> implements Handler<I> {
 

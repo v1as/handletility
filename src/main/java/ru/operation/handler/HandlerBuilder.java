@@ -29,7 +29,7 @@ import ru.operation.util.function.ThrowablePredicate;
  * skips before/after and the core. When, around, logging and MDC are omitted when not configured.
  */
 @RequiredArgsConstructor(access = PRIVATE)
-public final class HandlerCompose<I> {
+public final class HandlerBuilder<I> {
 
     @NonNull private final Handler<I> core;
     private String name;
@@ -40,29 +40,29 @@ public final class HandlerCompose<I> {
     private ThrowablePredicate<I> when;
     private final List<MdcEntry<I>> mdcEntries = new ArrayList<>();
 
-    public static <I> HandlerCompose<I> from(Handler<I> core) {
-        return new HandlerCompose<>(notNull(core, "core"));
+    public static <I> HandlerBuilder<I> from(Handler<I> core) {
+        return new HandlerBuilder<>(notNull(core, "core"));
     }
 
     /**
-     * Compose entry for a consumer. Exceptions propagate to {@link #onException}. {@link Handler#of}
+     * Builder entry for a consumer. Exceptions propagate to {@link #onException}. {@link Handler#of}
      * keeps them inside the handler.
      */
-    public static <I> HandlerCompose<I> from(ThrowableConsumer<I> consumer) {
+    public static <I> HandlerBuilder<I> from(ThrowableConsumer<I> consumer) {
         return from(new ThrowingHandler<>(notNull(consumer, "consumer")));
     }
 
     /** Optional logger suffix. The logger is the core's class. Absent means no suffix. */
-    public HandlerCompose<I> named(String name) {
+    public HandlerBuilder<I> named(String name) {
         this.name = notNull(name, "name");
         return this;
     }
 
-    public HandlerCompose<I> logging() {
+    public HandlerBuilder<I> logging() {
         return logging(Level.DEBUG);
     }
 
-    public HandlerCompose<I> logging(Level level) {
+    public HandlerBuilder<I> logging(Level level) {
         this.loggingLevel = notNull(level, "logging level");
         return this;
     }
@@ -72,7 +72,7 @@ public final class HandlerCompose<I> {
      * A later call replaces the previous predicate. A predicate exception, including a checked one,
      * reaches {@link #onException} as the original type.
      */
-    public HandlerCompose<I> when(ThrowablePredicate<I> predicate) {
+    public HandlerBuilder<I> when(ThrowablePredicate<I> predicate) {
         this.when = notNull(predicate, "predicate");
         return this;
     }
@@ -82,12 +82,12 @@ public final class HandlerCompose<I> {
      * ERROR} skips the core and after and becomes the operation result. A thrown exception reaches
      * {@link #onException}.
      */
-    public HandlerCompose<I> before(Handler<I> before) {
+    public HandlerBuilder<I> before(Handler<I> before) {
         this.beforeHandler = notNull(before, "before handler");
         return this;
     }
 
-    public HandlerCompose<I> before(ThrowableConsumer<I> before) {
+    public HandlerBuilder<I> before(ThrowableConsumer<I> before) {
         return before(new ThrowingHandler<>(notNull(before, "before consumer")));
     }
 
@@ -96,12 +96,12 @@ public final class HandlerCompose<I> {
      * ERROR} becomes the operation result. If the main result is already an error, that exception
      * is suppressed on this failure. A thrown exception reaches {@link #onException}.
      */
-    public HandlerCompose<I> after(Handler<Handled> after) {
+    public HandlerBuilder<I> after(Handler<Handled> after) {
         this.afterHandler = notNull(after, "after handler");
         return this;
     }
 
-    public HandlerCompose<I> after(ThrowableConsumer<Handled> after) {
+    public HandlerBuilder<I> after(ThrowableConsumer<Handled> after) {
         return after(new ThrowingHandler<>(notNull(after, "after consumer")));
     }
 
@@ -109,22 +109,22 @@ public final class HandlerCompose<I> {
      * Fully replaces default exception mapping. May recover to {@link Handled#done()} or return
      * {@link Handled#error(Exception)}.
      */
-    public HandlerCompose<I> onException(Handler<Failure<I>> onException) {
+    public HandlerBuilder<I> onException(Handler<Failure<I>> onException) {
         this.onException = notNull(onException, "onException");
         return this;
     }
 
-    public <T> HandlerCompose<I> mdc(String key, Function<I, T> valueExtractor) {
+    public <T> HandlerBuilder<I> mdc(String key, Function<I, T> valueExtractor) {
         mdcEntries.add(MdcEntry.of(key, valueExtractor));
         return this;
     }
 
-    public HandlerCompose<I> mdc(MdcEntry<I> entry) {
+    public HandlerBuilder<I> mdc(MdcEntry<I> entry) {
         mdcEntries.add(notNull(entry, "mdc entry"));
         return this;
     }
 
-    public HandlerCompose<I> mdc(List<MdcEntry<I>> entries) {
+    public HandlerBuilder<I> mdc(List<MdcEntry<I>> entries) {
         mdcEntries.addAll(notNull(entries, "mdc entries"));
         return this;
     }
