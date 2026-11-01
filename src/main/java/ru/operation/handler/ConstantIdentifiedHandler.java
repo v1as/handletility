@@ -11,11 +11,6 @@ record ConstantIdentifiedHandler<K, I>(@NonNull K identifier, @NonNull Handler<I
     }
 
     @Override
-    public K identifier() {
-        return identifier;
-    }
-
-    @Override
     public String toString() {
         return "Identified[" + identifier + "](" + delegate + ")";
     }

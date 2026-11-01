@@ -1,12 +1,10 @@
 package ru.operation.processor;
 
-record ConstantIdentifiedProcessor<K, I, O>(K identifier, Processor<I, O> delegate)
-        implements IdentifiedProcessor<K, I, O> {
+import lombok.NonNull;
 
-    @Override
-    public K identifier() {
-        return identifier;
-    }
+record ConstantIdentifiedProcessor<K, I, O>(
+        @NonNull K identifier, @NonNull Processor<I, O> delegate)
+        implements IdentifiedProcessor<K, I, O> {
 
     @Override
     public Processed<O> process(I input) {

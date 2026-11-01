@@ -27,10 +27,10 @@ public interface Handler<I> {
             if (handled.isError()) {
                 return Processed.error(handled.exception());
             }
-            if (handled.isSkipped()) {
-                return Processed.skipped();
+            if (handled.isDone()) {
+                return next.process(input);
             }
-            return next.process(input);
+            return Processed.skipped();
         };
     }
 
@@ -42,7 +42,13 @@ public interface Handler<I> {
     default Handler<I> or(Handler<? super I> next) {
         return input -> {
             Handled result = handle(input);
-            return result.isSkipped() ? next.handle(input) : result;
+            if (result.isError()) {
+                return result;
+            }
+            if (result.isDone()) {
+                return result;
+            }
+            return next.handle(input);
         };
     }
 

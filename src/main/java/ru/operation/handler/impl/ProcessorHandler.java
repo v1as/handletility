@@ -22,9 +22,9 @@ public class ProcessorHandler<I, O> implements Handler<I> {
         if (processed.isError()) {
             return error(processed.exception());
         }
-        if (processed.isSkipped()) {
-            return skipped();
+        if (processed.isDone()) {
+            return done();
         }
-        return done();
+        return skipped();
     }
 }

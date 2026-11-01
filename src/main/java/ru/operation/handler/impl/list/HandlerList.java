@@ -55,17 +55,17 @@ public class HandlerList<I> extends AbstractHandler<I> {
             } catch (Exception e) {
                 handled = onException.handle(new Failure<>(input, e));
             }
-            if (handled.isDone()) {
-                done = true;
-                if (!should(CONTINUE_ON_DONE)) {
-                    return handled;
-                }
-            }
             if (handled.isError()) {
                 failed = true;
                 errors.add(handled.exception());
                 if (!should(CONTINUE_ON_ERROR)) {
                     return error(combine(errors));
+                }
+            }
+            if (handled.isDone()) {
+                done = true;
+                if (!should(CONTINUE_ON_DONE)) {
+                    return handled;
                 }
             }
         }

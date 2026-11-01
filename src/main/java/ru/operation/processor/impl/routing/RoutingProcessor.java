@@ -32,11 +32,11 @@ public class RoutingProcessor<K, I, O> extends AbstractProcessor<I, O> {
     @Override
     protected Processed<O> processInternal(I input) {
         Processed<? extends Processor<I, O>> processor = lookup.process(input);
-        if (processor.hasValue()) {
-            return processor.value().process(input);
-        }
         if (processor.isError()) {
             return error(processor.exception());
+        }
+        if (processor.hasValue()) {
+            return processor.value().process(input);
         }
         if (defaultProcessor != null) {
             log.trace("Using default processor");

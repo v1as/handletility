@@ -36,7 +36,13 @@ public interface Processor<I, O> {
     default Processor<I, O> or(Processor<? super I, O> next) {
         return input -> {
             Processed<O> result = process(input);
-            return result.isSkipped() ? next.process(input) : result;
+            if (result.isError()) {
+                return result;
+            }
+            if (result.isDone()) {
+                return result;
+            }
+            return next.process(input);
         };
     }
 

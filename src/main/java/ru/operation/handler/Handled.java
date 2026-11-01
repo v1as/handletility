@@ -81,14 +81,14 @@ public record Handled(ResultState state, Exception exception) {
         if (isError()) {
             return Processed.error(exception);
         }
-        if (isSkipped()) {
-            return Processed.skipped();
+        if (isDone()) {
+            try {
+                return Processed.done(next.get());
+            } catch (Exception e) {
+                return Processed.error(e);
+            }
         }
-        try {
-            return Processed.done(next.get());
-        } catch (Exception e) {
-            return Processed.error(e);
-        }
+        return Processed.skipped();
     }
 
     @Override

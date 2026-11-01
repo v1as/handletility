@@ -6,7 +6,6 @@ import static ru.operation.handler.Handled.skipped;
 
 import java.util.List;
 import java.util.Objects;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import ru.operation.handler.AbstractHandler;
@@ -67,15 +66,18 @@ public class HandlerListTest {
         }
     }
 
-    @RequiredArgsConstructor
     private abstract static class AbstractCommand extends AbstractHandler<Command>
             implements IdentifiedHandler<String, Command> {
 
-        private final String name;
+        private final String identifier;
+
+        protected AbstractCommand(String identifier) {
+            this.identifier = identifier;
+        }
 
         @Override
         public String identifier() {
-            return name;
+            return identifier;
         }
     }
 

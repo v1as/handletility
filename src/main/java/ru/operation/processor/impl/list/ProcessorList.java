@@ -67,6 +67,14 @@ public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
                     "Processor '{}' has result '{}'",
                     processor.getClass().getSimpleName(),
                     processed);
+            if (processed.isError()) {
+                failed = true;
+                errors.add(processed.exception());
+                if (!modifiers.contains(CONTINUE_ON_ERROR)) {
+                    return error(combine(errors));
+                }
+                continue;
+            }
             if (processed.isDone() && combiner != null) {
                 if (!hasDone) {
                     accumulator = processed.value();
@@ -78,18 +86,16 @@ public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
                     continue;
                 } catch (Exception exception) {
                     log.warn("Processing error", exception);
-                    processed = error(exception);
+                    failed = true;
+                    errors.add(exception);
+                    if (!modifiers.contains(CONTINUE_ON_ERROR)) {
+                        return error(combine(errors));
+                    }
+                    continue;
                 }
             }
             if (processed.isDone()) {
                 return processed;
-            }
-            if (processed.isError()) {
-                failed = true;
-                errors.add(processed.exception());
-                if (!modifiers.contains(CONTINUE_ON_ERROR)) {
-                    return error(combine(errors));
-                }
             }
         }
         if (failed) {

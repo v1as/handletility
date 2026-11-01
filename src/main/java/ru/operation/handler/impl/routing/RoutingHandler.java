@@ -37,12 +37,12 @@ public class RoutingHandler<K, I> extends AbstractHandler<I> {
     @Override
     protected Handled handleInternal(I input) {
         Processed<? extends IdentifiedHandler<K, I>> handler = lookup.process(input);
+        if (handler.isError()) {
+            return error(handler.exception());
+        }
         if (handler.hasValue()) {
             log.trace("Using handler {}", handler);
             return handler.value().handle(input);
-        }
-        if (handler.isError()) {
-            return error(handler.exception());
         }
         if (defaultHandler != null) {
             log.trace("Using default handler");

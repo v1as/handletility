@@ -61,7 +61,10 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
      */
     @SuppressWarnings("unchecked")
     public <O> Processed<O> map(Function<T, O> transform) {
-        if (isError() || isSkipped()) {
+        if (isError()) {
+            return (Processed<O>) this;
+        }
+        if (isSkipped()) {
             return (Processed<O>) this;
         }
         try {
@@ -78,7 +81,10 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
 
     @SuppressWarnings("unchecked")
     public <O> Processed<O> flatMap(Processor<T, O> processor) {
-        if (isError() || isSkipped()) {
+        if (isError()) {
+            return (Processed<O>) this;
+        }
+        if (isSkipped()) {
             return (Processed<O>) this;
         }
         return processor.process(value);
@@ -91,7 +97,10 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
      * to the predicate.
      */
     public Processed<T> filter(Predicate<? super T> predicate) {
-        if (isError() || isSkipped()) {
+        if (isError()) {
+            return this;
+        }
+        if (isSkipped()) {
             return this;
         }
         try {
@@ -105,10 +114,10 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
         if (isError()) {
             return Handled.error(exception);
         }
-        if (isSkipped()) {
-            return Handled.skipped();
+        if (isDone()) {
+            return handler.handle(value);
         }
-        return handler.handle(value);
+        return Handled.skipped();
     }
 
     public boolean isError() {
