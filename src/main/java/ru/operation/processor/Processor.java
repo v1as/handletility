@@ -1,8 +1,13 @@
 package ru.operation.processor;
 
+import static ru.operation.util.Checks.notNull;
+
 import java.util.function.Function;
 import java.util.function.Predicate;
 import ru.operation.handler.Handler;
+import ru.operation.processor.impl.FilterProcessor;
+import ru.operation.processor.impl.FunctionProcessor;
+import ru.operation.util.function.ThrowableFunction;
 
 /**
  * Transforms {@code I} into {@code O}. Prefer extending {@link AbstractProcessor} for check,
@@ -50,8 +55,8 @@ public interface Processor<I, O> {
      * Keeps a successful output only if {@code predicate} holds; otherwise {@link
      * Processed#skipped()}. Skip/error from this processor propagate unchanged. Delegates to
      * {@link Processed#filter}: an exception from {@code predicate} becomes {@link
-     * Processed#error(Exception)}. {@link Processors#filter(Predicate)} is the same check on the
-     * input and starts a chain.
+     * Processed#error(Exception)}. {@code when} is the same check on the input and starts a
+     * chain.
      */
     default Processor<I, O> filter(Predicate<? super O> predicate) {
         return input -> process(input).filter(predicate);
@@ -65,5 +70,23 @@ public interface Processor<I, O> {
     /** Identifies this processor by a constant routing key. */
     default <K> IdentifiedProcessor<K, I, O> identifiedBy(K identifier) {
         return new ConstantIdentifiedProcessor<>(identifier, this);
+    }
+
+    /**
+     * Bare processor from a {@link ThrowableFunction} ({@code null} result → {@link Processed#done}).
+     * A thrown exception is {@link Processed#error(Exception)}.
+     */
+    static <A, B> Processor<A, B> of(ThrowableFunction<A, B> transform) {
+        return new FunctionProcessor<>(notNull(transform, "transform"));
+    }
+
+    /**
+     * Starts a chain from the input. The input is {@link Processed#done(Object) done} with that same
+     * value when {@code predicate} holds, and {@link Processed#skipped()} otherwise. An exception
+     * from the predicate is {@link Processed#error(Exception)}. The instance {@link #filter} checks
+     * a successful output of an existing chain.
+     */
+    static <A> Processor<A, A> when(Predicate<? super A> predicate) {
+        return new FilterProcessor<>(notNull(predicate, "predicate"));
     }
 }

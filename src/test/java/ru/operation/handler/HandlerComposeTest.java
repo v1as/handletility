@@ -37,7 +37,7 @@ public class HandlerComposeTest {
     public void buildOrderIsLoggingMdcCore() {
         Handler<String> core = new ConsumerHandler<>(s -> {});
         Handler<String> composed =
-                Handlers.compose(core)
+                HandlerCompose.from(core)
                         .mdc("requestId", s -> "id-" + s)
                         .named("persist")
                         .logging()
@@ -50,7 +50,9 @@ public class HandlerComposeTest {
     @Test
     public void loggingWithoutName() {
         Handler<String> composed =
-                Handlers.compose(new ConsumerHandler<String>(s -> {})).logging(Level.TRACE).build();
+                HandlerCompose.from(new ConsumerHandler<String>(s -> {}))
+                        .logging(Level.TRACE)
+                        .build();
 
         assertInstanceOf(LoggingHandler.class, composed);
         assertTrue(composed.toString().startsWith("Logging(TRACE, Catching("));
@@ -60,7 +62,7 @@ public class HandlerComposeTest {
     public void mdcReachesDelegate() {
         AtomicReference<String> seen = new AtomicReference<>();
         Handler<String> composed =
-                Handlers.compose(
+                HandlerCompose.from(
                                 new ConsumerHandler<String>(
                                         input -> seen.set(MDC.get("requestId"))))
                         .mdc("requestId", s -> "req-" + s)
@@ -74,13 +76,13 @@ public class HandlerComposeTest {
     public void namedRejectsNull() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> Handlers.compose(new ConsumerHandler<String>(s -> {})).named(null));
+                () -> HandlerCompose.from(new ConsumerHandler<String>(s -> {})).named(null));
     }
 
     @Test
     public void mdcWithoutLogging() {
         Handler<String> composed =
-                Handlers.compose(new ConsumerHandler<String>(s -> {})).mdc("k", s -> s).build();
+                HandlerCompose.from(new ConsumerHandler<String>(s -> {})).mdc("k", s -> s).build();
         assertInstanceOf(MdcHandler.class, composed);
     }
 
@@ -88,7 +90,7 @@ public class HandlerComposeTest {
     public void beforeAndAfterWrapCoreInsideMdc() {
         List<String> order = new ArrayList<>();
         Handler<String> composed =
-                Handlers.compose(new ConsumerHandler<String>(s -> order.add("main")))
+                HandlerCompose.from(new ConsumerHandler<String>(s -> order.add("main")))
                         .before(new ConsumerHandler<>(s -> order.add("before")))
                         .after(
                                 result -> {
@@ -113,7 +115,7 @@ public class HandlerComposeTest {
     public void composeAcceptsConsumerAndBeforeAfterConsumers() {
         List<String> order = new ArrayList<>();
         Handler<String> composed =
-                Handlers.compose(
+                HandlerCompose.from(
                                 (String s) -> {
                                     order.add("main");
                                 })
@@ -137,7 +139,7 @@ public class HandlerComposeTest {
                 input -> {
                     throw new IllegalStateException("boom");
                 };
-        Handler<String> composed = Handlers.compose(raw).build();
+        Handler<String> composed = HandlerCompose.from(raw).build();
 
         Handled result = composed.handle("x");
         assertTrue(result.isError());
@@ -152,7 +154,7 @@ public class HandlerComposeTest {
                     throw new IllegalStateException("boom");
                 };
         Handler<String> composed =
-                Handlers.compose(raw).onException(failure -> Handled.done()).build();
+                HandlerCompose.from(raw).onException(failure -> Handled.done()).build();
 
         assertTrue(composed.handle("x").isDone());
     }
@@ -160,7 +162,7 @@ public class HandlerComposeTest {
     @Test
     public void composeConsumerStillMapsExceptionToError() {
         Handler<String> composed =
-                Handlers.compose(
+                HandlerCompose.from(
                                 (String s) -> {
                                     throw new RuntimeException("from-consumer");
                                 })
@@ -178,7 +180,7 @@ public class HandlerComposeTest {
                     throw new IOException("checked");
                 };
         Handler<String> composed =
-                Handlers.compose(consumer)
+                HandlerCompose.from(consumer)
                         .onException(
                                 failure -> {
                                     assertInstanceOf(IOException.class, failure.exception());
@@ -196,7 +198,7 @@ public class HandlerComposeTest {
         AtomicBoolean afterCalled = new AtomicBoolean();
         AtomicBoolean onExceptionCalled = new AtomicBoolean();
         Handler<String> composed =
-                Handlers.compose((String s) -> coreCalled.set(true))
+                HandlerCompose.from((String s) -> coreCalled.set(true))
                         .before(
                                 new ConsumerHandler<String>(
                                         s -> {
@@ -228,7 +230,7 @@ public class HandlerComposeTest {
     public void afterHandlerErrorReplacesCoreSuccess() {
         AtomicBoolean onExceptionCalled = new AtomicBoolean();
         Handler<String> composed =
-                Handlers.compose((String s) -> {})
+                HandlerCompose.from((String s) -> {})
                         .after(
                                 new ConsumerHandler<Handled>(
                                         result -> {
@@ -254,7 +256,7 @@ public class HandlerComposeTest {
         IllegalStateException hook = new IllegalStateException("hook");
         Handler<String> coreHandler = input -> Handled.error(core);
         Handler<String> composed =
-                Handlers.compose(coreHandler)
+                HandlerCompose.from(coreHandler)
                         .after(
                                 result -> {
                                     return Handled.error(hook);
@@ -277,7 +279,7 @@ public class HandlerComposeTest {
                     throw new IllegalStateException("hook");
                 };
         Handler<String> composed =
-                Handlers.compose((String s) -> coreCalled.set(true))
+                HandlerCompose.from((String s) -> coreCalled.set(true))
                         .before(before)
                         .onException(
                                 failure -> {
@@ -300,7 +302,7 @@ public class HandlerComposeTest {
                     throw new IllegalStateException("after");
                 };
         Handler<String> composed =
-                Handlers.compose((String s) -> {})
+                HandlerCompose.from((String s) -> {})
                         .after(after)
                         .onException(
                                 failure -> {
@@ -320,7 +322,7 @@ public class HandlerComposeTest {
     public void whenFalseSkipsBeforeCoreAndAfter() {
         List<String> order = new ArrayList<>();
         Handler<String> composed =
-                Handlers.compose(
+                HandlerCompose.from(
                                 (String s) -> {
                                     order.add("main");
                                 })
@@ -344,7 +346,7 @@ public class HandlerComposeTest {
     public void whenTrueRunsBeforeCoreAndAfter() {
         List<String> order = new ArrayList<>();
         Handler<String> composed =
-                Handlers.compose(
+                HandlerCompose.from(
                                 (String s) -> {
                                     order.add("main");
                                 })
@@ -367,7 +369,7 @@ public class HandlerComposeTest {
     public void whenPredicateExceptionReachesOnException() {
         AtomicReference<Exception> seen = new AtomicReference<>();
         Handler<String> composed =
-                Handlers.compose((String s) -> {})
+                HandlerCompose.from((String s) -> {})
                         .when(
                                 s -> {
                                     throw new IOException("pred");
@@ -386,7 +388,7 @@ public class HandlerComposeTest {
 
     @Test
     public void whenWithoutAroundStillWrapsCore() {
-        Handler<String> composed = Handlers.compose((String s) -> {}).when(s -> true).build();
+        Handler<String> composed = HandlerCompose.from((String s) -> {}).when(s -> true).build();
 
         assertTrue(composed.handle("x").isDone());
         assertTrue(composed.toString().contains("Catching(Conditional("));
@@ -397,7 +399,7 @@ public class HandlerComposeTest {
     public void secondWhenReplacesFirst() {
         List<String> order = new ArrayList<>();
         Handler<String> composed =
-                Handlers.compose(
+                HandlerCompose.from(
                                 (String s) -> {
                                     order.add("main");
                                 })
@@ -412,7 +414,7 @@ public class HandlerComposeTest {
     @Test
     public void loggingUsesCoreClassNotCatchingWrapper() {
         Handler<String> composed =
-                Handlers.compose(new CreateNoteCommandHandler()).named("note").logging().build();
+                HandlerCompose.from(new CreateNoteCommandHandler()).named("note").logging().build();
 
         Logger root = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         ListAppender<ILoggingEvent> appender = new ListAppender<>();

@@ -16,8 +16,10 @@ import ru.operation.processor.impl.CatchingProcessor;
 import ru.operation.processor.impl.ConditionalProcessor;
 import ru.operation.processor.impl.LoggingExceptionProcessor;
 import ru.operation.processor.impl.MdcProcessor;
+import ru.operation.processor.impl.ThrowingProcessor;
 import ru.operation.processor.impl.wrap.LoggingProcessor;
 import ru.operation.util.function.ThrowableConsumer;
+import ru.operation.util.function.ThrowableFunction;
 import ru.operation.util.function.ThrowablePredicate;
 
 /**
@@ -43,7 +45,15 @@ public final class ProcessorCompose<I, O> {
     }
 
     public static <I, O> ProcessorCompose<I, O> from(Processor<I, O> core) {
-        return new ProcessorCompose<>(core);
+        return new ProcessorCompose<>(notNull(core, "core"));
+    }
+
+    /**
+     * Compose entry for a function ({@code null} result → {@link Processed#done}). Exceptions
+     * propagate to {@link #onException}. {@link Processor#of} keeps them inside the processor.
+     */
+    public static <I, O> ProcessorCompose<I, O> from(ThrowableFunction<I, O> transform) {
+        return from(new ThrowingProcessor<>(notNull(transform, "transform")));
     }
 
     /** Optional logger suffix. The logger is the core's class. Absent means no suffix. */
@@ -64,9 +74,9 @@ public final class ProcessorCompose<I, O> {
     /**
      * Skips before, after and the core when {@code predicate} is false ({@link
      * Processed#skipped()}). A later call replaces the previous predicate. A predicate exception,
-     * including a checked one, reaches {@link #onException} as the original type. {@link
-     * Processors#filter} starts a chain from the input and keeps that input as payload. {@link
-     * Processor#filter} checks a successful output.
+     * including a checked one, reaches {@link #onException} as the original type. {@code
+     * Processor.when} starts a chain from the input and keeps that input as payload. The instance
+     * {@code filter} checks a successful output.
      */
     public ProcessorCompose<I, O> when(ThrowablePredicate<I> predicate) {
         this.when = notNull(predicate, "predicate");

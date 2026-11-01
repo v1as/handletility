@@ -9,15 +9,14 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import ru.operation.handler.Handler;
-import ru.operation.handler.Handlers;
 
 public class ProcessorThenTest {
 
     @Test
     public void ofThenComposeThenApply() {
         Processor<String, String> pipeline =
-                Processors.<String, Integer>of(Integer::parseInt)
-                        .thenCompose(Processors.of((Integer n) -> n * 2))
+                Processor.<String, Integer>of(Integer::parseInt)
+                        .thenCompose(Processor.of((Integer n) -> n * 2))
                         .thenApply(Object::toString);
 
         assertEquals("84", pipeline.process("42").value());
@@ -35,8 +34,7 @@ public class ProcessorThenTest {
     public void thenHandleDelegatesOnSuccess() {
         List<Integer> seen = new ArrayList<>();
         Handler<String> handler =
-                Processors.<String, Integer>of(Integer::parseInt)
-                        .thenHandle(Handlers.of(seen::add));
+                Processor.<String, Integer>of(Integer::parseInt).thenHandle(Handler.of(seen::add));
 
         assertTrue(handler.handle("7").isDone());
         assertEquals(List.of(7), seen);
@@ -46,7 +44,7 @@ public class ProcessorThenTest {
     public void thenHandlePropagatesSkip() {
         List<Integer> seen = new ArrayList<>();
         Processor<String, Integer> skipping = input -> Processed.skipped();
-        Handler<String> handler = skipping.thenHandle(Handlers.of(seen::add));
+        Handler<String> handler = skipping.thenHandle(Handler.of(seen::add));
 
         assertTrue(handler.handle("x").isSkipped());
         assertTrue(seen.isEmpty());
@@ -55,7 +53,7 @@ public class ProcessorThenTest {
     @Test
     public void filterKeepsMatchingOutput() {
         Processor<String, Integer> even =
-                Processors.<String, Integer>of(Integer::parseInt).filter(n -> n % 2 == 0);
+                Processor.<String, Integer>of(Integer::parseInt).filter(n -> n % 2 == 0);
 
         assertEquals(42, even.process("42").value());
         assertTrue(even.process("41").isSkipped());
@@ -66,7 +64,7 @@ public class ProcessorThenTest {
         List<String> seen = new ArrayList<>();
         String input = "ab";
         Processor<String, String> admitted =
-                Processors.<String>filter(value -> value.startsWith("a"));
+                Processor.<String>when(value -> value.startsWith("a"));
         Processor<String, String> pipeline =
                 admitted.thenApply(
                         value -> {
@@ -81,7 +79,7 @@ public class ProcessorThenTest {
         assertTrue(pipeline.process("b").isSkipped());
         assertEquals(List.of(input), seen);
 
-        Processed<String> acceptedNull = Processors.<String>filter(value -> true).process(null);
+        Processed<String> acceptedNull = Processor.<String>when(value -> true).process(null);
         assertTrue(acceptedNull.isDone());
         assertNull(acceptedNull.value());
     }
@@ -91,7 +89,7 @@ public class ProcessorThenTest {
         IllegalStateException boom = new IllegalStateException("boom");
         List<String> seen = new ArrayList<>();
         Processed<String> result =
-                Processors.<String>filter(
+                Processor.<String>when(
                                 value -> {
                                     throw boom;
                                 })
@@ -170,7 +168,7 @@ public class ProcessorThenTest {
     public void thenApplyTurnsExceptionIntoError() {
         IllegalStateException boom = new IllegalStateException("boom");
         Processed<Integer> result =
-                Processors.<String, Integer>of(s -> 1)
+                Processor.<String, Integer>of(s -> 1)
                         .<Integer>thenApply(
                                 n -> {
                                     throw boom;
@@ -185,7 +183,7 @@ public class ProcessorThenTest {
     public void filterTurnsExceptionIntoError() {
         IllegalStateException boom = new IllegalStateException("boom");
         Processed<Integer> result =
-                Processors.<String, Integer>of((String s) -> 1)
+                Processor.<String, Integer>of((String s) -> 1)
                         .filter(
                                 n -> {
                                     throw boom;
@@ -199,7 +197,7 @@ public class ProcessorThenTest {
     @Test
     public void identifiedByBindsKeyAndDelegates() {
         IdentifiedProcessor<String, String, Integer> identified =
-                Processors.<String, Integer>of(Integer::parseInt).identifiedBy("parse");
+                Processor.<String, Integer>of(Integer::parseInt).identifiedBy("parse");
 
         assertEquals("parse", identified.identifier());
         assertEquals(42, identified.process("42").value());

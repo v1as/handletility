@@ -41,7 +41,15 @@ public final class HandlerCompose<I> {
     private final List<MdcEntry<I>> mdcEntries = new ArrayList<>();
 
     public static <I> HandlerCompose<I> from(Handler<I> core) {
-        return new HandlerCompose<>(core);
+        return new HandlerCompose<>(notNull(core, "core"));
+    }
+
+    /**
+     * Compose entry for a consumer. Exceptions propagate to {@link #onException}. {@link Handler#of}
+     * keeps them inside the handler.
+     */
+    public static <I> HandlerCompose<I> from(ThrowableConsumer<I> consumer) {
+        return from(new ThrowingHandler<>(notNull(consumer, "consumer")));
     }
 
     /** Optional logger suffix. The logger is the core's class. Absent means no suffix. */

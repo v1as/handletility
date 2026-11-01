@@ -58,7 +58,7 @@ public class HandlerOrTest {
     public void identifiedByBindsKeyAndDelegates() {
         List<String> seen = new ArrayList<>();
         IdentifiedHandler<String, String> identified =
-                Handlers.<String>of(seen::add).identifiedBy("audit");
+                Handler.<String>of(seen::add).identifiedBy("audit");
 
         assertEquals("audit", identified.identifier());
         assertTrue(identified.handle("marko").isDone());

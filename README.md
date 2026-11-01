@@ -34,9 +34,9 @@ dependencies {
 record Payment(String method, int cents) {}
 
 Handler<Payment> card =
-        Processors.<Payment>filter(payment -> "card".equals(payment.method()))
+        Processor.<Payment>when(payment -> "card".equals(payment.method()))
                 .thenHandle(
-                        Handlers.of(
+                        Handler.of(
                                 payment -> {
                                     if (payment.cents() < 0) {
                                         throw new IllegalArgumentException("negative");
@@ -51,7 +51,7 @@ card.handle(new Payment("card", -1));     // error, исключение леж�
 
 ```java
 Processor<String, Integer> cents =
-        Processors.<String>filter(raw -> !raw.isBlank())
+        Processor.<String>when(raw -> !raw.isBlank())
                 .thenApply(raw -> Integer.valueOf(raw) * 100);
 
 cents.process("42");    // done, 4200
@@ -59,14 +59,14 @@ cents.process("   ");   // skipped
 cents.process("nope");  // error
 ```
 
-`Handlers.of` и `Processors.of` кладут брошенное исключение в error. Неподходящий вход отсекает `Processors.filter`: это skip, и следующий шаг не вызывается.
+`Handler.of` и `Processor.of` кладут брошенное исключение в error. Неподходящий вход отсекает `Processor.when`: это skip, и следующий шаг не вызывается.
 
 ## Skipped отдаёт тот же вход следующему кандидату
 
 ```java
 Handler<Payment> wallet =
-        Processors.<Payment>filter(payment -> "wallet".equals(payment.method()))
-                .thenHandle(Handlers.of(payment -> wallets.draw(payment)));
+        Processor.<Payment>when(payment -> "wallet".equals(payment.method()))
+                .thenHandle(Handler.of(payment -> wallets.draw(payment)));
 
 Handler<Payment> charge = card.or(wallet);
 
@@ -104,7 +104,7 @@ amount.process("nope");  // skipped
 
 ```java
 Processor<String, Integer> positive =
-        Processors.of(Integer::parseInt).filter(n -> n > 0);
+        Processor.of(Integer::parseInt).filter(n -> n > 0);
 
 Processor<String, String> printed = positive.thenApply(n -> Integer.toString(n * 2));
 
@@ -112,7 +112,7 @@ printed.process("21");    // done, "42"
 printed.process("0");     // skipped: filter закрыл цепочку
 printed.process("nope");  // error: предикат filter не вызывается
 
-Handler<String> save = printed.thenHandle(Handlers.of(repository::save));
+Handler<String> save = printed.thenHandle(Handler.of(repository::save));
 save.handle("0");         // skipped
 ```
 
@@ -139,7 +139,7 @@ Processor<Order, Integer> discountIfPresent = presentCode.thenApply(rates::get);
 
 ```java
 Processed<Receipt> receipt =
-        Handlers.of(orders::save)
+        Handler.of(orders::save)
                 .handle(order)
                 .thenSupply(() -> receipts.issue(order));
 // save бросил → error, issue не вызывается
@@ -194,8 +194,8 @@ record Command(String name) {}
 
 Handler<Command> commands =
         RoutingHandler.<String, Command>routingHandler()
-                .handler(Handlers.of(this::create).identifiedBy("create"))
-                .handler(Handlers.of(this::cancel).identifiedBy("cancel"))
+                .handler(Handler.of(this::create).identifiedBy("create"))
+                .handler(Handler.of(this::cancel).identifiedBy("cancel"))
                 .keyExtractor(
                         command ->
                                 command.name() == null
@@ -219,7 +219,7 @@ commands.handle(new Command(null));     // error ключа
 record Order(String id, String rawAmount) {}
 
 Processor<Order, Integer> readAmount =
-        Processors.compose((Order order) -> Integer.valueOf(order.rawAmount()))
+        ProcessorCompose.from((Order order) -> Integer.valueOf(order.rawAmount()))
                 .named("amount")
                 .logging()
                 .mdc("orderId", Order::id)
@@ -234,7 +234,7 @@ readAmount.process(new Order("a1", "15"));   // done, 15
 readAmount.process(new Order("a1", "nope")); // done, 0 — восстановил onException
 ```
 
-`Processors.filter` проверяет значение в начале цепочки и при успехе передаёт дальше тот же вход. `Processor.filter` проверяет уже успешный выход. `when` в compose стоит снаружи before, after и ядра: ложный предикат пропускает их все, а checked-исключение предиката доходит до `onException`.
+Статический `Processor.when` проверяет вход в начале цепочки и при успехе передаёт дальше тот же вход. Метод экземпляра `filter` проверяет уже успешный выход. `when` в `ProcessorCompose` стоит снаружи before, after и ядра: ложный предикат пропускает их все, а checked-исключение предиката доходит до `onException`.
 
 `onException` получает исключение функции и может вернуть done. Когда функция бросает, `after` не выполняется.
 
@@ -242,7 +242,7 @@ readAmount.process(new Order("a1", "nope")); // done, 0 — восстанови
 
 `named` добавляет суффикс к имени логгера, `logging` пишет исход вызова, `mdc` на время вызова кладёт id заказа в MDC.
 
-У `Processors.of` брошенное исключение уже записано как error, поэтому восстановление живёт на `compose`.
+У `Processor.of` брошенное исключение уже записано как error, поэтому восстановление живёт на `compose`.
 
 ## На границе три состояния ещё различимы
 

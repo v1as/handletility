@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
-import ru.operation.handler.Handlers;
+import ru.operation.handler.HandlerCompose;
 import ru.operation.handler.IdentifiedHandler;
 import ru.operation.processor.impl.FunctionProcessor;
 
@@ -41,7 +41,7 @@ public class RoutingHandlerTest {
     @Test
     public void shouldHandleWithNoDefault() {
         Handler<String> handler =
-                Handlers.compose(
+                HandlerCompose.from(
                                 new RoutingHandler<>(
                                         List.of(firstHandler, secondHandler), identityKey, null))
                         .logging()

@@ -1,7 +1,11 @@
 package ru.operation.handler;
 
+import static ru.operation.util.Checks.notNull;
+
+import ru.operation.handler.impl.ConsumerHandler;
 import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
+import ru.operation.util.function.ThrowableConsumer;
 
 /**
  * Side-effect operation over an input. Prefer extending {@link AbstractHandler} for check,
@@ -55,5 +59,10 @@ public interface Handler<I> {
     /** Identifies this handler by a constant routing key. */
     default <K> IdentifiedHandler<K, I> identifiedBy(K identifier) {
         return new ConstantIdentifiedHandler<>(identifier, this);
+    }
+
+    /** Bare handler from a {@link ThrowableConsumer}. A thrown exception is {@link Handled#error}. */
+    static <A> Handler<A> of(ThrowableConsumer<A> consumer) {
+        return new ConsumerHandler<>(notNull(consumer, "consumer"));
     }
 }

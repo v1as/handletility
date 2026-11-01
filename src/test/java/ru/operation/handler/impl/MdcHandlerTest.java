@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import ru.operation.MdcEntry;
 import ru.operation.handler.Handled;
-import ru.operation.handler.Handlers;
+import ru.operation.handler.HandlerCompose;
 import ru.operation.processor.impl.FunctionProcessor;
 
 public class MdcHandlerTest {
@@ -80,7 +80,7 @@ public class MdcHandlerTest {
         AtomicReference<String> a = new AtomicReference<>();
         AtomicReference<String> b = new AtomicReference<>();
         var handler =
-                Handlers.compose(
+                HandlerCompose.from(
                                 new ConsumerHandler<String>(
                                         input -> {
                                             a.set(MDC.get("a"));

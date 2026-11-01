@@ -39,7 +39,7 @@ public class ProcessorComposeTest {
     public void buildOrderIsLoggingMdcCore() {
         Processor<String, String> core = new FunctionProcessor<>(String::toUpperCase);
         Processor<String, String> composed =
-                Processors.compose(core)
+                ProcessorCompose.from(core)
                         .mdc("traceId", s -> "t-" + s)
                         .logging()
                         .named("upper-log")
@@ -52,7 +52,9 @@ public class ProcessorComposeTest {
     @Test
     public void loggingWithoutName() {
         Processor<String, String> composed =
-                Processors.compose(new FunctionProcessor<String, String>(s -> s)).logging().build();
+                ProcessorCompose.from(new FunctionProcessor<String, String>(s -> s))
+                        .logging()
+                        .build();
 
         assertInstanceOf(LoggingProcessor.class, composed);
         assertTrue(composed.toString().startsWith("Logging(DEBUG, Catching("));
@@ -62,7 +64,7 @@ public class ProcessorComposeTest {
     public void processesWithMdc() {
         AtomicReference<String> seen = new AtomicReference<>();
         Processor<String, String> composed =
-                Processors.compose(
+                ProcessorCompose.from(
                                 new FunctionProcessor<String, String>(
                                         input -> {
                                             seen.set(MDC.get("traceId"));
@@ -81,7 +83,7 @@ public class ProcessorComposeTest {
     public void beforeAndAfterWrapCoreInsideMdc() {
         List<String> order = new ArrayList<>();
         Processor<String, String> composed =
-                Processors.compose(
+                ProcessorCompose.from(
                                 new FunctionProcessor<String, String>(
                                         s -> {
                                             order.add("main");
@@ -110,7 +112,7 @@ public class ProcessorComposeTest {
     public void composeAcceptsFunctionAndBeforeAfterConsumers() {
         List<String> order = new ArrayList<>();
         Processor<String, String> composed =
-                Processors.compose(
+                ProcessorCompose.from(
                                 (String s) -> {
                                     order.add("main");
                                     return s.toUpperCase();
@@ -135,7 +137,7 @@ public class ProcessorComposeTest {
                 input -> {
                     throw new IllegalStateException("boom");
                 };
-        Processor<String, String> composed = Processors.compose(raw).build();
+        Processor<String, String> composed = ProcessorCompose.from(raw).build();
 
         Processed<String> result = composed.process("x");
         assertTrue(result.isError());
@@ -150,7 +152,9 @@ public class ProcessorComposeTest {
                     throw new IllegalStateException("boom");
                 };
         Processor<String, String> composed =
-                Processors.compose(raw).onException(failure -> Processed.done("recovered")).build();
+                ProcessorCompose.from(raw)
+                        .onException(failure -> Processed.done("recovered"))
+                        .build();
 
         Processed<String> result = composed.process("x");
         assertTrue(result.isDone());
@@ -160,8 +164,8 @@ public class ProcessorComposeTest {
     @Test
     public void composeFunctionStillMapsExceptionToError() {
         Processor<String, String> composed =
-                Processors.compose(
-                                Processors.<String, String>of(
+                ProcessorCompose.from(
+                                Processor.<String, String>of(
                                         s -> {
                                             throw new RuntimeException("from-function");
                                         }))
@@ -179,7 +183,7 @@ public class ProcessorComposeTest {
                     throw new IOException("checked");
                 };
         Processor<String, String> composed =
-                Processors.compose(transform)
+                ProcessorCompose.from(transform)
                         .onException(
                                 failure -> {
                                     assertInstanceOf(IOException.class, failure.exception());
@@ -199,7 +203,7 @@ public class ProcessorComposeTest {
         AtomicBoolean afterCalled = new AtomicBoolean();
         AtomicBoolean onExceptionCalled = new AtomicBoolean();
         Processor<String, String> composed =
-                Processors.compose(
+                ProcessorCompose.from(
                                 (String s) -> {
                                     coreCalled.set(true);
                                     return s;
@@ -236,7 +240,7 @@ public class ProcessorComposeTest {
     public void afterHandlerErrorReplacesCoreSuccess() {
         AtomicBoolean onExceptionCalled = new AtomicBoolean();
         Processor<String, String> composed =
-                Processors.compose((String s) -> "ok")
+                ProcessorCompose.from((String s) -> "ok")
                         .after(
                                 new ConsumerHandler<Processed<String>>(
                                         result -> {
@@ -263,7 +267,7 @@ public class ProcessorComposeTest {
         IllegalStateException hook = new IllegalStateException("hook");
         Processor<String, String> coreProcessor = input -> Processed.error(core);
         Processor<String, String> composed =
-                Processors.compose(coreProcessor)
+                ProcessorCompose.from(coreProcessor)
                         .after(
                                 result -> {
                                     return Handled.error(hook);
@@ -286,7 +290,7 @@ public class ProcessorComposeTest {
                     throw new IllegalStateException("hook");
                 };
         Processor<String, String> composed =
-                Processors.compose(
+                ProcessorCompose.from(
                                 (String s) -> {
                                     coreCalled.set(true);
                                     return s;
@@ -315,7 +319,7 @@ public class ProcessorComposeTest {
                     throw new IllegalStateException("after");
                 };
         Processor<String, String> composed =
-                Processors.compose((String s) -> "ok")
+                ProcessorCompose.from((String s) -> "ok")
                         .after(after)
                         .onException(
                                 failure -> {
@@ -335,7 +339,7 @@ public class ProcessorComposeTest {
         List<String> order = new ArrayList<>();
         AtomicBoolean coreCalled = new AtomicBoolean();
         Processor<String, String> composed =
-                Processors.compose(
+                ProcessorCompose.from(
                                 (String s) -> {
                                     coreCalled.set(true);
                                     return s.toUpperCase();
@@ -361,7 +365,7 @@ public class ProcessorComposeTest {
     public void whenTrueRunsBeforeCoreAndAfter() {
         List<String> order = new ArrayList<>();
         Processor<String, String> composed =
-                Processors.compose(
+                ProcessorCompose.from(
                                 (String s) -> {
                                     order.add("main");
                                     return s.toUpperCase();
@@ -385,7 +389,7 @@ public class ProcessorComposeTest {
     public void whenPredicateExceptionReachesOnException() {
         AtomicReference<Exception> seen = new AtomicReference<>();
         Processor<String, String> composed =
-                Processors.compose((String s) -> s)
+                ProcessorCompose.from((String s) -> s)
                         .when(
                                 s -> {
                                     throw new IOException("pred");
@@ -407,7 +411,7 @@ public class ProcessorComposeTest {
     @Test
     public void whenWithoutAroundStillWrapsCore() {
         Processor<String, String> composed =
-                Processors.compose((String s) -> s).when(s -> true).build();
+                ProcessorCompose.from((String s) -> s).when(s -> true).build();
 
         assertEquals("x", composed.process("x").value());
         assertTrue(composed.toString().contains("Catching(Conditional("));
@@ -418,7 +422,7 @@ public class ProcessorComposeTest {
     public void secondWhenReplacesFirst() {
         AtomicBoolean coreCalled = new AtomicBoolean();
         Processor<String, String> composed =
-                Processors.compose(
+                ProcessorCompose.from(
                                 (String s) -> {
                                     coreCalled.set(true);
                                     return s;
@@ -434,7 +438,7 @@ public class ProcessorComposeTest {
     @Test
     public void composeFunctionNullIsDoneWithoutPayload() {
         ThrowableFunction<String, String> transform = s -> null;
-        Processor<String, String> composed = Processors.compose(transform).build();
+        Processor<String, String> composed = ProcessorCompose.from(transform).build();
 
         Processed<String> result = composed.process("x");
         assertTrue(result.isDone());
@@ -445,7 +449,7 @@ public class ProcessorComposeTest {
     @Test
     public void loggingUsesCoreClassNotCatchingWrapper() {
         Processor<String, Integer> composed =
-                Processors.compose(new ParseAmountProcessor()).named("amount").logging().build();
+                ProcessorCompose.from(new ParseAmountProcessor()).named("amount").logging().build();
 
         Logger root = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         ListAppender<ILoggingEvent> appender = new ListAppender<>();

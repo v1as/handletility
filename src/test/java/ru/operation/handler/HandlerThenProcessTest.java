@@ -10,7 +10,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
-import ru.operation.processor.Processors;
 
 public class HandlerThenProcessTest {
 
@@ -20,9 +19,9 @@ public class HandlerThenProcessTest {
         String input = "a1";
         AtomicReference<String> received = new AtomicReference<>();
         Processor<String, String> issue =
-                Handlers.of((String order) -> seen.add("save"))
+                Handler.of((String order) -> seen.add("save"))
                         .thenProcess(
-                                Processors.of(
+                                Processor.of(
                                         order -> {
                                             received.set(order);
                                             seen.add("issue");
@@ -40,7 +39,7 @@ public class HandlerThenProcessTest {
     public void thenProcessPropagatesSkipAndError() {
         List<String> seen = new ArrayList<>();
         Processor<String, String> next =
-                Processors.of(
+                Processor.of(
                         value -> {
                             seen.add(value);
                             return value;
