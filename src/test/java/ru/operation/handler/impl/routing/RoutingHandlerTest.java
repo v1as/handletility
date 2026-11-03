@@ -29,7 +29,8 @@ public class RoutingHandlerTest {
                 return done();
             };
 
-    private final FunctionProcessor<String, String> identityKey = new FunctionProcessor<>(s -> s);
+    private final FunctionProcessor<String, String> identityIdentifier =
+            new FunctionProcessor<>(s -> s);
 
     private Handler<String> marking(int mark) {
         return input -> {
@@ -43,7 +44,9 @@ public class RoutingHandlerTest {
         Handler<String> handler =
                 HandlerBuilder.from(
                                 new RoutingHandler<>(
-                                        List.of(firstHandler, secondHandler), identityKey, null))
+                                        List.of(firstHandler, secondHandler),
+                                        identityIdentifier,
+                                        null))
                         .logging()
                         .build();
 
@@ -61,7 +64,7 @@ public class RoutingHandlerTest {
     public void shouldHandleWithDefault() {
         RoutingHandler<String, String> handler =
                 new RoutingHandler<>(
-                        List.of(firstHandler, secondHandler), identityKey, forthHandler);
+                        List.of(firstHandler, secondHandler), identityIdentifier, forthHandler);
 
         assertTrue(handler.handle("abc").isDone());
         assertEquals(4, store[0]);
@@ -74,7 +77,7 @@ public class RoutingHandlerTest {
     }
 
     @Test
-    public void keyExtractionErrorDoesNotCallDefault() {
+    public void identifierExtractionErrorDoesNotCallDefault() {
         IllegalStateException failure = new IllegalStateException("broken parse");
         AtomicBoolean defaultCalled = new AtomicBoolean();
         RoutingHandler<String, String> handler =
@@ -97,7 +100,7 @@ public class RoutingHandlerTest {
     }
 
     @Test
-    public void skippedKeyUsesDefault() {
+    public void skippedIdentifierUsesDefault() {
         AtomicBoolean defaultCalled = new AtomicBoolean();
         RoutingHandler<String, String> handler =
                 new RoutingHandler<>(

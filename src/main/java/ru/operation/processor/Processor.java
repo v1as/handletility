@@ -126,7 +126,7 @@ public interface Processor<I, O> {
         return input -> process(input).handle(handler::handle);
     }
 
-    /** Identifies this processor by a constant routing key. */
+    /** Identifies this processor by a constant. */
     default <K> IdentifiedProcessor<K, I, O> identifiedBy(K identifier) {
         return new ConstantIdentifiedProcessor<>(identifier, this);
     }

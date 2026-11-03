@@ -196,7 +196,7 @@ public class ProcessorThenTest {
     }
 
     @Test
-    public void identifiedByBindsKeyAndDelegates() {
+    public void identifiedByBindsIdentifierAndDelegates() {
         IdentifiedProcessor<String, String, Integer> identified =
                 Processor.<String, Integer>of(Integer::parseInt).identifiedBy("parse");
 

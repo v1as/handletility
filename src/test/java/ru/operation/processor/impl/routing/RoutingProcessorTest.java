@@ -25,7 +25,7 @@ public class RoutingProcessorTest {
     public static final IdentifiedProcessor<String, Integer, Integer> SUB_PROCESSOR =
             new FunctionProcessor<Integer, Integer>(value -> --value).identifiedBy("SUB");
 
-    public static final FunctionProcessor<Integer, String> KEY_PROCESSOR =
+    public static final FunctionProcessor<Integer, String> IDENTIFIER_PROCESSOR =
             new FunctionProcessor<>(
                     value -> {
                         if (value > 0) {
@@ -40,7 +40,9 @@ public class RoutingProcessorTest {
     public void shouldProcessWithoutDefaultProcessor() {
         RoutingProcessor<String, Integer, Integer> processor =
                 new RoutingProcessor<>(
-                        List.of(ADD_PROCESSOR, SUB_PROCESSOR), KEY_PROCESSOR, ADD_TEN_PROCESSOR);
+                        List.of(ADD_PROCESSOR, SUB_PROCESSOR),
+                        IDENTIFIER_PROCESSOR,
+                        ADD_TEN_PROCESSOR);
         assertEquals(11, processor.process(10).value());
         assertEquals(-11, processor.process(-10).value());
         assertEquals(10, processor.process(0).value());
@@ -52,7 +54,7 @@ public class RoutingProcessorTest {
         RoutingProcessor<String, Integer, Integer> processor =
                 new RoutingProcessor<>(
                         List.of(ADD_PROCESSOR),
-                        KEY_PROCESSOR,
+                        IDENTIFIER_PROCESSOR,
                         value -> {
                             defaultCalled.set(true);
                             return done(value + 100);
@@ -66,7 +68,7 @@ public class RoutingProcessorTest {
     }
 
     @Test
-    public void keyExtractionErrorDoesNotCallDefault() {
+    public void identifierExtractionErrorDoesNotCallDefault() {
         IllegalStateException failure = new IllegalStateException("broken parse");
         AtomicBoolean defaultCalled = new AtomicBoolean();
         RoutingProcessor<String, Integer, Integer> processor =
@@ -89,7 +91,7 @@ public class RoutingProcessorTest {
     }
 
     @Test
-    public void skippedKeyUsesDefault() {
+    public void skippedIdentifierUsesDefault() {
         AtomicBoolean defaultCalled = new AtomicBoolean();
         RoutingProcessor<String, Integer, Integer> processor =
                 new RoutingProcessor<>(

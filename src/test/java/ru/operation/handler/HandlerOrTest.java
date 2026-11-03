@@ -58,7 +58,7 @@ public class HandlerOrTest {
     }
 
     @Test
-    public void identifiedByBindsKeyAndDelegates() {
+    public void identifiedByBindsIdentifierAndDelegates() {
         List<String> seen = new ArrayList<>();
         IdentifiedHandler<String, String> identified =
                 Handler.<String>of(seen::add).identifiedBy("audit");

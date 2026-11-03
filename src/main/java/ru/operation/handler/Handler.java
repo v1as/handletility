@@ -77,7 +77,7 @@ public interface Handler<I> {
         };
     }
 
-    /** Identifies this handler by a constant routing key. */
+    /** Identifies this handler by a constant. */
     default <K> IdentifiedHandler<K, I> identifiedBy(K identifier) {
         return new ConstantIdentifiedHandler<>(identifier, this);
     }

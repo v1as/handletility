@@ -16,9 +16,9 @@ import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
 
 /**
- * Routes input to an {@link IdentifiedHandler} selected by a key extracted from the input. A
- * key-extraction error is returned as-is and does not call {@code defaultHandler}. Skip and an
- * unknown key do.
+ * Routes input to an {@link IdentifiedHandler} selected by an identifier extracted from the
+ * input. An identifier-extraction error is returned as-is and does not call {@code defaultHandler}.
+ * Skip and an unknown identifier do.
  */
 public class RoutingHandler<K, I> extends AbstractHandler<I> {
 
@@ -28,9 +28,9 @@ public class RoutingHandler<K, I> extends AbstractHandler<I> {
     @Builder(builderMethodName = "routingHandler")
     public RoutingHandler(
             @NonNull @Singular List<? extends IdentifiedHandler<K, I>> handlers,
-            @NonNull Processor<I, K> keyExtractor,
+            @NonNull Processor<I, K> identifierExtractor,
             Handler<I> defaultHandler) {
-        this.lookup = new IdentifyingProcessor<>(handlers, keyExtractor);
+        this.lookup = new IdentifyingProcessor<>(handlers, identifierExtractor);
         this.defaultHandler = defaultHandler;
     }
 
