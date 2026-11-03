@@ -3,6 +3,7 @@ package ru.operation.handler;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static ru.operation.handler.Handled.done;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,7 @@ public class AbstractHandlerTest {
                     @Override
                     protected Handled handleInternal(String input) {
                         called.set(true);
-                        return Handled.done();
+                        return done();
                     }
                 };
 
@@ -47,7 +48,7 @@ public class AbstractHandlerTest {
                     @Override
                     protected Handled handleInternal(String input) {
                         called.set(true);
-                        return Handled.done();
+                        return done();
                     }
                 };
 

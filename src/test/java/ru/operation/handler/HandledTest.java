@@ -7,6 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static ru.operation.handler.Handled.done;
+import static ru.operation.handler.Handled.error;
+import static ru.operation.handler.Handled.skipped;
 
 import java.io.IOException;
 import org.junit.jupiter.api.Assertions;
@@ -18,61 +21,55 @@ public class HandledTest {
 
     @Test
     public void doneIsDone() {
-        assertTrue(Handled.done().isDone());
-        assertFalse(Handled.skipped().isDone());
-        assertSame(Handled.done(), Handled.done());
+        assertTrue(done().isDone());
+        assertFalse(skipped().isDone());
+        assertSame(done(), done());
     }
 
     @Test
     public void throwIfErrorOnError() {
         HandlerException error = new HandlerException("boom");
-        assertSame(
-                error,
-                assertThrows(HandlerException.class, () -> Handled.error(error).throwIfError()));
+        assertSame(error, assertThrows(HandlerException.class, () -> error(error).throwIfError()));
 
         IOException checked = new IOException("disk");
         HandlerException wrapped =
-                assertThrows(HandlerException.class, () -> Handled.error(checked).throwIfError());
+                assertThrows(HandlerException.class, () -> error(checked).throwIfError());
         assertEquals("disk", wrapped.getMessage());
         assertSame(checked, wrapped.getCause());
     }
 
     @Test
     public void throwIfErrorPassesThroughOkAndSkipped() {
-        assertSame(Handled.done(), Handled.done().throwIfError());
-        assertSame(Handled.skipped(), Handled.skipped().throwIfError());
+        assertSame(done(), done().throwIfError());
+        assertSame(skipped(), skipped().throwIfError());
     }
 
     @Test
     public void requireDoneRejectsSkip() {
-        Handled.done().requireDone();
+        done().requireDone();
 
-        HandlerException skipped =
-                assertThrows(HandlerException.class, Handled.skipped()::requireDone);
+        HandlerException skipped = assertThrows(HandlerException.class, skipped()::requireDone);
         assertNull(skipped.getCause());
 
         HandlerException error = new HandlerException("boom");
-        assertSame(
-                error,
-                assertThrows(HandlerException.class, () -> Handled.error(error).requireDone()));
+        assertSame(error, assertThrows(HandlerException.class, () -> error(error).requireDone()));
     }
 
     @Test
     public void produceSuppliesOnlyWhenHandled() {
-        assertEquals("ok", Handled.done().produce(() -> "ok").requireDone());
-        assertTrue(Handled.done().produce(() -> null).isDone());
-        assertFalse(Handled.done().produce(() -> null).hasValue());
+        assertEquals("ok", done().produce(() -> "ok").requireDone());
+        assertTrue(done().produce(() -> null).isDone());
+        assertFalse(done().produce(() -> null).hasValue());
 
-        assertTrue(Handled.skipped().produce(Assertions::fail).isSkipped());
+        assertTrue(skipped().produce(Assertions::fail).isSkipped());
 
         Exception boom = new HandlerException("boom");
-        Processed<String> error = Handled.error(boom).produce(() -> fail());
+        Processed<String> error = error(boom).produce(() -> fail());
         assertTrue(error.isError());
         assertSame(boom, error.exception());
 
         Processed<String> failed =
-                Handled.done()
-                        .produce(
+                done().produce(
                                 () -> {
                                     throw new IllegalStateException("nope");
                                 });
@@ -85,7 +82,7 @@ public class HandledTest {
         IllegalStateException boom = new IllegalStateException("boom");
 
         assertThrows(IllegalArgumentException.class, () -> new Handled(ResultState.ERROR, null));
-        assertThrows(IllegalArgumentException.class, () -> Handled.error((Exception) null));
+        assertThrows(IllegalArgumentException.class, () -> error((Exception) null));
         assertThrows(IllegalArgumentException.class, () -> new Handled(ResultState.DONE, boom));
         assertThrows(IllegalArgumentException.class, () -> new Handled(ResultState.SKIPPED, boom));
         assertThrows(IllegalArgumentException.class, () -> new Handled(null, null));

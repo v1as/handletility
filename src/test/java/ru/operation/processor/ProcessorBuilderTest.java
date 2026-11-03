@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ru.operation.handler.Handled.done;
+import static ru.operation.processor.Processed.done;
+import static ru.operation.processor.Processed.error;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -152,9 +154,7 @@ public class ProcessorBuilderTest {
                     throw new IllegalStateException("boom");
                 };
         Processor<String, String> composed =
-                ProcessorBuilder.from(raw)
-                        .onException(failure -> Processed.done("recovered"))
-                        .build();
+                ProcessorBuilder.from(raw).onException(failure -> done("recovered")).build();
 
         Processed<String> result = composed.process("x");
         assertTrue(result.isDone());
@@ -188,7 +188,7 @@ public class ProcessorBuilderTest {
                                 failure -> {
                                     assertInstanceOf(IOException.class, failure.exception());
                                     assertEquals("checked", failure.exception().getMessage());
-                                    return Processed.done("recovered");
+                                    return done("recovered");
                                 })
                         .build();
 
@@ -221,7 +221,7 @@ public class ProcessorBuilderTest {
                         .onException(
                                 failure -> {
                                     onExceptionCalled.set(true);
-                                    return Processed.done("recovered");
+                                    return done("recovered");
                                 })
                         .build();
 
@@ -249,7 +249,7 @@ public class ProcessorBuilderTest {
                         .onException(
                                 failure -> {
                                     onExceptionCalled.set(true);
-                                    return Processed.done("recovered");
+                                    return done("recovered");
                                 })
                         .build();
 
@@ -265,7 +265,7 @@ public class ProcessorBuilderTest {
     public void afterHandlerErrorWhenCoreFailedSuppressesCoreException() {
         IllegalStateException core = new IllegalStateException("core");
         IllegalStateException hook = new IllegalStateException("hook");
-        Processor<String, String> coreProcessor = input -> Processed.error(core);
+        Processor<String, String> coreProcessor = input -> error(core);
         Processor<String, String> composed =
                 ProcessorBuilder.from(coreProcessor)
                         .after(
@@ -299,7 +299,7 @@ public class ProcessorBuilderTest {
                         .onException(
                                 failure -> {
                                     seen.set(failure.exception());
-                                    return Processed.done("recovered");
+                                    return done("recovered");
                                 })
                         .build();
 
@@ -324,7 +324,7 @@ public class ProcessorBuilderTest {
                         .onException(
                                 failure -> {
                                     seen.set(failure.exception());
-                                    return Processed.done("recovered");
+                                    return done("recovered");
                                 })
                         .build();
 
@@ -397,7 +397,7 @@ public class ProcessorBuilderTest {
                         .onException(
                                 failure -> {
                                     seen.set(failure.exception());
-                                    return Processed.done("recovered");
+                                    return done("recovered");
                                 })
                         .build();
 

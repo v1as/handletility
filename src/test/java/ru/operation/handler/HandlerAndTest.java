@@ -3,6 +3,9 @@ package ru.operation.handler;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static ru.operation.handler.Handled.done;
+import static ru.operation.handler.Handled.error;
+import static ru.operation.handler.Handled.skipped;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,18 +22,18 @@ public class HandlerAndTest {
         Handler<String> first =
                 value -> {
                     seen.add("first");
-                    return Handled.done();
+                    return done();
                 };
         Handler<String> second =
                 value -> {
                     received.set(value);
                     seen.add("second");
-                    return Handled.done();
+                    return done();
                 };
         Handler<String> third =
                 value -> {
                     seen.add("third");
-                    return Handled.done();
+                    return done();
                 };
 
         assertTrue(first.and(second).and(third).handle(input).isDone());
@@ -41,13 +44,13 @@ public class HandlerAndTest {
         Handler<String> skipping =
                 value -> {
                     seen.add("skip");
-                    return Handled.skipped();
+                    return skipped();
                 };
         assertTrue(first.and(skipping).and(third).handle(input).isSkipped());
         assertEquals(List.of("first", "skip"), seen);
 
         IllegalStateException boom = new IllegalStateException("boom");
-        Handled error = first.and(value -> Handled.error(boom)).handle(input);
+        Handled error = first.and(value -> error(boom)).handle(input);
         assertTrue(error.isError());
         assertSame(boom, error.exception());
     }
@@ -58,14 +61,14 @@ public class HandlerAndTest {
         Handler<String> next =
                 value -> {
                     seen.add("next");
-                    return Handled.done();
+                    return done();
                 };
 
-        Handler<String> skipping = value -> Handled.skipped();
+        Handler<String> skipping = value -> skipped();
         assertTrue(skipping.and(next).handle("x").isSkipped());
 
         IllegalStateException boom = new IllegalStateException("boom");
-        Handler<String> failing = value -> Handled.error(boom);
+        Handler<String> failing = value -> error(boom);
         Handled error = failing.and(next).handle("x");
         assertTrue(error.isError());
         assertSame(boom, error.exception());

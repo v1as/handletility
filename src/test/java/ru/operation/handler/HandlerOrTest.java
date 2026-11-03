@@ -2,6 +2,9 @@ package ru.operation.handler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static ru.operation.handler.Handled.done;
+import static ru.operation.handler.Handled.error;
+import static ru.operation.handler.Handled.skipped;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,17 +18,17 @@ public class HandlerOrTest {
         Handler<String> first =
                 input -> {
                     seen.add("first");
-                    return Handled.skipped();
+                    return skipped();
                 };
         Handler<String> second =
                 input -> {
                     seen.add("second");
-                    return Handled.done();
+                    return done();
                 };
         Handler<String> third =
                 input -> {
                     seen.add("third");
-                    return Handled.done();
+                    return done();
                 };
 
         Handled result = first.or(second).or(third).handle("marko");
@@ -40,14 +43,14 @@ public class HandlerOrTest {
         Handler<String> next =
                 input -> {
                     seen.add("next");
-                    return Handled.done();
+                    return done();
                 };
 
-        Handler<String> done = input -> Handled.done();
+        Handler<String> done = input -> done();
         assertTrue(done.or(next).handle("x").isDone());
         assertTrue(seen.isEmpty());
 
-        Handler<String> failing = input -> Handled.error(new IllegalStateException("boom"));
+        Handler<String> failing = input -> error(new IllegalStateException("boom"));
         Handled error = failing.or(next).handle("x");
         assertTrue(error.isError());
         assertEquals("boom", error.exception().getMessage());
@@ -67,7 +70,7 @@ public class HandlerOrTest {
 
     @Test
     public void orStaysSkippedWhenEveryStepSkips() {
-        Handler<String> skipping = input -> Handled.skipped();
+        Handler<String> skipping = input -> skipped();
 
         assertTrue(skipping.or(skipping).handle("x").isSkipped());
     }

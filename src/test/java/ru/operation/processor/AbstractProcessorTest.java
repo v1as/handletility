@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static ru.operation.processor.Processed.done;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,7 @@ public class AbstractProcessorTest {
                     @Override
                     protected Processed<String> processInternal(String input) {
                         called.set(true);
-                        return Processed.done(input);
+                        return done(input);
                     }
                 };
 
@@ -48,7 +49,7 @@ public class AbstractProcessorTest {
                     @Override
                     protected Processed<String> processInternal(String input) {
                         called.set(true);
-                        return Processed.done(input);
+                        return done(input);
                     }
                 };
 

@@ -6,6 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static ru.operation.processor.Processed.done;
+import static ru.operation.processor.Processed.error;
+import static ru.operation.processor.Processed.skipped;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -19,15 +22,15 @@ public class ProcessedTest {
 
     @Test
     public void stateHelpers() {
-        assertTrue(Processed.done(1).isDone());
-        assertTrue(Processed.done(1).hasValue());
-        assertFalse(Processed.done(1).isError());
-        assertFalse(Processed.done(1).isSkipped());
+        assertTrue(done(1).isDone());
+        assertTrue(done(1).hasValue());
+        assertFalse(done(1).isError());
+        assertFalse(done(1).isSkipped());
 
-        assertTrue(Processed.skipped().isSkipped());
-        assertFalse(Processed.skipped().hasValue());
+        assertTrue(skipped().isSkipped());
+        assertFalse(skipped().hasValue());
 
-        Processed<Integer> error = Processed.error("fail");
+        Processed<Integer> error = error("fail");
         assertTrue(error.isError());
         assertFalse(error.hasValue());
         assertEquals(ResultState.ERROR, error.state());
@@ -39,9 +42,7 @@ public class ProcessedTest {
         IllegalStateException runtime = new IllegalStateException("boom");
         assertSame(
                 runtime,
-                assertThrows(
-                        IllegalStateException.class,
-                        () -> Processed.error(runtime).throwIfError()));
+                assertThrows(IllegalStateException.class, () -> error(runtime).throwIfError()));
 
         IOException checked = new IOException("disk");
         ProcessorException wrapped =
@@ -54,7 +55,7 @@ public class ProcessedTest {
 
     @Test
     public void doneNullPayloadChainsAndDiffersFromSkipped() {
-        Processed<String> doneNull = Processed.done("x").map(s -> (String) null);
+        Processed<String> doneNull = done("x").map(s -> (String) null);
         assertTrue(doneNull.isDone());
         assertFalse(doneNull.isSkipped());
         assertFalse(doneNull.hasValue());
@@ -64,12 +65,12 @@ public class ProcessedTest {
                 doneNull.flatMap(
                         v -> {
                             calls.incrementAndGet();
-                            return Processed.done("next");
+                            return done("next");
                         });
         assertEquals(1, calls.get());
         assertEquals("next", chained.requireDone());
 
-        assertFalse(Processed.<String>skipped().flatMap(v -> Processed.done("nope")).isDone());
+        assertFalse(Processed.<String>skipped().flatMap(v -> done("nope")).isDone());
     }
 
     @Test
@@ -84,8 +85,7 @@ public class ProcessedTest {
     public void mapTurnsExceptionIntoError() {
         IllegalStateException boom = new IllegalStateException("boom");
         Processed<Integer> result =
-                Processed.done(1)
-                        .map(
+                done(1).map(
                                 n -> {
                                     throw boom;
                                 });
@@ -99,8 +99,7 @@ public class ProcessedTest {
         assertThrows(
                 AssertionError.class,
                 () ->
-                        Processed.done(1)
-                                .map(
+                        done(1).map(
                                         n -> {
                                             throw new AssertionError("boom");
                                         }));
@@ -108,12 +107,11 @@ public class ProcessedTest {
 
     @Test
     public void filterSkipsOnFalseAndTurnsExceptionIntoError() {
-        assertTrue(Processed.done(1).filter(n -> false).isSkipped());
+        assertTrue(done(1).filter(n -> false).isSkipped());
 
         IllegalStateException boom = new IllegalStateException("boom");
         Processed<Integer> error =
-                Processed.done(1)
-                        .filter(
+                done(1).filter(
                                 n -> {
                                     throw boom;
                                 });
@@ -123,11 +121,10 @@ public class ProcessedTest {
 
     @Test
     public void mapAndFlatMap() {
-        assertEquals(4, Processed.done(2).map(n -> n * 2).value());
+        assertEquals(4, done(2).map(n -> n * 2).value());
         assertFalse(Processed.<Integer>skipped().map(n -> n * 2).hasValue());
 
-        Processed<Integer> chained =
-                Processed.done("42").flatMap(new FunctionProcessor<>(Integer::valueOf));
+        Processed<Integer> chained = done("42").flatMap(new FunctionProcessor<>(Integer::valueOf));
         assertEquals(42, chained.requireDone());
 
         assertTrue(
@@ -139,7 +136,7 @@ public class ProcessedTest {
     @Test
     public void handle() {
         AtomicInteger sum = new AtomicInteger();
-        Handled handled = Processed.done(3).handle(new ConsumerHandler<>(n -> sum.addAndGet(n)));
+        Handled handled = done(3).handle(new ConsumerHandler<>(n -> sum.addAndGet(n)));
         assertTrue(handled.isDone());
         assertEquals(3, sum.get());
 
@@ -148,10 +145,10 @@ public class ProcessedTest {
 
     @Test
     public void throwIfErrorPassesThroughDoneAndSkipped() {
-        Processed<String> done = Processed.done("a");
+        Processed<String> done = done("a");
         assertSame(done, done.throwIfError());
 
-        Processed<String> doneNull = Processed.done((String) null);
+        Processed<String> doneNull = done((String) null);
         assertSame(doneNull, doneNull.throwIfError());
         assertNull(doneNull.value());
 
@@ -160,15 +157,15 @@ public class ProcessedTest {
 
     @Test
     public void requireDoneReturnsPayloadAndRejectsSkip() {
-        assertEquals("a", Processed.done("a").requireDone());
-        assertNull(Processed.done((String) null).requireDone());
+        assertEquals("a", done("a").requireDone());
+        assertNull(done((String) null).requireDone());
 
         ProcessorException skipped =
                 assertThrows(
                         ProcessorException.class, () -> Processed.<String>skipped().requireDone());
         assertNull(skipped.getCause());
 
-        Processed<String> error = Processed.error("disk");
+        Processed<String> error = error("disk");
         assertSame(error.exception(), assertThrows(ProcessorException.class, error::requireDone));
     }
 
@@ -185,7 +182,7 @@ public class ProcessedTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new Processed<>("ok", ResultState.DONE, boom));
-        assertThrows(IllegalArgumentException.class, () -> Processed.error((Exception) null));
+        assertThrows(IllegalArgumentException.class, () -> error((Exception) null));
         assertThrows(IllegalArgumentException.class, () -> new Processed<>(null, null, null));
     }
 }

@@ -1,6 +1,7 @@
 package ru.operation.processor.impl;
 
 import static ru.operation.handler.Handled.skipped;
+import static ru.operation.processor.Processed.error;
 
 import lombok.Builder;
 import lombok.NonNull;
@@ -37,7 +38,7 @@ public class AroundProcessor<I, O> implements Processor<I, O> {
     public Processed<O> process(I input) {
         Handled before = beforeHandler.handle(input);
         if (before.isError()) {
-            return Processed.error(before.exception());
+            return error(before.exception());
         }
         Processed<O> result = delegate.process(input);
         Handled after = afterHandler.handle(result);
@@ -45,7 +46,7 @@ public class AroundProcessor<I, O> implements Processor<I, O> {
             if (result.isError()) {
                 suppressCoreFailure(after.exception(), result.exception());
             }
-            return Processed.error(after.exception());
+            return error(after.exception());
         }
         return result;
     }

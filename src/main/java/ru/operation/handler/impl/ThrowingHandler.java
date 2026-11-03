@@ -1,5 +1,7 @@
 package ru.operation.handler.impl;
 
+import static ru.operation.handler.Handled.done;
+
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import ru.operation.handler.Handled;
@@ -19,7 +21,7 @@ public class ThrowingHandler<I> implements Handler<I> {
     public Handled handle(I input) {
         try {
             consumer.accept(input);
-            return Handled.done();
+            return done();
         } catch (Exception e) {
             throw unchecked(e);
         }

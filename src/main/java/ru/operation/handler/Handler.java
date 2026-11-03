@@ -1,5 +1,7 @@
 package ru.operation.handler;
 
+import static ru.operation.processor.Processed.error;
+import static ru.operation.processor.Processed.skipped;
 import static ru.operation.util.Checks.notNull;
 
 import ru.operation.handler.impl.ConsumerHandler;
@@ -30,12 +32,12 @@ public interface Handler<I> {
         return input -> {
             Handled handled = handle(input);
             if (handled.isError()) {
-                return Processed.error(handled.exception());
+                return error(handled.exception());
             }
             if (handled.isDone()) {
                 return next.process(input);
             }
-            return Processed.skipped();
+            return skipped();
         };
     }
 

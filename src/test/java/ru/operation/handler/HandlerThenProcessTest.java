@@ -3,6 +3,8 @@ package ru.operation.handler;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static ru.operation.handler.Handled.error;
+import static ru.operation.handler.Handled.skipped;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,11 +47,11 @@ public class HandlerThenProcessTest {
                             return value;
                         });
 
-        Handler<String> skipping = input -> Handled.skipped();
+        Handler<String> skipping = input -> skipped();
         assertTrue(skipping.thenProcess(next).process("x").isSkipped());
 
         IllegalStateException boom = new IllegalStateException("boom");
-        Handler<String> failing = input -> Handled.error(boom);
+        Handler<String> failing = input -> error(boom);
         Processed<String> error = failing.thenProcess(next).process("x");
 
         assertTrue(error.isError());

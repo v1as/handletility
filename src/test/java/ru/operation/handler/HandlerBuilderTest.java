@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static ru.operation.handler.Handled.done;
+import static ru.operation.handler.Handled.error;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -153,8 +155,7 @@ public class HandlerBuilderTest {
                 input -> {
                     throw new IllegalStateException("boom");
                 };
-        Handler<String> composed =
-                HandlerBuilder.from(raw).onException(failure -> Handled.done()).build();
+        Handler<String> composed = HandlerBuilder.from(raw).onException(failure -> done()).build();
 
         assertTrue(composed.handle("x").isDone());
     }
@@ -185,7 +186,7 @@ public class HandlerBuilderTest {
                                 failure -> {
                                     assertInstanceOf(IOException.class, failure.exception());
                                     assertEquals("checked", failure.exception().getMessage());
-                                    return Handled.done();
+                                    return done();
                                 })
                         .build();
 
@@ -207,12 +208,12 @@ public class HandlerBuilderTest {
                         .after(
                                 result -> {
                                     afterCalled.set(true);
-                                    return Handled.done();
+                                    return done();
                                 })
                         .onException(
                                 failure -> {
                                     onExceptionCalled.set(true);
-                                    return Handled.done();
+                                    return done();
                                 })
                         .build();
 
@@ -239,7 +240,7 @@ public class HandlerBuilderTest {
                         .onException(
                                 failure -> {
                                     onExceptionCalled.set(true);
-                                    return Handled.done();
+                                    return done();
                                 })
                         .build();
 
@@ -254,12 +255,12 @@ public class HandlerBuilderTest {
     public void afterHandlerErrorWhenCoreFailedSuppressesCoreException() {
         IllegalStateException core = new IllegalStateException("core");
         IllegalStateException hook = new IllegalStateException("hook");
-        Handler<String> coreHandler = input -> Handled.error(core);
+        Handler<String> coreHandler = input -> error(core);
         Handler<String> composed =
                 HandlerBuilder.from(coreHandler)
                         .after(
                                 result -> {
-                                    return Handled.error(hook);
+                                    return error(hook);
                                 })
                         .build();
 
@@ -284,7 +285,7 @@ public class HandlerBuilderTest {
                         .onException(
                                 failure -> {
                                     seen.set(failure.exception());
-                                    return Handled.done();
+                                    return done();
                                 })
                         .build();
 
@@ -307,7 +308,7 @@ public class HandlerBuilderTest {
                         .onException(
                                 failure -> {
                                     seen.set(failure.exception());
-                                    return Handled.error(failure.exception());
+                                    return error(failure.exception());
                                 })
                         .build();
 
@@ -377,7 +378,7 @@ public class HandlerBuilderTest {
                         .onException(
                                 failure -> {
                                     seen.set(failure.exception());
-                                    return Handled.done();
+                                    return done();
                                 })
                         .build();
 
@@ -439,7 +440,7 @@ public class HandlerBuilderTest {
 
         @Override
         public Handled handle(String input) {
-            return Handled.done();
+            return done();
         }
     }
 }

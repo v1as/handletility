@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static ru.operation.processor.Processed.done;
+import static ru.operation.processor.Processed.skipped;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,15 +67,15 @@ public class ProcessorRecoverTest {
                     return "recovered";
                 };
 
-        Processor<String, String> done = input -> Processed.done(input);
+        Processor<String, String> done = input -> done(input);
         assertEquals("ab", done.recover(recovery).process("ab").value());
 
-        Processor<String, String> empty = input -> Processed.done(null);
+        Processor<String, String> empty = input -> done(null);
         Processed<String> doneNull = empty.recover(recovery).process("ab");
         assertTrue(doneNull.isDone());
         assertNull(doneNull.value());
 
-        Processor<String, String> skipping = input -> Processed.skipped();
+        Processor<String, String> skipping = input -> skipped();
         assertTrue(skipping.recover(recovery).process("ab").isSkipped());
         assertTrue(seen.isEmpty());
     }

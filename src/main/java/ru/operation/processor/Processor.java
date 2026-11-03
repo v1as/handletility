@@ -1,5 +1,8 @@
 package ru.operation.processor;
 
+import static ru.operation.processor.Processed.done;
+import static ru.operation.processor.Processed.error;
+import static ru.operation.processor.Processed.skipped;
 import static ru.operation.util.Checks.notNull;
 
 import java.util.function.Function;
@@ -67,22 +70,22 @@ public interface Processor<I, O> {
         return input -> {
             Processed<O> result = process(input);
             if (result.isError()) {
-                return Processed.error(result.exception());
+                return error(result.exception());
             }
             if (result.isDone()) {
                 Processed<Q> nextResult = next.process(input);
                 if (nextResult.isError()) {
-                    return Processed.error(nextResult.exception());
+                    return error(nextResult.exception());
                 }
                 if (nextResult.isDone()) {
                     try {
-                        return Processed.done(combiner.apply(result.value(), nextResult.value()));
+                        return done(combiner.apply(result.value(), nextResult.value()));
                     } catch (Exception exception) {
-                        return Processed.error(exception);
+                        return error(exception);
                     }
                 }
             }
-            return Processed.skipped();
+            return skipped();
         };
     }
 
@@ -98,9 +101,9 @@ public interface Processor<I, O> {
             Processed<O> result = process(input);
             if (result.isError()) {
                 try {
-                    return Processed.done(recovery.apply(new Failure<>(input, result.exception())));
+                    return done(recovery.apply(new Failure<>(input, result.exception())));
                 } catch (Exception exception) {
-                    return Processed.error(exception);
+                    return error(exception);
                 }
             }
             return result;

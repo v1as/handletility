@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static ru.operation.processor.Processed.done;
+import static ru.operation.processor.Processed.error;
+import static ru.operation.processor.Processed.skipped;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +27,7 @@ public class ProcessorThenTest {
 
     @Test
     public void thenPipePropagatesSkip() {
-        Processor<String, Integer> skipping = input -> Processed.skipped();
+        Processor<String, Integer> skipping = input -> skipped();
         Processor<String, String> pipeline = skipping.thenApply(Object::toString);
 
         assertTrue(pipeline.process("x").isSkipped());
@@ -43,7 +46,7 @@ public class ProcessorThenTest {
     @Test
     public void thenHandlePropagatesSkip() {
         List<Integer> seen = new ArrayList<>();
-        Processor<String, Integer> skipping = input -> Processed.skipped();
+        Processor<String, Integer> skipping = input -> skipped();
         Handler<String> handler = skipping.thenHandle(Handler.of(seen::add));
 
         assertTrue(handler.handle("x").isSkipped());
@@ -110,17 +113,17 @@ public class ProcessorThenTest {
         Processor<String, String> first =
                 input -> {
                     seen.add("first");
-                    return Processed.skipped();
+                    return skipped();
                 };
         Processor<String, String> second =
                 input -> {
                     seen.add("second");
-                    return Processed.done(input + "-ok");
+                    return done(input + "-ok");
                 };
         Processor<String, String> third =
                 input -> {
                     seen.add("third");
-                    return Processed.done("nope");
+                    return done("nope");
                 };
 
         Processed<String> result = first.or(second).or(third).process("marko");
@@ -135,21 +138,20 @@ public class ProcessorThenTest {
         Processor<String, String> next =
                 input -> {
                     seen.add("next");
-                    return Processed.done("other");
+                    return done("other");
                 };
 
-        Processor<String, String> done = input -> Processed.done("kept");
+        Processor<String, String> done = input -> done("kept");
         assertEquals("kept", done.or(next).process("x").value());
         assertTrue(seen.isEmpty());
 
-        Processor<String, String> empty = input -> Processed.done(null);
+        Processor<String, String> empty = input -> done(null);
         Processed<String> doneWithNull = empty.or(next).process("x");
         assertTrue(doneWithNull.isDone());
         assertNull(doneWithNull.value());
         assertTrue(seen.isEmpty());
 
-        Processor<String, String> failing =
-                input -> Processed.error(new IllegalStateException("boom"));
+        Processor<String, String> failing = input -> error(new IllegalStateException("boom"));
         Processed<String> error = failing.or(next).process("x");
         assertTrue(error.isError());
         assertEquals("boom", error.exception().getMessage());
@@ -158,7 +160,7 @@ public class ProcessorThenTest {
 
     @Test
     public void orStaysSkippedWhenEveryStepSkips() {
-        Processor<String, String> skipping = input -> Processed.skipped();
+        Processor<String, String> skipping = input -> skipped();
 
         assertTrue(skipping.or(skipping).process("x").isSkipped());
     }
@@ -204,11 +206,10 @@ public class ProcessorThenTest {
 
     @Test
     public void filterPropagatesUpstreamSkipAndError() {
-        Processor<String, Integer> skipping = input -> Processed.skipped();
+        Processor<String, Integer> skipping = input -> skipped();
         assertTrue(skipping.thenFilter(n -> true).process("x").isSkipped());
 
-        Processor<String, Integer> failing =
-                input -> Processed.error(new IllegalStateException("boom"));
+        Processor<String, Integer> failing = input -> error(new IllegalStateException("boom"));
         Processed<Integer> error = failing.thenFilter(n -> true).process("x");
         assertTrue(error.isError());
         assertEquals("boom", error.exception().getMessage());

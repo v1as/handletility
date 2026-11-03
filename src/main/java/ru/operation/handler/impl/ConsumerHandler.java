@@ -1,5 +1,7 @@
 package ru.operation.handler.impl;
 
+import static ru.operation.handler.Handled.done;
+
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import ru.operation.handler.AbstractHandler;
@@ -14,6 +16,6 @@ public class ConsumerHandler<I> extends AbstractHandler<I> {
     @Override
     protected Handled handleInternal(I input) throws Exception {
         consumer.accept(input);
-        return Handled.done();
+        return done();
     }
 }

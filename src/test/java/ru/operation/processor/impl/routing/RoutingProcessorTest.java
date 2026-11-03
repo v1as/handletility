@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static ru.operation.processor.Processed.done;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,7 +62,7 @@ public class RoutingProcessorTest {
                                 }),
                         value -> {
                             defaultCalled.set(true);
-                            return Processed.done(value);
+                            return done(value);
                         });
 
         Processed<Integer> result = processor.process(5);
@@ -80,7 +81,7 @@ public class RoutingProcessorTest {
                         new FunctionProcessor<>(value -> null),
                         value -> {
                             defaultCalled.set(true);
-                            return Processed.done(value + 10);
+                            return done(value + 10);
                         });
 
         assertEquals(15, processor.process(5).value());

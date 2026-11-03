@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ru.operation.handler.Handled.done;
+import static ru.operation.handler.Handled.error;
+import static ru.operation.handler.Handled.skipped;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,7 +37,7 @@ public class AroundHandlerTest {
                                 result -> {
                                     order.add("after");
                                     seenAfter.set(result);
-                                    return Handled.skipped();
+                                    return skipped();
                                 })
                         .build();
 
@@ -59,11 +61,11 @@ public class AroundHandlerTest {
         AtomicBoolean coreCalled = new AtomicBoolean();
         Handler<String> skippedBefore =
                 AroundHandler.<String>builder()
-                        .beforeHandler(input -> Handled.skipped())
+                        .beforeHandler(input -> skipped())
                         .delegate(
                                 input -> {
                                     coreCalled.set(true);
-                                    return Handled.error(new IllegalStateException("core"));
+                                    return error(new IllegalStateException("core"));
                                 })
                         .build();
 
@@ -75,7 +77,7 @@ public class AroundHandlerTest {
 
         Handler<String> doneAfter =
                 AroundHandler.<String>builder()
-                        .delegate(input -> Handled.skipped())
+                        .delegate(input -> skipped())
                         .afterHandler(result -> done())
                         .build();
 
@@ -87,7 +89,7 @@ public class AroundHandlerTest {
         AtomicBoolean coreCalled = new AtomicBoolean();
         AtomicBoolean afterCalled = new AtomicBoolean();
         IOException hook = new IOException("hook");
-        Handled hookError = Handled.error(hook);
+        Handled hookError = error(hook);
         Handler<String> around =
                 AroundHandler.<String>builder()
                         .beforeHandler(input -> hookError)
@@ -110,7 +112,7 @@ public class AroundHandlerTest {
 
     @Test
     public void afterErrorDoesNotReturnSuccessfulCore() {
-        Handled hookError = Handled.error(new IllegalStateException("hook"));
+        Handled hookError = error(new IllegalStateException("hook"));
         Handler<String> around =
                 AroundHandler.<String>builder()
                         .delegate(input -> done())
@@ -124,10 +126,10 @@ public class AroundHandlerTest {
     public void afterErrorWhenCoreFailedSuppressesCoreException() {
         IllegalStateException core = new IllegalStateException("core");
         IllegalStateException hook = new IllegalStateException("hook");
-        Handled hookError = Handled.error(hook);
+        Handled hookError = error(hook);
         Handler<String> around =
                 AroundHandler.<String>builder()
-                        .delegate(input -> Handled.error(core))
+                        .delegate(input -> error(core))
                         .afterHandler(result -> hookError)
                         .build();
 
