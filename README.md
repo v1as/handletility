@@ -16,7 +16,7 @@ Java 17. Транзитивно подтягивается `slf4j-api`; реал
 
 ```gradle
 dependencies {
-    implementation 'io.github.v1as:handletility:0.0.10'
+    implementation 'io.github.v1as:handletility:0.0.12'
 }
 ```
 
@@ -24,7 +24,7 @@ dependencies {
 <dependency>
   <groupId>io.github.v1as</groupId>
   <artifactId>handletility</artifactId>
-  <version>0.0.10</version>
+  <version>0.0.12</version>
 </dependency>
 ```
 
@@ -259,7 +259,7 @@ Handler<Command> commands =
         RoutingHandler.<String, Command>routingHandler()
                 .handler(Handler.of(this::create).identifiedBy("create"))
                 .handler(Handler.of(this::cancel).identifiedBy("cancel"))
-                .identifierExtractor(
+                .identifier(
                         command ->
                                 command.name() == null
                                         ? Processed.error("no name")

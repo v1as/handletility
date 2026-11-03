@@ -37,7 +37,7 @@ public class HandlerListTest {
                                                 RoutingHandler.<String, Command>routingHandler()
                                                         .handler(new HelloCommand())
                                                         .handler(new ByeCommand())
-                                                        .identifierExtractor(
+                                                        .identifier(
                                                                 new FunctionProcessor<>(
                                                                         Command::name))
                                                         .build())

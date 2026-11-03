@@ -12,8 +12,8 @@ import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
 
 /**
- * Routes input to an {@link IdentifiedProcessor} selected by an identifier extracted from the
- * input. An identifier-extraction error is returned as-is and does not call {@code
+ * Routes input to an {@link IdentifiedProcessor} selected by an identifier read from the input.
+ * An error while reading the identifier is returned as-is and does not call {@code
  * defaultProcessor}. Skip and an unknown identifier do.
  */
 public class RoutingProcessor<K, I, O> extends AbstractProcessor<I, O> {
@@ -23,9 +23,9 @@ public class RoutingProcessor<K, I, O> extends AbstractProcessor<I, O> {
 
     public <T extends IdentifiedProcessor<K, I, O>> RoutingProcessor(
             @NonNull List<T> processors,
-            @NonNull Processor<I, K> identifierExtractor,
+            @NonNull Processor<I, K> identifier,
             Processor<I, O> defaultProcessor) {
-        this.lookup = new IdentifyingProcessor<>(processors, identifierExtractor);
+        this.lookup = new IdentifyingProcessor<>(processors, identifier);
         this.defaultProcessor = defaultProcessor;
     }
 

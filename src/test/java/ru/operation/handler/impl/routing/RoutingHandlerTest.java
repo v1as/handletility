@@ -77,7 +77,7 @@ public class RoutingHandlerTest {
     }
 
     @Test
-    public void identifierExtractionErrorDoesNotCallDefault() {
+    public void identifierErrorDoesNotCallDefault() {
         IllegalStateException failure = new IllegalStateException("broken parse");
         AtomicBoolean defaultCalled = new AtomicBoolean();
         RoutingHandler<String, String> handler =

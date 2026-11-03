@@ -68,7 +68,7 @@ public class RoutingProcessorTest {
     }
 
     @Test
-    public void identifierExtractionErrorDoesNotCallDefault() {
+    public void identifierErrorDoesNotCallDefault() {
         IllegalStateException failure = new IllegalStateException("broken parse");
         AtomicBoolean defaultCalled = new AtomicBoolean();
         RoutingProcessor<String, Integer, Integer> processor =
