@@ -47,7 +47,23 @@ public class RoutingProcessorTest {
     }
 
     @Test
-    public void shouldProcessWithDefaultProcessor() {}
+    public void shouldProcessWithDefaultProcessor() {
+        AtomicBoolean defaultCalled = new AtomicBoolean();
+        RoutingProcessor<String, Integer, Integer> processor =
+                new RoutingProcessor<>(
+                        List.of(ADD_PROCESSOR),
+                        KEY_PROCESSOR,
+                        value -> {
+                            defaultCalled.set(true);
+                            return done(value + 100);
+                        });
+
+        assertEquals(4, processor.process(3).value());
+        assertFalse(defaultCalled.get());
+
+        assertEquals(100, processor.process(0).value());
+        assertTrue(defaultCalled.get());
+    }
 
     @Test
     public void keyExtractionErrorDoesNotCallDefault() {

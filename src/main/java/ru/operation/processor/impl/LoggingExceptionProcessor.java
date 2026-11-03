@@ -14,7 +14,7 @@ public class LoggingExceptionProcessor<I, O> implements Processor<Failure<I>, O>
 
     @Override
     public Processed<O> process(Failure<I> failure) {
-        log.warn("Processing error for {}", failure.input(), failure.exception());
+        log.warn("Processing error of '{}'", failure.input(), failure.exception());
         return error(failure.exception());
     }
 }

@@ -41,8 +41,9 @@ public class RoutingHandler<K, I> extends AbstractHandler<I> {
             return error(handler.exception());
         }
         if (handler.hasValue()) {
-            log.trace("Using handler {}", handler);
-            return handler.value().handle(input);
+            IdentifiedHandler<K, I> selected = handler.value();
+            log.trace("Using handler {}", selected);
+            return selected.handle(input);
         }
         if (defaultHandler != null) {
             log.trace("Using default handler");

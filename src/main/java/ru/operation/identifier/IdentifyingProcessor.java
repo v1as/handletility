@@ -1,6 +1,9 @@
 package ru.operation.identifier;
 
 import static java.util.function.Function.identity;
+import static ru.operation.processor.Processed.done;
+import static ru.operation.processor.Processed.error;
+import static ru.operation.processor.Processed.skipped;
 
 import java.util.List;
 import java.util.Map;
@@ -26,14 +29,20 @@ public class IdentifyingProcessor<K, T extends Identified<K>, I> extends Abstrac
     @Override
     protected Processed<T> processInternal(I input) {
         Processed<K> key = keyExtractor.process(input);
-        Processed<T> identified = key.map(keyToItem::get);
-        if (identified.isError()) {
-            log.trace("For '{}' key extraction failed: {}", input, identified);
-        } else if (identified.hasValue()) {
-            log.trace("For '{}' identified by key '{}'", input, key);
-        } else {
-            log.trace("For '{}' not identified by key {}", input, key);
+        if (key.isError()) {
+            log.trace("For '{}' key extraction failed", input, key.exception());
+            return error(key.exception());
         }
-        return identified;
+        if (key.isSkipped()) {
+            log.trace("For '{}' key extraction skipped", input);
+            return skipped();
+        }
+        T item = keyToItem.get(key.value());
+        if (item != null) {
+            log.trace("For '{}' identified by key '{}'", input, key.value());
+            return done(item);
+        }
+        log.trace("For '{}' not identified by key '{}'", input, key.value());
+        return done(null);
     }
 }

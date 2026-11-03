@@ -36,7 +36,9 @@ public class RoutingProcessor<K, I, O> extends AbstractProcessor<I, O> {
             return error(processor.exception());
         }
         if (processor.hasValue()) {
-            return processor.value().process(input);
+            Processor<I, O> selected = processor.value();
+            log.trace("Using processor {}", selected);
+            return selected.process(input);
         }
         if (defaultProcessor != null) {
             log.trace("Using default processor");

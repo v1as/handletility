@@ -60,7 +60,11 @@ public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
             try {
                 processed = processor.process(input);
             } catch (Exception e) {
-                log.warn("Processing error", e);
+                log.trace(
+                        "Processor '{}' threw while processing '{}'",
+                        processor.getClass().getSimpleName(),
+                        input,
+                        e);
                 processed = this.onException.process(new Failure<>(input, e));
             }
             log.trace(
@@ -85,9 +89,10 @@ public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
                     accumulator = combiner.apply(accumulator, processed.value());
                     continue;
                 } catch (Exception exception) {
-                    log.warn("Processing error", exception);
+                    log.trace("Combiner threw while processing '{}'", input, exception);
+                    Processed<O> mapped = onException.process(new Failure<>(input, exception));
                     failed = true;
-                    errors.add(exception);
+                    errors.add(mapped.isError() ? mapped.exception() : exception);
                     if (!modifiers.contains(CONTINUE_ON_ERROR)) {
                         return error(combine(errors));
                     }

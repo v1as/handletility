@@ -14,7 +14,7 @@ public class LoggingExceptionHandler<I> implements Handler<Failure<I>> {
 
     @Override
     public Handled handle(Failure<I> failure) {
-        log.warn("Handling error while processing {}", failure.input(), failure.exception());
+        log.warn("Error while handling '{}'", failure.input(), failure.exception());
         return error(failure.exception());
     }
 }

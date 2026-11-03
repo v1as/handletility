@@ -53,8 +53,14 @@ public class HandlerList<I> extends AbstractHandler<I> {
             try {
                 handled = handle(handler, input);
             } catch (Exception e) {
+                log.trace(
+                        "Handler '{}' threw while handling '{}'",
+                        handler.getClass().getSimpleName(),
+                        input,
+                        e);
                 handled = onException.handle(new Failure<>(input, e));
             }
+            log.trace("Handler '{}' has result '{}'", handler.getClass().getSimpleName(), handled);
             if (handled.isError()) {
                 failed = true;
                 errors.add(handled.exception());
