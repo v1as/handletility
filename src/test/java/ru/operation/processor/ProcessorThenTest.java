@@ -16,7 +16,7 @@ import ru.operation.handler.Handler;
 public class ProcessorThenTest {
 
     @Test
-    public void ofThenComposeThenApply() {
+    public void ofThenPipeThenApply() {
         Processor<String, String> pipeline =
                 Processor.<String, Integer>of(Integer::parseInt)
                         .thenPipe(Processor.of((Integer n) -> n * 2))
@@ -181,7 +181,7 @@ public class ProcessorThenTest {
     }
 
     @Test
-    public void filterTurnsExceptionIntoError() {
+    public void thenFilterTurnsExceptionIntoError() {
         IllegalStateException boom = new IllegalStateException("boom");
         Processed<Integer> result =
                 Processor.<String, Integer>of((String s) -> 1)
@@ -205,7 +205,7 @@ public class ProcessorThenTest {
     }
 
     @Test
-    public void filterPropagatesUpstreamSkipAndError() {
+    public void thenFilterPropagatesUpstreamSkipAndError() {
         Processor<String, Integer> skipping = input -> skipped();
         assertTrue(skipping.thenFilter(n -> true).process("x").isSkipped());
 

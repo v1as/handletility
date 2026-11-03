@@ -16,7 +16,7 @@ Java 17. На classpath нужен SLF4J.
 
 ```gradle
 dependencies {
-    implementation 'io.github.v1as:handletility:0.0.9'
+    implementation 'io.github.v1as:handletility:0.0.10'
 }
 ```
 
@@ -24,7 +24,7 @@ dependencies {
 <dependency>
   <groupId>io.github.v1as</groupId>
   <artifactId>handletility</artifactId>
-  <version>0.0.9</version>
+  <version>0.0.10</version>
 </dependency>
 ```
 
@@ -250,7 +250,7 @@ Processor<User, List<String>> validate =
                 .build();
 ```
 
-## Ключ выбирает операцию
+## Идентификатор выбирает операцию
 
 ```java
 record Command(String name) {}
@@ -259,7 +259,7 @@ Handler<Command> commands =
         RoutingHandler.<String, Command>routingHandler()
                 .handler(Handler.of(this::create).identifiedBy("create"))
                 .handler(Handler.of(this::cancel).identifiedBy("cancel"))
-                .keyExtractor(
+                .identifierExtractor(
                         command ->
                                 command.name() == null
                                         ? Processed.error("no name")
@@ -269,12 +269,12 @@ Handler<Command> commands =
 
 commands.handle(new Command("create")); // create
 commands.handle(new Command("rename")); // defaultHandler → skipped
-commands.handle(new Command(null));     // error ключа
+commands.handle(new Command(null));     // error идентификатора
 ```
 
-На неизвестное имя вызывается `defaultHandler`: в примере он отвечает skipped. Если чтение ключа закончилось error, этот error становится результатом вызова, а `defaultHandler` не вызывается.
+На неизвестное имя вызывается `defaultHandler`: в примере он отвечает skipped. Если чтение идентификатора закончилось error, этот error становится результатом вызова, а `defaultHandler` не вызывается.
 
-`RoutingProcessor` устроен так же и выбирает `IdentifiedProcessor`. Ключ задаётся через `Processor.identifiedBy`.
+`RoutingProcessor` устроен так же и выбирает `IdentifiedProcessor`. Идентификатор задаётся через `Processor.identifiedBy`.
 
 ## Обвязка остаётся снаружи функции
 

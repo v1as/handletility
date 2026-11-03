@@ -252,7 +252,7 @@ public class HandlerBuilderTest {
     }
 
     @Test
-    public void afterHandlerErrorWhenCoreFailedSuppressesCoreException() {
+    public void afterHandlerErrorWhenCoreReturnsErrorSuppressesCoreException() {
         IllegalStateException core = new IllegalStateException("core");
         IllegalStateException hook = new IllegalStateException("hook");
         Handler<String> coreHandler = input -> error(core);

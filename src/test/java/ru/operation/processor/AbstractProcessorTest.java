@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 public class AbstractProcessorTest {
 
     @Test
-    public void failedCheckSkipsInternal() {
+    public void checkRejectedSkipsInternal() {
         AtomicBoolean called = new AtomicBoolean();
         Processor<String, String> processor =
                 new AbstractProcessor<>() {

@@ -132,7 +132,7 @@ public class AroundProcessorTest {
     }
 
     @Test
-    public void afterErrorWhenCoreFailedSuppressesCoreException() {
+    public void afterErrorWhenCoreReturnsErrorSuppressesCoreException() {
         IllegalStateException core = new IllegalStateException("core");
         IllegalStateException hook = new IllegalStateException("hook");
         Processor<String, String> around =

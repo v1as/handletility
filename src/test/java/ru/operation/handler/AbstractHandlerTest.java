@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 public class AbstractHandlerTest {
 
     @Test
-    public void failedCheckSkipsInternal() {
+    public void checkRejectedSkipsInternal() {
         AtomicBoolean called = new AtomicBoolean();
         Handler<String> handler =
                 new AbstractHandler<>() {

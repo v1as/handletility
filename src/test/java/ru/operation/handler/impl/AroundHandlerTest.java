@@ -123,7 +123,7 @@ public class AroundHandlerTest {
     }
 
     @Test
-    public void afterErrorWhenCoreFailedSuppressesCoreException() {
+    public void afterErrorWhenCoreReturnsErrorSuppressesCoreException() {
         IllegalStateException core = new IllegalStateException("core");
         IllegalStateException hook = new IllegalStateException("hook");
         Handled hookError = error(hook);

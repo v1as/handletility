@@ -9,8 +9,8 @@ import ru.operation.handler.Handler;
 import ru.operation.util.function.ThrowablePredicate;
 
 /**
- * Runs {@code delegate} only when {@code predicate} holds. A failed check returns {@link
- * Handled#skipped()} and does not call the delegate. Exceptions from the predicate propagate
+ * Runs {@code delegate} only when {@code predicate} holds. When the predicate is false, returns
+ * {@link Handled#skipped()} and does not call the delegate. Exceptions from the predicate propagate
  * unchanged, including checked ones.
  */
 @RequiredArgsConstructor

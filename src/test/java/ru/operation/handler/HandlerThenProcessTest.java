@@ -38,7 +38,7 @@ public class HandlerThenProcessTest {
     }
 
     @Test
-    public void thenProcessPropagatesSkipAndError() {
+    public void thenProcessSkipsAndErrorsWithoutCallingNext() {
         List<String> seen = new ArrayList<>();
         Processor<String, String> next =
                 Processor.of(

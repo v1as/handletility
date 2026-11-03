@@ -262,7 +262,7 @@ public class ProcessorBuilderTest {
     }
 
     @Test
-    public void afterHandlerErrorWhenCoreFailedSuppressesCoreException() {
+    public void afterHandlerErrorWhenCoreReturnsErrorSuppressesCoreException() {
         IllegalStateException core = new IllegalStateException("core");
         IllegalStateException hook = new IllegalStateException("hook");
         Processor<String, String> coreProcessor = input -> error(core);

@@ -76,7 +76,7 @@ public final class ProcessorBuilder<I, O> {
      * Processed#skipped()}). A later call replaces the previous predicate. A predicate exception,
      * including a checked one, reaches {@link #onException} as the original type. {@code
      * Processor.when} starts a chain from the input and keeps that input as payload. The instance
-     * {@code filter} checks a successful output.
+     * {@link Processor#thenFilter} checks a successful output.
      */
     public ProcessorBuilder<I, O> when(ThrowablePredicate<I> predicate) {
         this.when = notNull(predicate, "predicate");

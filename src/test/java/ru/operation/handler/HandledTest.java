@@ -39,7 +39,7 @@ public class HandledTest {
     }
 
     @Test
-    public void throwIfErrorPassesThroughOkAndSkipped() {
+    public void throwIfErrorPassesThroughDoneAndSkipped() {
         assertSame(done(), done().throwIfError());
         assertSame(skipped(), skipped().throwIfError());
     }
