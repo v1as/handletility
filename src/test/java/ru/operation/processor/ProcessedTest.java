@@ -137,14 +137,13 @@ public class ProcessedTest {
     }
 
     @Test
-    public void thenHandle() {
+    public void handle() {
         AtomicInteger sum = new AtomicInteger();
-        Handled handled =
-                Processed.done(3).thenHandle(new ConsumerHandler<>(n -> sum.addAndGet(n)));
+        Handled handled = Processed.done(3).handle(new ConsumerHandler<>(n -> sum.addAndGet(n)));
         assertTrue(handled.isDone());
         assertEquals(3, sum.get());
 
-        assertTrue(Processed.<Integer>skipped().thenHandle(n -> Handled.done()).isSkipped());
+        assertTrue(Processed.<Integer>skipped().handle(n -> Handled.done()).isSkipped());
     }
 
     @Test

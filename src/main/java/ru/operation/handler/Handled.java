@@ -77,7 +77,7 @@ public record Handled(ResultState state, Exception exception) {
      * {@code null} from {@code next} is {@link Processed#done(Object) DONE with a null payload}; an
      * exception from {@code next} is {@link Processed#error(Exception)}.
      */
-    public <O> Processed<O> thenSupply(ThrowableSupplier<O> next) {
+    public <O> Processed<O> produce(ThrowableSupplier<O> next) {
         if (isError()) {
             return Processed.error(exception);
         }

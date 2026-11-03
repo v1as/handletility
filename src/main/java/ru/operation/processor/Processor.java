@@ -15,7 +15,7 @@ import ru.operation.util.function.ThrowableFunction;
  * Transforms {@code I} into {@code O}. Prefer extending {@link AbstractProcessor} for check,
  * exception handling and logging.
  *
- * <p>{@link #thenApply}, {@link #thenCompose}, {@link #filter} and {@link #thenHandle} follow {@link
+ * <p>{@link #thenApply}, {@link #thenPipe}, {@link #thenFilter} and {@link #thenHandle} follow {@link
  * Processed}: skip and error propagate, and later steps are not invoked. {@link #and} runs the next
  * processor on the same input only after done and folds both payloads. {@link #or} tries the next
  * processor on the same input after skip and still stops on done or error. {@link #recover} turns an
@@ -31,8 +31,8 @@ public interface Processor<I, O> {
         return input -> process(input).map(transform::apply);
     }
 
-    /** Chains another processor ({@link Processed#flatMap}). */
-    default <R> Processor<I, R> thenCompose(Processor<? super O, R> next) {
+    /** Pipes a successful output into the next processor ({@link Processed#flatMap}). */
+    default <R> Processor<I, R> thenPipe(Processor<? super O, R> next) {
         return input -> process(input).flatMap(next::process);
     }
 
@@ -114,13 +114,13 @@ public interface Processor<I, O> {
      * Processed#error(Exception)}. {@code when} is the same check on the input and starts a
      * chain.
      */
-    default Processor<I, O> filter(Predicate<? super O> predicate) {
+    default Processor<I, O> thenFilter(Predicate<? super O> predicate) {
         return input -> process(input).filter(predicate);
     }
 
-    /** Continues with a handler ({@link Processed#thenHandle}). */
+    /** Continues with a handler ({@link Processed#handle}). */
     default Handler<I> thenHandle(Handler<? super O> handler) {
-        return input -> process(input).thenHandle(handler::handle);
+        return input -> process(input).handle(handler::handle);
     }
 
     /** Identifies this processor by a constant routing key. */
@@ -139,7 +139,7 @@ public interface Processor<I, O> {
     /**
      * Starts a chain from the input. The input is {@link Processed#done(Object) done} with that same
      * value when {@code predicate} holds, and {@link Processed#skipped()} otherwise. An exception
-     * from the predicate is {@link Processed#error(Exception)}. The instance {@link #filter} checks
+     * from the predicate is {@link Processed#error(Exception)}. The instance {@link #thenFilter} checks
      * a successful output of an existing chain.
      */
     static <A> Processor<A, A> when(Predicate<? super A> predicate) {

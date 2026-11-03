@@ -58,21 +58,21 @@ public class HandledTest {
     }
 
     @Test
-    public void thenSupplySuppliesOnlyWhenHandled() {
-        assertEquals("ok", Handled.done().thenSupply(() -> "ok").requireDone());
-        assertTrue(Handled.done().thenSupply(() -> null).isDone());
-        assertFalse(Handled.done().thenSupply(() -> null).hasValue());
+    public void produceSuppliesOnlyWhenHandled() {
+        assertEquals("ok", Handled.done().produce(() -> "ok").requireDone());
+        assertTrue(Handled.done().produce(() -> null).isDone());
+        assertFalse(Handled.done().produce(() -> null).hasValue());
 
-        assertTrue(Handled.skipped().thenSupply(Assertions::fail).isSkipped());
+        assertTrue(Handled.skipped().produce(Assertions::fail).isSkipped());
 
         Exception boom = new HandlerException("boom");
-        Processed<String> error = Handled.error(boom).thenSupply(() -> fail());
+        Processed<String> error = Handled.error(boom).produce(() -> fail());
         assertTrue(error.isError());
         assertSame(boom, error.exception());
 
         Processed<String> failed =
                 Handled.done()
-                        .thenSupply(
+                        .produce(
                                 () -> {
                                     throw new IllegalStateException("nope");
                                 });

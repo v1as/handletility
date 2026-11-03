@@ -110,7 +110,7 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
         }
     }
 
-    public Handled thenHandle(Handler<T> handler) {
+    public Handled handle(Handler<T> handler) {
         if (isError()) {
             return Handled.error(exception);
         }

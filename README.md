@@ -16,7 +16,7 @@ Java 17. На classpath нужен SLF4J.
 
 ```gradle
 dependencies {
-    implementation 'io.github.v1as:handletility:0.0.6'
+    implementation 'io.github.v1as:handletility:0.0.9'
 }
 ```
 
@@ -24,7 +24,7 @@ dependencies {
 <dependency>
   <groupId>io.github.v1as</groupId>
   <artifactId>handletility</artifactId>
-  <version>0.0.5</version>
+  <version>0.0.9</version>
 </dependency>
 ```
 
@@ -167,19 +167,19 @@ charge.process(new Payment("card", -1));    // done, failure "negative"
 
 ```java
 Processor<String, Integer> positive =
-        Processor.of(Integer::parseInt).filter(n -> n > 0);
+        Processor.of(Integer::parseInt).thenFilter(n -> n > 0);
 
 Processor<String, String> printed = positive.thenApply(n -> Integer.toString(n * 2));
 
 printed.process("21");    // done, "42"
-printed.process("0");     // skipped: filter закрыл цепочку
-printed.process("nope");  // error: предикат filter не вызывается
+printed.process("0");     // skipped: thenFilter закрыл цепочку
+printed.process("nope");  // error: предикат thenFilter не вызывается
 
 Handler<String> save = printed.thenHandle(Handler.of(repository::save));
 save.handle("0");         // skipped
 ```
 
-`map`, `flatMap`, `filter`, `thenApply`, `thenCompose` и `thenHandle` проносят skip и error дальше и не вызывают следующий шаг.
+`map`, `flatMap`, `filter`, `thenApply`, `thenPipe`, `thenFilter` и `thenHandle` проносят skip и error дальше и не вызывают следующий шаг.
 
 Done с `null` вперёд идёт. Skip — нет:
 
@@ -204,7 +204,7 @@ Processor<Order, Integer> discountIfPresent = presentCode.thenApply(rates::get);
 Processed<Receipt> receipt =
         Handler.of(orders::save)
                 .handle(order)
-                .thenSupply(() -> receipts.issue(order));
+                .produce(() -> receipts.issue(order));
 // save бросил → error, issue не вызывается
 ```
 
@@ -297,7 +297,7 @@ readAmount.process(new Order("a1", "15"));   // done, 15
 readAmount.process(new Order("a1", "nope")); // done, 0 — восстановил onException
 ```
 
-Статический `Processor.when` проверяет вход в начале цепочки и при успехе передаёт дальше тот же вход. Метод экземпляра `filter` проверяет уже успешный выход. `when` в `ProcessorBuilder` стоит снаружи before, after и ядра: ложный предикат пропускает их все, а checked-исключение предиката доходит до `onException`.
+Статический `Processor.when` проверяет вход в начале цепочки и при успехе передаёт дальше тот же вход. Метод экземпляра `thenFilter` проверяет уже успешный выход. `when` в `ProcessorBuilder` стоит снаружи before, after и ядра: ложный предикат пропускает их все, а checked-исключение предиката доходит до `onException`.
 
 `onException` получает исключение функции и может вернуть done. Когда функция бросает, `after` не выполняется.
 

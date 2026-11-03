@@ -16,14 +16,14 @@ public class ProcessorThenTest {
     public void ofThenComposeThenApply() {
         Processor<String, String> pipeline =
                 Processor.<String, Integer>of(Integer::parseInt)
-                        .thenCompose(Processor.of((Integer n) -> n * 2))
+                        .thenPipe(Processor.of((Integer n) -> n * 2))
                         .thenApply(Object::toString);
 
         assertEquals("84", pipeline.process("42").value());
     }
 
     @Test
-    public void thenComposePropagatesSkip() {
+    public void thenPipePropagatesSkip() {
         Processor<String, Integer> skipping = input -> Processed.skipped();
         Processor<String, String> pipeline = skipping.thenApply(Object::toString);
 
@@ -53,7 +53,7 @@ public class ProcessorThenTest {
     @Test
     public void filterKeepsMatchingOutput() {
         Processor<String, Integer> even =
-                Processor.<String, Integer>of(Integer::parseInt).filter(n -> n % 2 == 0);
+                Processor.<String, Integer>of(Integer::parseInt).thenFilter(n -> n % 2 == 0);
 
         assertEquals(42, even.process("42").value());
         assertTrue(even.process("41").isSkipped());
@@ -183,7 +183,7 @@ public class ProcessorThenTest {
         IllegalStateException boom = new IllegalStateException("boom");
         Processed<Integer> result =
                 Processor.<String, Integer>of((String s) -> 1)
-                        .filter(
+                        .thenFilter(
                                 n -> {
                                     throw boom;
                                 })
@@ -205,11 +205,11 @@ public class ProcessorThenTest {
     @Test
     public void filterPropagatesUpstreamSkipAndError() {
         Processor<String, Integer> skipping = input -> Processed.skipped();
-        assertTrue(skipping.filter(n -> true).process("x").isSkipped());
+        assertTrue(skipping.thenFilter(n -> true).process("x").isSkipped());
 
         Processor<String, Integer> failing =
                 input -> Processed.error(new IllegalStateException("boom"));
-        Processed<Integer> error = failing.filter(n -> true).process("x");
+        Processed<Integer> error = failing.thenFilter(n -> true).process("x");
         assertTrue(error.isError());
         assertEquals("boom", error.exception().getMessage());
     }
