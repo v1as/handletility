@@ -1,4 +1,4 @@
-package ru.operation.handler.impl.routing;
+package ru.operation.handler.impl.switching;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ru.operation.handler.Handled.done;
 
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import ru.operation.handler.Handled;
@@ -15,7 +14,7 @@ import ru.operation.handler.HandlerBuilder;
 import ru.operation.handler.IdentifiedHandler;
 import ru.operation.processor.impl.FunctionProcessor;
 
-public class RoutingHandlerTest {
+public class SwitchHandlerTest {
 
     private final int[] store = {-1};
 
@@ -29,7 +28,7 @@ public class RoutingHandlerTest {
                 return done();
             };
 
-    private final FunctionProcessor<String, String> identityIdentifier =
+    private final FunctionProcessor<String, String> identityKeyReader =
             new FunctionProcessor<>(s -> s);
 
     private Handler<String> marking(int mark) {
@@ -43,10 +42,11 @@ public class RoutingHandlerTest {
     public void shouldHandleWithNoDefault() {
         Handler<String> handler =
                 HandlerBuilder.from(
-                                new RoutingHandler<>(
-                                        List.of(firstHandler, secondHandler),
-                                        identityIdentifier,
-                                        null))
+                                SwitchHandler.<String, String>switchHandler()
+                                        .handler(firstHandler)
+                                        .handler(secondHandler)
+                                        .keyReader(identityKeyReader)
+                                        .build())
                         .logging()
                         .build();
 
@@ -62,9 +62,13 @@ public class RoutingHandlerTest {
 
     @Test
     public void shouldHandleWithDefault() {
-        RoutingHandler<String, String> handler =
-                new RoutingHandler<>(
-                        List.of(firstHandler, secondHandler), identityIdentifier, forthHandler);
+        SwitchHandler<String, String> handler =
+                SwitchHandler.<String, String>switchHandler()
+                        .handler(firstHandler)
+                        .handler(secondHandler)
+                        .keyReader(identityKeyReader)
+                        .defaultHandler(forthHandler)
+                        .build();
 
         assertTrue(handler.handle("abc").isDone());
         assertEquals(4, store[0]);
@@ -77,20 +81,23 @@ public class RoutingHandlerTest {
     }
 
     @Test
-    public void identifierErrorDoesNotCallDefault() {
+    public void keyReaderErrorDoesNotCallDefault() {
         IllegalStateException failure = new IllegalStateException("broken parse");
         AtomicBoolean defaultCalled = new AtomicBoolean();
-        RoutingHandler<String, String> handler =
-                new RoutingHandler<>(
-                        List.of(firstHandler),
-                        new FunctionProcessor<>(
+        SwitchHandler<String, String> handler =
+                SwitchHandler.<String, String>switchHandler()
+                        .handler(firstHandler)
+                        .keyReader(
+                                new FunctionProcessor<>(
+                                        input -> {
+                                            throw failure;
+                                        }))
+                        .defaultHandler(
                                 input -> {
-                                    throw failure;
-                                }),
-                        input -> {
-                            defaultCalled.set(true);
-                            return done();
-                        });
+                                    defaultCalled.set(true);
+                                    return done();
+                                })
+                        .build();
 
         Handled result = handler.handle("weird");
 
@@ -100,16 +107,18 @@ public class RoutingHandlerTest {
     }
 
     @Test
-    public void skippedIdentifierUsesDefault() {
+    public void skippedKeyReaderUsesDefault() {
         AtomicBoolean defaultCalled = new AtomicBoolean();
-        RoutingHandler<String, String> handler =
-                new RoutingHandler<>(
-                        List.of(firstHandler),
-                        new FunctionProcessor<>(input -> null),
-                        input -> {
-                            defaultCalled.set(true);
-                            return done();
-                        });
+        SwitchHandler<String, String> handler =
+                SwitchHandler.<String, String>switchHandler()
+                        .handler(firstHandler)
+                        .keyReader(new FunctionProcessor<>(input -> null))
+                        .defaultHandler(
+                                input -> {
+                                    defaultCalled.set(true);
+                                    return done();
+                                })
+                        .build();
 
         assertTrue(handler.handle("weird").isDone());
         assertTrue(defaultCalled.get());

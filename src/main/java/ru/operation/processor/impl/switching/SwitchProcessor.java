@@ -1,10 +1,12 @@
-package ru.operation.processor.impl.routing;
+package ru.operation.processor.impl.switching;
 
 import static ru.operation.processor.Processed.error;
 import static ru.operation.processor.Processed.skipped;
 
 import java.util.List;
+import lombok.Builder;
 import lombok.NonNull;
+import lombok.Singular;
 import ru.operation.identifier.IdentifyingProcessor;
 import ru.operation.processor.AbstractProcessor;
 import ru.operation.processor.IdentifiedProcessor;
@@ -12,20 +14,23 @@ import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
 
 /**
- * Routes input to an {@link IdentifiedProcessor} selected by an identifier read from the input.
- * An error while reading the identifier is returned as-is and does not call {@code
- * defaultProcessor}. Skip and an unknown identifier do.
+ * Ключ из входа читается один раз через {@code keyReader} (равенство ключей); выбирается ровно один
+ * {@link IdentifiedProcessor} — его done, skipped и error становятся окончательным результатом.
+ * Skip {@code keyReader} и неизвестный ключ направляются в {@code defaultProcessor}, иначе —
+ * skipped. Error от {@code keyReader} возвращается как есть, {@code defaultProcessor} не
+ * вызывается.
  */
-public class RoutingProcessor<K, I, O> extends AbstractProcessor<I, O> {
+public class SwitchProcessor<K, I, O> extends AbstractProcessor<I, O> {
 
     private final IdentifyingProcessor<K, ? extends IdentifiedProcessor<K, I, O>, I> lookup;
     private final Processor<I, O> defaultProcessor;
 
-    public <T extends IdentifiedProcessor<K, I, O>> RoutingProcessor(
-            @NonNull List<T> processors,
-            @NonNull Processor<I, K> identifier,
+    @Builder(builderMethodName = "switchProcessor")
+    public SwitchProcessor(
+            @NonNull @Singular List<? extends IdentifiedProcessor<K, I, O>> processors,
+            @NonNull Processor<I, K> keyReader,
             Processor<I, O> defaultProcessor) {
-        this.lookup = new IdentifyingProcessor<>(processors, identifier);
+        this.lookup = new IdentifyingProcessor<>(processors, keyReader);
         this.defaultProcessor = defaultProcessor;
     }
 

@@ -13,7 +13,7 @@ import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
 import ru.operation.handler.IdentifiedHandler;
 import ru.operation.handler.impl.AroundHandler;
-import ru.operation.handler.impl.routing.RoutingHandler;
+import ru.operation.handler.impl.switching.SwitchHandler;
 import ru.operation.processor.Processor;
 import ru.operation.processor.impl.FunctionProcessor;
 
@@ -34,10 +34,10 @@ public class HandlerListTest {
                         .delegate(
                                 HandlerList.<Command>builder()
                                         .handler(
-                                                RoutingHandler.<String, Command>routingHandler()
+                                                SwitchHandler.<String, Command>switchHandler()
                                                         .handler(new HelloCommand())
                                                         .handler(new ByeCommand())
-                                                        .identifier(
+                                                        .keyReader(
                                                                 new FunctionProcessor<>(
                                                                         Command::name))
                                                         .build())

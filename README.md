@@ -16,7 +16,7 @@ Java 17. Транзитивно подтягивается `slf4j-api`; реал
 
 ```gradle
 dependencies {
-    implementation 'io.github.v1as:handletility:0.0.12'
+    implementation 'io.github.v1as:handletility:0.0.13'
 }
 ```
 
@@ -24,7 +24,7 @@ dependencies {
 <dependency>
   <groupId>io.github.v1as</groupId>
   <artifactId>handletility</artifactId>
-  <version>0.0.12</version>
+  <version>0.0.13</version>
 </dependency>
 ```
 
@@ -250,16 +250,16 @@ Processor<User, List<String>> validate =
                 .build();
 ```
 
-## Идентификатор выбирает операцию
+## Switch по ключу
 
 ```java
 record Command(String name) {}
 
 Handler<Command> commands =
-        RoutingHandler.<String, Command>routingHandler()
+        SwitchHandler.<String, Command>switchHandler()
                 .handler(Handler.of(this::create).identifiedBy("create"))
                 .handler(Handler.of(this::cancel).identifiedBy("cancel"))
-                .identifier(
+                .keyReader(
                         command ->
                                 command.name() == null
                                         ? Processed.error("no name")
@@ -269,12 +269,12 @@ Handler<Command> commands =
 
 commands.handle(new Command("create")); // create
 commands.handle(new Command("rename")); // defaultHandler → skipped
-commands.handle(new Command(null));     // error идентификатора
+commands.handle(new Command(null));     // error keyReader
 ```
 
-На неизвестное имя вызывается `defaultHandler`: в примере он отвечает skipped. Если чтение идентификатора закончилось error, этот error становится результатом вызова, а `defaultHandler` не вызывается.
+На неизвестное имя вызывается `defaultHandler`: в примере он отвечает skipped. Если чтение ключа через `keyReader` закончилось error, этот error становится результатом вызова, а `defaultHandler` не вызывается.
 
-`RoutingProcessor` устроен так же и выбирает `IdentifiedProcessor`. Идентификатор задаётся через `Processor.identifiedBy`.
+`SwitchProcessor` устроен так же: `SwitchProcessor.switchProcessor()`, ветки через `Processor.identifiedBy`, ключ из входа — `.keyReader(...)`.
 
 ## Обвязка остаётся снаружи функции
 

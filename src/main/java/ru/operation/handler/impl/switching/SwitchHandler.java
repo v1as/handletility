@@ -1,4 +1,4 @@
-package ru.operation.handler.impl.routing;
+package ru.operation.handler.impl.switching;
 
 import static ru.operation.handler.Handled.error;
 import static ru.operation.handler.Handled.skipped;
@@ -16,21 +16,22 @@ import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
 
 /**
- * Routes input to an {@link IdentifiedHandler} selected by an identifier read from the input. An
- * error while reading the identifier is returned as-is and does not call {@code defaultHandler}.
- * Skip and an unknown identifier do.
+ * Ключ из входа читается один раз через {@code keyReader} (равенство ключей); выбирается ровно один
+ * {@link IdentifiedHandler} — его done, skipped и error становятся окончательным результатом. Skip
+ * {@code keyReader} и неизвестный ключ направляются в {@code defaultHandler}, иначе — skipped.
+ * Error от {@code keyReader} возвращается как есть, {@code defaultHandler} не вызывается.
  */
-public class RoutingHandler<K, I> extends AbstractHandler<I> {
+public class SwitchHandler<K, I> extends AbstractHandler<I> {
 
     private final IdentifyingProcessor<K, ? extends IdentifiedHandler<K, I>, I> lookup;
     private final Handler<I> defaultHandler;
 
-    @Builder(builderMethodName = "routingHandler")
-    public RoutingHandler(
+    @Builder(builderMethodName = "switchHandler")
+    public SwitchHandler(
             @NonNull @Singular List<? extends IdentifiedHandler<K, I>> handlers,
-            @NonNull Processor<I, K> identifier,
+            @NonNull Processor<I, K> keyReader,
             Handler<I> defaultHandler) {
-        this.lookup = new IdentifyingProcessor<>(handlers, identifier);
+        this.lookup = new IdentifyingProcessor<>(handlers, keyReader);
         this.defaultHandler = defaultHandler;
     }
 
