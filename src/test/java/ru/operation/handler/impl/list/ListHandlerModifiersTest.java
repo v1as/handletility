@@ -18,13 +18,13 @@ import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
 import ru.operation.handler.HandlerException;
 
-public class HandlerListModifiersTest {
+public class ListHandlerModifiersTest {
 
     @Test
     public void stopsOnFirstDoneByDefault() {
         List<String> called = new ArrayList<>();
         Handler<String> list =
-                new HandlerList<>(
+                new ListHandler<>(
                         Arrays.asList(
                                 input -> {
                                     called.add("first");
@@ -43,7 +43,7 @@ public class HandlerListModifiersTest {
     public void continueOnDoneRunsAll() {
         List<String> called = new ArrayList<>();
         Handler<String> list =
-                HandlerList.<String>builder()
+                ListHandler.<String>builder()
                         .handler(
                                 input -> {
                                     called.add("first");
@@ -66,7 +66,7 @@ public class HandlerListModifiersTest {
         HandlerException first = new HandlerException("one");
         HandlerException second = new HandlerException("two");
         Handler<String> list =
-                HandlerList.<String>builder()
+                ListHandler.<String>builder()
                         .handler(input -> error(first))
                         .handler(input -> error(second))
                         .handler(input -> done())
@@ -87,7 +87,7 @@ public class HandlerListModifiersTest {
     public void stopsOnErrorWithoutModifier() {
         List<String> called = new ArrayList<>();
         Handler<String> list =
-                new HandlerList<>(
+                new ListHandler<>(
                         Arrays.asList(
                                 input -> {
                                     called.add("first");
@@ -106,7 +106,7 @@ public class HandlerListModifiersTest {
     public void singleErrorIsTheOriginalException() {
         IOException checked = new IOException("disk");
         Handled checkedResult =
-                new HandlerList<>(Arrays.asList(input -> error(checked))).handle("x");
+                new ListHandler<>(Arrays.asList(input -> error(checked))).handle("x");
         assertSame(checked, checkedResult.exception());
         HandlerException wrapped =
                 assertThrows(HandlerException.class, checkedResult::throwIfError);
@@ -116,7 +116,7 @@ public class HandlerListModifiersTest {
 
         IllegalStateException runtime = new IllegalStateException("disk");
         Handled runtimeResult =
-                new HandlerList<>(Arrays.asList(input -> error(runtime))).handle("x");
+                new ListHandler<>(Arrays.asList(input -> error(runtime))).handle("x");
         assertSame(runtime, runtimeResult.exception());
         assertSame(runtime, assertThrows(IllegalStateException.class, runtimeResult::throwIfError));
     }
@@ -126,7 +126,7 @@ public class HandlerListModifiersTest {
         IOException first = new IOException("disk");
         IllegalArgumentException second = new IllegalArgumentException("bad");
         Handler<String> list =
-                HandlerList.<String>builder()
+                ListHandler.<String>builder()
                         .handler(input -> error(first))
                         .handler(input -> error(second))
                         .modifier(HandlerModifier.CONTINUE_ON_ERROR)

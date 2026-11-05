@@ -19,12 +19,12 @@ import ru.operation.processor.Processor;
 import ru.operation.processor.ProcessorException;
 import ru.operation.util.function.ThrowableBiFunction;
 
-public class ProcessorListTest {
+public class ListProcessorTest {
 
     @Test
     public void should_process_after_skip() {
         Processor<String, String> handlers =
-                new ProcessorList<>(Arrays.asList(value -> skipped(), value -> done("polo")));
+                new ListProcessor<>(Arrays.asList(value -> skipped(), value -> done("polo")));
         Processed<String> result = handlers.process("marko");
         assertEquals(done("polo"), result);
     }
@@ -32,7 +32,7 @@ public class ProcessorListTest {
     @Test
     public void continueOnErrorTriesNext() {
         Processor<String, Integer> list =
-                ProcessorList.<String, Integer>processorList()
+                ListProcessor.<String, Integer>listProcessor()
                         .processor(input -> error("first"))
                         .processor(input -> done(7))
                         .modifier(ProcessorModifier.CONTINUE_ON_ERROR)
@@ -47,7 +47,7 @@ public class ProcessorListTest {
     public void singleErrorIsTheOriginalException() {
         IOException checked = new IOException("disk");
         Processed<String> checkedResult =
-                new ProcessorList<String, String>(Arrays.asList(input -> error(checked)))
+                new ListProcessor<String, String>(Arrays.asList(input -> error(checked)))
                         .process("x");
         assertSame(checked, checkedResult.exception());
         ProcessorException wrapped =
@@ -58,7 +58,7 @@ public class ProcessorListTest {
 
         IllegalStateException runtime = new IllegalStateException("disk");
         Processed<String> runtimeResult =
-                new ProcessorList<String, String>(Arrays.asList(input -> error(runtime)))
+                new ListProcessor<String, String>(Arrays.asList(input -> error(runtime)))
                         .process("x");
         assertSame(runtime, runtimeResult.exception());
         assertSame(runtime, assertThrows(IllegalStateException.class, runtimeResult::throwIfError));
@@ -69,7 +69,7 @@ public class ProcessorListTest {
         IOException first = new IOException("disk");
         IllegalArgumentException second = new IllegalArgumentException("bad");
         Processor<String, String> list =
-                ProcessorList.<String, String>processorList()
+                ListProcessor.<String, String>listProcessor()
                         .processor(input -> error(first))
                         .processor(input -> error(second))
                         .modifier(ProcessorModifier.CONTINUE_ON_ERROR)
@@ -222,8 +222,8 @@ public class ProcessorListTest {
             List<? extends Processor<String, O>> processors,
             ThrowableBiFunction<O, O, O> combiner,
             boolean continueOnError) {
-        ProcessorList.ProcessorListBuilder<String, O> builder =
-                ProcessorList.<String, O>processorList().combiner(combiner);
+        ListProcessor.ListProcessorBuilder<String, O> builder =
+                ListProcessor.<String, O>listProcessor().combiner(combiner);
         processors.forEach(builder::processor);
         if (continueOnError) {
             builder.modifier(ProcessorModifier.CONTINUE_ON_ERROR);

@@ -24,14 +24,14 @@ import ru.operation.handler.impl.LoggingExceptionHandler;
  * Runs handlers in order. By default stops on the first {@code DONE} or {@code ERROR}; behaviour is
  * controlled by {@link HandlerModifier}.
  */
-public class HandlerList<I> extends AbstractHandler<I> {
+public class ListHandler<I> extends AbstractHandler<I> {
 
     private final List<? extends Handler<I>> handlers;
     private final Set<HandlerModifier> modifiers;
     private final Handler<Failure<I>> onException;
 
     @Builder
-    public HandlerList(
+    public ListHandler(
             @NonNull @Singular List<? extends Handler<I>> handlers,
             @Singular Set<HandlerModifier> modifiers,
             Handler<Failure<I>> onException) {
@@ -40,7 +40,7 @@ public class HandlerList<I> extends AbstractHandler<I> {
         this.onException = onException != null ? onException : new LoggingExceptionHandler<>();
     }
 
-    public HandlerList(List<? extends Handler<I>> handlers) {
+    public ListHandler(List<? extends Handler<I>> handlers) {
         this(handlers, emptySet(), new LoggingExceptionHandler<>());
     }
 

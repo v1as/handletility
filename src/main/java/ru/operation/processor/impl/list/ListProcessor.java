@@ -27,15 +27,15 @@ import ru.operation.util.function.ThrowableBiFunction;
  * {@code combiner} is an error of the list and follows the same rule. A collected error during a
  * fold is still the result, and the accumulated value is dropped.
  */
-public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
+public class ListProcessor<I, O> extends AbstractProcessor<I, O> {
 
     private final List<? extends Processor<I, O>> processors;
     private final Set<ProcessorModifier> modifiers;
     private final ThrowableBiFunction<O, O, O> combiner;
     private final Processor<Failure<I>, O> onException;
 
-    @Builder(builderMethodName = "processorList")
-    public ProcessorList(
+    @Builder(builderMethodName = "listProcessor")
+    public ListProcessor(
             @NonNull @Singular List<? extends Processor<I, O>> processors,
             @Singular Set<ProcessorModifier> modifiers,
             ThrowableBiFunction<O, O, O> combiner,
@@ -46,7 +46,7 @@ public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
         this.onException = onException != null ? onException : new LoggingExceptionProcessor<>();
     }
 
-    public ProcessorList(List<? extends Processor<I, O>> processors) {
+    public ListProcessor(List<? extends Processor<I, O>> processors) {
         this(
                 processors,
                 Collections.<ProcessorModifier>emptySet(),

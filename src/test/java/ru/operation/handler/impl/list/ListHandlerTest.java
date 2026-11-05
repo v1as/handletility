@@ -18,12 +18,12 @@ import ru.operation.handler.impl.switching.SwitchHandler;
 import ru.operation.processor.Processor;
 import ru.operation.processor.impl.FunctionProcessor;
 
-public class HandlerListTest {
+public class ListHandlerTest {
 
     @Test
     public void should_process_after_skip() {
         Handler<String> handlers =
-                new HandlerList<>(Arrays.asList(value -> skipped(), value -> done()));
+                new ListHandler<>(Arrays.asList(value -> skipped(), value -> done()));
         Handled result = handlers.handle("hello");
         assertEquals(done(), result);
     }
@@ -34,7 +34,7 @@ public class HandlerListTest {
                 AroundHandler.<Command>builder()
                         .beforeHandler(new LoggingHandler())
                         .delegate(
-                                HandlerList.<Command>builder()
+                                ListHandler.<Command>builder()
                                         .handler(
                                                 SwitchHandler.<String, Command>switchHandler()
                                                         .handler(new HelloCommand())

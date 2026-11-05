@@ -16,7 +16,7 @@ Java 8. Транзитивно подтягивается `slf4j-api`; реал�
 
 ```gradle
 dependencies {
-    implementation 'io.github.v1as:handletility:0.0.14'
+    implementation 'io.github.v1as:handletility:0.0.15'
 }
 ```
 
@@ -24,7 +24,7 @@ dependencies {
 <dependency>
   <groupId>io.github.v1as</groupId>
   <artifactId>handletility</artifactId>
-  <version>0.0.13</version>
+  <version>0.0.15</version>
 </dependency>
 ```
 
@@ -214,7 +214,7 @@ Processed<Receipt> receipt =
 
 ```java
 Handler<Event> dispatch =
-        HandlerList.<Event>builder()
+        ListHandler.<Event>builder()
                 .handler(security)
                 .handler(notify)
                 .handler(index)
@@ -225,7 +225,7 @@ Handler<Event> dispatch =
 
 ```java
 Handler<Event> fanout =
-        HandlerList.<Event>builder()
+        ListHandler.<Event>builder()
                 .handler(audit)
                 .handler(notify)
                 .handler(index)
@@ -234,11 +234,11 @@ Handler<Event> fanout =
                 .build();
 ```
 
-`ProcessorList` по умолчанию — это `or` для набора: результатом становится первое done-значение, skip пробует следующий процессор, error останавливает список, пока не задан `CONTINUE_ON_ERROR`. `combiner` проходит все процессоры и сливает payload всех done слева направо; skip в склейку не входит, один done возвращается как есть. `CONTINUE_ON_ERROR` и в свёртке только про ошибку: обход продолжается, но если ошибка была, итогом становится error без слитого значения.
+`ListProcessor` по умолчанию — это `or` для набора: результатом становится первое done-значение, skip пробует следующий процессор, error останавливает список, пока не задан `CONTINUE_ON_ERROR`. `combiner` проходит все процессоры и сливает payload всех done слева направо; skip в склейку не входит, один done возвращается как есть. `CONTINUE_ON_ERROR` и в свёртке только про ошибку: обход продолжается, но если ошибка была, итогом становится error без слитого значения.
 
 ```java
 Processor<User, List<String>> validate =
-        ProcessorList.<User, List<String>>processorList()
+        ListProcessor.<User, List<String>>listProcessor()
                 .processor(this::checkName)
                 .processor(this::checkAge)
                 .combiner(
