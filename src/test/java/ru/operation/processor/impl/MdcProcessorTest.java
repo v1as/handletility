@@ -20,7 +20,7 @@ public class MdcProcessorTest {
     @Test
     public void putsMdcValueAroundDelegate() {
         AtomicReference<String> seen = new AtomicReference<>();
-        var processor =
+        MdcProcessor<String, String> processor =
                 new MdcProcessor<>(
                         "traceId",
                         input -> "t-" + input,

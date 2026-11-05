@@ -11,6 +11,7 @@ import static ru.operation.processor.Processed.error;
 import static ru.operation.processor.Processed.skipped;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import ru.operation.processor.Processed;
@@ -23,7 +24,7 @@ public class ProcessorListTest {
     @Test
     public void should_process_after_skip() {
         Processor<String, String> handlers =
-                new ProcessorList<>(List.of(value -> skipped(), value -> done("polo")));
+                new ProcessorList<>(Arrays.asList(value -> skipped(), value -> done("polo")));
         Processed<String> result = handlers.process("marko");
         assertEquals(done("polo"), result);
     }
@@ -46,7 +47,8 @@ public class ProcessorListTest {
     public void singleErrorIsTheOriginalException() {
         IOException checked = new IOException("disk");
         Processed<String> checkedResult =
-                new ProcessorList<String, String>(List.of(input -> error(checked))).process("x");
+                new ProcessorList<String, String>(Arrays.asList(input -> error(checked)))
+                        .process("x");
         assertSame(checked, checkedResult.exception());
         ProcessorException wrapped =
                 assertThrows(ProcessorException.class, checkedResult::throwIfError);
@@ -56,7 +58,8 @@ public class ProcessorListTest {
 
         IllegalStateException runtime = new IllegalStateException("disk");
         Processed<String> runtimeResult =
-                new ProcessorList<String, String>(List.of(input -> error(runtime))).process("x");
+                new ProcessorList<String, String>(Arrays.asList(input -> error(runtime)))
+                        .process("x");
         assertSame(runtime, runtimeResult.exception());
         assertSame(runtime, assertThrows(IllegalStateException.class, runtimeResult::throwIfError));
     }
@@ -75,7 +78,7 @@ public class ProcessorListTest {
         Processed<String> result = list.process("x");
         ProcessorException aggregated =
                 assertInstanceOf(ProcessorException.class, result.exception());
-        assertEquals(List.of(first, second), aggregated.causes());
+        assertEquals(Arrays.asList(first, second), aggregated.causes());
         assertSame(first, aggregated.getCause());
         assertEquals("disk; bad", aggregated.getMessage());
         assertEquals(0, aggregated.getSuppressed().length);
@@ -86,7 +89,7 @@ public class ProcessorListTest {
     public void foldSkipsDoNotEnterTheAccumulator() {
         Processor<String, String> list =
                 folding(
-                        List.of(
+                        Arrays.asList(
                                 input -> skipped(),
                                 input -> done("a"),
                                 input -> skipped(),
@@ -101,7 +104,7 @@ public class ProcessorListTest {
     public void foldReturnsSingleDoneWithoutCombining() {
         Processor<String, String> list =
                 folding(
-                        List.of(input -> skipped(), input -> done(null)),
+                        Arrays.asList(input -> skipped(), input -> done(null)),
                         (left, right) -> {
                             throw new AssertionError("combined");
                         },
@@ -114,7 +117,7 @@ public class ProcessorListTest {
     public void foldCombinesDoneLeftToRight() {
         Processor<String, String> list =
                 folding(
-                        List.of(input -> done("a"), input -> done("b"), input -> done("c")),
+                        Arrays.asList(input -> done("a"), input -> done("b"), input -> done("c")),
                         (left, right) -> "(" + left + right + ")",
                         false);
 
@@ -127,7 +130,7 @@ public class ProcessorListTest {
         boolean[] later = {false};
         Processor<String, String> list =
                 folding(
-                        List.of(
+                        Arrays.asList(
                                 input -> done("a"),
                                 input -> error(disk),
                                 input -> {
@@ -148,7 +151,7 @@ public class ProcessorListTest {
         IllegalArgumentException second = new IllegalArgumentException("bad");
         Processor<String, String> list =
                 folding(
-                        List.of(
+                        Arrays.asList(
                                 input -> done("a"),
                                 input -> error(first),
                                 input -> done("b"),
@@ -159,7 +162,7 @@ public class ProcessorListTest {
         Processed<String> result = list.process("x");
         ProcessorException aggregated =
                 assertInstanceOf(ProcessorException.class, result.exception());
-        assertEquals(List.of(first, second), aggregated.causes());
+        assertEquals(Arrays.asList(first, second), aggregated.causes());
         assertTrue(result.isError());
     }
 
@@ -169,7 +172,7 @@ public class ProcessorListTest {
         boolean[] later = {false};
         Processor<String, String> list =
                 folding(
-                        List.of(
+                        Arrays.asList(
                                 input -> done("a"),
                                 input -> done("b"),
                                 input -> {
@@ -192,7 +195,7 @@ public class ProcessorListTest {
         boolean[] later = {false};
         Processor<String, String> list =
                 folding(
-                        List.of(
+                        Arrays.asList(
                                 input -> done("a"),
                                 input -> error(disk),
                                 input -> done("b"),
@@ -211,7 +214,7 @@ public class ProcessorListTest {
         Processed<String> result = list.process("x");
         ProcessorException aggregated =
                 assertInstanceOf(ProcessorException.class, result.exception());
-        assertEquals(List.of(disk, merge), aggregated.causes());
+        assertEquals(Arrays.asList(disk, merge), aggregated.causes());
         assertTrue(later[0]);
     }
 

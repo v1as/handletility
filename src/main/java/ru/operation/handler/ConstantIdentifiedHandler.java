@@ -1,9 +1,15 @@
 package ru.operation.handler;
 
 import lombok.NonNull;
+import lombok.Value;
+import lombok.experimental.Accessors;
 
-record ConstantIdentifiedHandler<K, I>(@NonNull K identifier, @NonNull Handler<I> delegate)
-        implements IdentifiedHandler<K, I> {
+@Value
+@Accessors(fluent = true)
+class ConstantIdentifiedHandler<K, I> implements IdentifiedHandler<K, I> {
+
+    @NonNull K identifier;
+    @NonNull Handler<I> delegate;
 
     @Override
     public Handled handle(I input) {

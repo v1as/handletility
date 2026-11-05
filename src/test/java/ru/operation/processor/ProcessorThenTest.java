@@ -9,6 +9,7 @@ import static ru.operation.processor.Processed.error;
 import static ru.operation.processor.Processed.skipped;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import ru.operation.handler.Handler;
@@ -40,7 +41,7 @@ public class ProcessorThenTest {
                 Processor.<String, Integer>of(Integer::parseInt).thenHandle(Handler.of(seen::add));
 
         assertTrue(handler.handle("7").isDone());
-        assertEquals(List.of(7), seen);
+        assertEquals(Arrays.asList(7), seen);
     }
 
     @Test
@@ -76,10 +77,10 @@ public class ProcessorThenTest {
 
         assertSame(input, admitted.process(input).value());
         assertEquals("AB", pipeline.process(input).value());
-        assertEquals(List.of(input), seen);
+        assertEquals(Arrays.asList(input), seen);
 
         assertTrue(pipeline.process("b").isSkipped());
-        assertEquals(List.of(input), seen);
+        assertEquals(Arrays.asList(input), seen);
 
         Processed<String> acceptedNull = Processor.<String>when(value -> true).process(null);
         assertTrue(acceptedNull.isDone());
@@ -129,7 +130,7 @@ public class ProcessorThenTest {
         Processed<String> result = first.or(second).or(third).process("marko");
 
         assertEquals("marko-ok", result.value());
-        assertEquals(List.of("first", "second"), seen);
+        assertEquals(Arrays.asList("first", "second"), seen);
     }
 
     @Test

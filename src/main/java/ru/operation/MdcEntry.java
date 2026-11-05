@@ -7,11 +7,24 @@ import ru.operation.processor.Processor;
 import ru.operation.processor.impl.FunctionProcessor;
 
 /** Binding of an MDC key to a value extracted from the input. */
-public record MdcEntry<I>(String key, Processor<I, ?> valueProcessor) {
+public final class MdcEntry<I> {
 
-    public MdcEntry {
+    private final String key;
+    private final Processor<I, ?> valueProcessor;
+
+    public MdcEntry(String key, Processor<I, ?> valueProcessor) {
         notNull(key, "mdc key");
         notNull(valueProcessor, "mdc value processor");
+        this.key = key;
+        this.valueProcessor = valueProcessor;
+    }
+
+    public String key() {
+        return key;
+    }
+
+    public Processor<I, ?> valueProcessor() {
+        return valueProcessor;
     }
 
     /** Preferred factory: method references like {@code Request::id} work without wrapping. */

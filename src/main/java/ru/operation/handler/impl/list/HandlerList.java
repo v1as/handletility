@@ -1,5 +1,6 @@
 package ru.operation.handler.impl.list;
 
+import static java.util.Collections.emptySet;
 import static ru.operation.handler.Handled.done;
 import static ru.operation.handler.Handled.error;
 import static ru.operation.handler.Handled.skipped;
@@ -35,12 +36,12 @@ public class HandlerList<I> extends AbstractHandler<I> {
             @Singular Set<HandlerModifier> modifiers,
             Handler<Failure<I>> onException) {
         this.handlers = handlers;
-        this.modifiers = modifiers == null ? Set.of() : modifiers;
+        this.modifiers = modifiers == null ? emptySet() : modifiers;
         this.onException = onException != null ? onException : new LoggingExceptionHandler<>();
     }
 
     public HandlerList(List<? extends Handler<I>> handlers) {
-        this(handlers, Set.of(), new LoggingExceptionHandler<>());
+        this(handlers, emptySet(), new LoggingExceptionHandler<>());
     }
 
     @Override

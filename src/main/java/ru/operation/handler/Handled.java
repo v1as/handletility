@@ -1,13 +1,18 @@
 package ru.operation.handler;
 
+import lombok.EqualsAndHashCode;
 import ru.operation.ResultState;
 import ru.operation.processor.Processed;
 import ru.operation.util.function.ThrowableSupplier;
 
 /** Result of a {@link Handler}: done, skipped, or error. Error always carries an exception. */
-public record Handled(ResultState state, Exception exception) {
+@EqualsAndHashCode
+public final class Handled {
 
-    public Handled {
+    private final ResultState state;
+    private final Exception exception;
+
+    public Handled(ResultState state, Exception exception) {
         if (state == null) {
             throw new IllegalArgumentException("state cannot be null");
         }
@@ -18,6 +23,16 @@ public record Handled(ResultState state, Exception exception) {
         } else if (exception != null) {
             throw new IllegalArgumentException(state + " cannot carry an exception");
         }
+        this.state = state;
+        this.exception = exception;
+    }
+
+    public ResultState state() {
+        return state;
+    }
+
+    public Exception exception() {
+        return exception;
     }
 
     private static final Handled DONE = new Handled(ResultState.DONE, null);
@@ -55,8 +70,8 @@ public record Handled(ResultState state, Exception exception) {
         if (!isError()) {
             return this;
         }
-        if (exception instanceof RuntimeException runtime) {
-            throw runtime;
+        if (exception instanceof RuntimeException) {
+            throw (RuntimeException) exception;
         }
         throw new HandlerException(exception.getMessage(), exception);
     }
@@ -95,7 +110,7 @@ public record Handled(ResultState state, Exception exception) {
     public String toString() {
         String result = state.toString();
         if (isError()) {
-            result += ": %s %s".formatted(exception.getClass(), exception.getMessage());
+            result += String.format(": %s %s", exception.getClass(), exception.getMessage());
         }
         return "[" + result + "]";
     }

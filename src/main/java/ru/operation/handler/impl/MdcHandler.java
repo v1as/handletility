@@ -1,10 +1,12 @@
 package ru.operation.handler.impl;
 
+import static java.util.Collections.singletonList;
 import static ru.operation.util.CollectionChecks.copyNonEmpty;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.slf4j.MDC;
 import ru.operation.MdcEntry;
@@ -19,7 +21,7 @@ public class MdcHandler<I> implements Handler<I> {
     private final Handler<I> delegate;
 
     public MdcHandler(String key, Function<I, ?> valueExtractor, Handler<I> delegate) {
-        this(List.of(MdcEntry.of(key, valueExtractor)), delegate);
+        this(singletonList(MdcEntry.of(key, valueExtractor)), delegate);
     }
 
     public MdcHandler(List<MdcEntry<I>> entries, @NonNull Handler<I> delegate) {
@@ -55,7 +57,7 @@ public class MdcHandler<I> implements Handler<I> {
 
     @Override
     public String toString() {
-        List<String> keys = entries.stream().map(MdcEntry::key).toList();
+        List<String> keys = entries.stream().map(MdcEntry::key).collect(Collectors.toList());
         return "Mdc(" + keys + ", " + delegate + ")";
     }
 }

@@ -4,13 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.List;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import ru.operation.MdcEntry;
 import ru.operation.handler.Handled;
+import ru.operation.handler.Handler;
 import ru.operation.handler.HandlerBuilder;
 import ru.operation.processor.impl.FunctionProcessor;
 
@@ -24,7 +25,7 @@ public class MdcHandlerTest {
     @Test
     public void putsMdcValueAroundDelegate() {
         AtomicReference<String> seen = new AtomicReference<>();
-        var handler =
+        MdcHandler<String> handler =
                 new MdcHandler<>(
                         "requestId",
                         input -> "req-" + input,
@@ -41,7 +42,7 @@ public class MdcHandlerTest {
     public void restoresPreviousMdcValue() {
         MDC.put("requestId", "old");
         AtomicReference<String> seen = new AtomicReference<>();
-        var handler =
+        MdcHandler<String> handler =
                 new MdcHandler<>(
                         "requestId",
                         input -> "new",
@@ -57,9 +58,9 @@ public class MdcHandlerTest {
     public void putsMultipleMdcKeys() {
         AtomicReference<String> requestId = new AtomicReference<>();
         AtomicReference<String> userId = new AtomicReference<>();
-        var handler =
+        MdcHandler<String> handler =
                 new MdcHandler<>(
-                        List.of(
+                        Arrays.asList(
                                 MdcEntry.of("requestId", s -> "r-" + s),
                                 new MdcEntry<>("userId", new FunctionProcessor<>(s -> "u-" + s))),
                         new ConsumerHandler<String>(
@@ -79,7 +80,7 @@ public class MdcHandlerTest {
     public void builderAccumulatesMultipleMdcCalls() {
         AtomicReference<String> a = new AtomicReference<>();
         AtomicReference<String> b = new AtomicReference<>();
-        var handler =
+        Handler<String> handler =
                 HandlerBuilder.from(
                                 new ConsumerHandler<String>(
                                         input -> {
@@ -99,7 +100,7 @@ public class MdcHandlerTest {
     @Test
     public void acceptsMethodReference() {
         AtomicReference<String> seen = new AtomicReference<>();
-        var handler =
+        MdcHandler<String> handler =
                 new MdcHandler<>(
                         "requestId",
                         String::toUpperCase,

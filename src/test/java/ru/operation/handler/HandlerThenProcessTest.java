@@ -7,6 +7,7 @@ import static ru.operation.handler.Handled.error;
 import static ru.operation.handler.Handled.skipped;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,7 @@ public class HandlerThenProcessTest {
 
         assertEquals("a1-receipt", result.value());
         assertSame(input, received.get());
-        assertEquals(List.of("save", "issue"), seen);
+        assertEquals(Arrays.asList("save", "issue"), seen);
     }
 
     @Test

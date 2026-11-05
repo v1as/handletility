@@ -1,5 +1,10 @@
 package ru.operation;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class OperationException extends RuntimeException {
@@ -8,22 +13,22 @@ public class OperationException extends RuntimeException {
 
     public OperationException(Throwable cause) {
         super(cause);
-        this.causes = cause == null ? List.of() : List.of(cause);
+        this.causes = cause == null ? emptyList() : singletonList(cause);
     }
 
     public OperationException(String message) {
         super(message);
-        this.causes = List.of();
+        this.causes = emptyList();
     }
 
     public OperationException(String message, Throwable cause) {
         super(message, cause);
-        this.causes = cause == null ? List.of() : List.of(cause);
+        this.causes = cause == null ? emptyList() : singletonList(cause);
     }
 
     protected OperationException(List<? extends Throwable> causes) {
         super(describe(causes), causes.get(0));
-        this.causes = List.copyOf(causes);
+        this.causes = Collections.unmodifiableList(new ArrayList<>(causes));
     }
 
     /** Причины этой ошибки: все исходные исключения сводной ошибки либо единственный cause. */
@@ -37,11 +42,11 @@ public class OperationException extends RuntimeException {
             if (cause.getMessage() == null) {
                 continue;
             }
-            if (!message.isEmpty()) {
+            if (message.length() > 0) {
                 message.append("; ");
             }
             message.append(cause.getMessage());
         }
-        return message.isEmpty() ? null : message.toString();
+        return message.length() == 0 ? null : message.toString();
     }
 }

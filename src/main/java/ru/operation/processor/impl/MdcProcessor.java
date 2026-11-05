@@ -1,10 +1,12 @@
 package ru.operation.processor.impl;
 
+import static java.util.Collections.singletonList;
 import static ru.operation.util.CollectionChecks.copyNonEmpty;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.slf4j.MDC;
 import ru.operation.MdcEntry;
@@ -18,7 +20,7 @@ public class MdcProcessor<I, O> implements Processor<I, O> {
     private final Processor<I, O> delegate;
 
     public MdcProcessor(String key, Function<I, ?> valueExtractor, Processor<I, O> delegate) {
-        this(List.of(MdcEntry.of(key, valueExtractor)), delegate);
+        this(singletonList(MdcEntry.of(key, valueExtractor)), delegate);
     }
 
     public MdcProcessor(List<MdcEntry<I>> entries, @NonNull Processor<I, O> delegate) {
@@ -54,7 +56,7 @@ public class MdcProcessor<I, O> implements Processor<I, O> {
 
     @Override
     public String toString() {
-        List<String> keys = entries.stream().map(MdcEntry::key).toList();
+        List<String> keys = entries.stream().map(MdcEntry::key).collect(Collectors.toList());
         return "Mdc(" + keys + ", " + delegate + ")";
     }
 }

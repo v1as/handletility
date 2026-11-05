@@ -15,6 +15,8 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -101,7 +103,7 @@ public class ProcessorBuilderTest {
                         .build();
 
         assertEquals("X", composed.process("x").value());
-        assertEquals(List.of("before", "main", "after"), order);
+        assertEquals(Arrays.asList("before", "main", "after"), order);
         assertTrue(composed.toString().contains("Around("));
         assertTrue(composed.toString().contains("Catching("));
         assertTrue(composed.toString().contains("Mdc([k],"));
@@ -130,7 +132,7 @@ public class ProcessorBuilderTest {
                         .build();
 
         assertEquals("X", composed.process("x").value());
-        assertEquals(List.of("before", "main", "after"), order);
+        assertEquals(Arrays.asList("before", "main", "after"), order);
     }
 
     @Test
@@ -357,7 +359,7 @@ public class ProcessorBuilderTest {
 
         assertTrue(composed.process("x").isSkipped());
         assertFalse(coreCalled.get());
-        assertEquals(List.of(), order);
+        assertEquals(Collections.emptyList(), order);
         assertTrue(composed.toString().contains("Catching(Conditional(Around("));
     }
 
@@ -382,7 +384,7 @@ public class ProcessorBuilderTest {
                         .build();
 
         assertEquals("X", composed.process("x").value());
-        assertEquals(List.of("before", "main", "after"), order);
+        assertEquals(Arrays.asList("before", "main", "after"), order);
     }
 
     @Test

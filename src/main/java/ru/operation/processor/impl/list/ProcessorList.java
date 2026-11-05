@@ -6,6 +6,7 @@ import static ru.operation.processor.Processed.skipped;
 import static ru.operation.processor.impl.list.ProcessorModifier.CONTINUE_ON_ERROR;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import lombok.Builder;
@@ -40,13 +41,17 @@ public class ProcessorList<I, O> extends AbstractProcessor<I, O> {
             ThrowableBiFunction<O, O, O> combiner,
             Processor<Failure<I>, O> onException) {
         this.processors = processors;
-        this.modifiers = modifiers == null ? Set.of() : modifiers;
+        this.modifiers = modifiers == null ? Collections.<ProcessorModifier>emptySet() : modifiers;
         this.combiner = combiner;
         this.onException = onException != null ? onException : new LoggingExceptionProcessor<>();
     }
 
     public ProcessorList(List<? extends Processor<I, O>> processors) {
-        this(processors, Set.of(), null, new LoggingExceptionProcessor<>());
+        this(
+                processors,
+                Collections.<ProcessorModifier>emptySet(),
+                null,
+                new LoggingExceptionProcessor<>());
     }
 
     @Override

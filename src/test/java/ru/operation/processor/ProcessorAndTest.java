@@ -8,6 +8,7 @@ import static ru.operation.processor.Processed.error;
 import static ru.operation.processor.Processed.skipped;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import ru.operation.util.function.ThrowableBiFunction;
@@ -28,7 +29,7 @@ public class ProcessorAndTest {
                 first.and(second, (left, right) -> left + "|" + right).process("in");
 
         assertEquals("in-out|in", result.value());
-        assertEquals(List.of("in"), seen);
+        assertEquals(Arrays.asList("in"), seen);
 
         seen.clear();
         Processor<String, String> empty = input -> done(null);
@@ -37,7 +38,7 @@ public class ProcessorAndTest {
                         .process("in");
         assertTrue(withNull.isDone());
         assertEquals("null|in", withNull.value());
-        assertEquals(List.of("in"), seen);
+        assertEquals(Arrays.asList("in"), seen);
     }
 
     @Test
@@ -71,7 +72,7 @@ public class ProcessorAndTest {
                     return skipped();
                 };
         assertTrue(done.and(nextSkip, combiner).process("x").isSkipped());
-        assertEquals(List.of("next"), seen);
+        assertEquals(Arrays.asList("next"), seen);
 
         seen.clear();
         IllegalArgumentException nextBoom = new IllegalArgumentException("next");
@@ -83,7 +84,7 @@ public class ProcessorAndTest {
         Processed<String> nextError = done.and(nextFail, combiner).process("x");
         assertTrue(nextError.isError());
         assertSame(nextBoom, nextError.exception());
-        assertEquals(List.of("next"), seen);
+        assertEquals(Arrays.asList("next"), seen);
 
         seen.clear();
         IllegalStateException combineBoom = new IllegalStateException("combine");
@@ -94,6 +95,6 @@ public class ProcessorAndTest {
         Processed<String> combineError = done.and(next, failingCombiner).process("x");
         assertTrue(combineError.isError());
         assertSame(combineBoom, combineError.exception());
-        assertEquals(List.of("next"), seen);
+        assertEquals(Arrays.asList("next"), seen);
     }
 }

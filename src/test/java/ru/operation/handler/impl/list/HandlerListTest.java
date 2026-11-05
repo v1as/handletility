@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static ru.operation.handler.Handled.done;
 import static ru.operation.handler.Handled.skipped;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +22,8 @@ public class HandlerListTest {
 
     @Test
     public void should_process_after_skip() {
-        Handler<String> handlers = new HandlerList<>(List.of(value -> skipped(), value -> done()));
+        Handler<String> handlers =
+                new HandlerList<>(Arrays.asList(value -> skipped(), value -> done()));
         Handled result = handlers.handle("hello");
         assertEquals(done(), result);
     }
@@ -53,7 +55,23 @@ public class HandlerListTest {
         System.out.println(baseHandler.handle(new Command("some", null)));
     }
 
-    private record Command(String name, List<String> argument) {}
+    private static final class Command {
+        private final String name;
+        private final List<String> argument;
+
+        private Command(String name, List<String> argument) {
+            this.name = name;
+            this.argument = argument;
+        }
+
+        String name() {
+            return name;
+        }
+
+        List<String> argument() {
+            return argument;
+        }
+    }
 
     @Slf4j
     private static class LoggingHandler implements Handler<Command> {

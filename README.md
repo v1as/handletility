@@ -12,11 +12,11 @@
 
 **Error** — шаг сломался. Исключение лежит на результате.
 
-Java 17. Транзитивно подтягивается `slf4j-api`; реализацию логирования (Logback, Log4j2 и т.п.) подключает приложение.
+Java 8. Транзитивно подтягивается `slf4j-api`; реализацию логирования (Logback, Log4j2 и т.п.) подключает приложение.
 
 ```gradle
 dependencies {
-    implementation 'io.github.v1as:handletility:0.0.13'
+    implementation 'io.github.v1as:handletility:0.0.14'
 }
 ```
 

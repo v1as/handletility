@@ -1,10 +1,15 @@
 package ru.operation.processor;
 
 import lombok.NonNull;
+import lombok.Value;
+import lombok.experimental.Accessors;
 
-record ConstantIdentifiedProcessor<K, I, O>(
-        @NonNull K identifier, @NonNull Processor<I, O> delegate)
-        implements IdentifiedProcessor<K, I, O> {
+@Value
+@Accessors(fluent = true)
+class ConstantIdentifiedProcessor<K, I, O> implements IdentifiedProcessor<K, I, O> {
+
+    @NonNull K identifier;
+    @NonNull Processor<I, O> delegate;
 
     @Override
     public Processed<O> process(I input) {

@@ -1,4 +1,12 @@
 package ru.operation;
 
+import lombok.Value;
+import lombok.experimental.Accessors;
+
 /** Context of a failed step: original input plus the exception. */
-public record Failure<I>(I input, Exception exception) {}
+@Value
+@Accessors(fluent = true)
+public class Failure<I> {
+    I input;
+    Exception exception;
+}

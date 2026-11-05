@@ -7,6 +7,7 @@ import static ru.operation.handler.Handled.error;
 import static ru.operation.handler.Handled.skipped;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +35,7 @@ public class HandlerOrTest {
         Handled result = first.or(second).or(third).handle("marko");
 
         assertTrue(result.isDone());
-        assertEquals(List.of("first", "second"), seen);
+        assertEquals(Arrays.asList("first", "second"), seen);
     }
 
     @Test
@@ -65,7 +66,7 @@ public class HandlerOrTest {
 
         assertEquals("audit", identified.identifier());
         assertTrue(identified.handle("marko").isDone());
-        assertEquals(List.of("marko"), seen);
+        assertEquals(Arrays.asList("marko"), seen);
     }
 
     @Test

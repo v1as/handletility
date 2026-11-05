@@ -6,6 +6,7 @@ import static ru.operation.ResultState.SKIPPED;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
+import lombok.EqualsAndHashCode;
 import ru.operation.ResultState;
 import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
@@ -15,9 +16,14 @@ import ru.operation.handler.Handler;
  * #hasValue()} is {@code true} only for a non-null payload. Skip and error never carry a value.
  * Done and skip never carry an exception; error always does.
  */
-public record Processed<T>(T value, ResultState state, Exception exception) {
+@EqualsAndHashCode
+public final class Processed<T> {
 
-    public Processed {
+    private final T value;
+    private final ResultState state;
+    private final Exception exception;
+
+    public Processed(T value, ResultState state, Exception exception) {
         if (state == null) {
             throw new IllegalArgumentException("state cannot be null");
         }
@@ -32,6 +38,21 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
         } else if (value != null || exception == null) {
             throw new IllegalArgumentException("ERROR requires an exception and no value");
         }
+        this.value = value;
+        this.state = state;
+        this.exception = exception;
+    }
+
+    public T value() {
+        return value;
+    }
+
+    public ResultState state() {
+        return state;
+    }
+
+    public Exception exception() {
+        return exception;
     }
 
     private static final Processed<?> SKIPPED_RESULT =
@@ -140,8 +161,8 @@ public record Processed<T>(T value, ResultState state, Exception exception) {
         if (!isError()) {
             return this;
         }
-        if (exception instanceof RuntimeException runtime) {
-            throw runtime;
+        if (exception instanceof RuntimeException) {
+            throw (RuntimeException) exception;
         }
         throw new ProcessorException(exception.getMessage(), exception);
     }

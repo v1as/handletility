@@ -14,7 +14,7 @@ public class AbstractHandlerTest {
     public void checkRejectedSkipsInternal() {
         AtomicBoolean called = new AtomicBoolean();
         Handler<String> handler =
-                new AbstractHandler<>() {
+                new AbstractHandler<String>() {
                     @Override
                     public boolean check(String input) {
                         return "ok".equals(input);
@@ -39,7 +39,7 @@ public class AbstractHandlerTest {
         IllegalStateException boom = new IllegalStateException("boom");
         AtomicBoolean called = new AtomicBoolean();
         Handler<String> handler =
-                new AbstractHandler<>() {
+                new AbstractHandler<String>() {
                     @Override
                     public boolean check(String input) {
                         throw boom;

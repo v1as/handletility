@@ -11,6 +11,7 @@ import static ru.operation.handler.Handled.skipped;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import ru.operation.handler.Handled;
@@ -24,7 +25,7 @@ public class HandlerListModifiersTest {
         List<String> called = new ArrayList<>();
         Handler<String> list =
                 new HandlerList<>(
-                        List.of(
+                        Arrays.asList(
                                 input -> {
                                     called.add("first");
                                     return done();
@@ -35,7 +36,7 @@ public class HandlerListModifiersTest {
                                 }));
 
         assertTrue(list.handle("x").isDone());
-        assertEquals(List.of("first"), called);
+        assertEquals(Arrays.asList("first"), called);
     }
 
     @Test
@@ -57,7 +58,7 @@ public class HandlerListModifiersTest {
                         .build();
 
         assertTrue(list.handle("x").isDone());
-        assertEquals(List.of("first", "second"), called);
+        assertEquals(Arrays.asList("first", "second"), called);
     }
 
     @Test
@@ -75,7 +76,7 @@ public class HandlerListModifiersTest {
 
         Handled result = list.handle("x");
         HandlerException aggregated = assertInstanceOf(HandlerException.class, result.exception());
-        assertEquals(List.of(first, second), aggregated.causes());
+        assertEquals(Arrays.asList(first, second), aggregated.causes());
         assertSame(first, aggregated.getCause());
         assertEquals("one; two", aggregated.getMessage());
         assertEquals(0, aggregated.getSuppressed().length);
@@ -87,7 +88,7 @@ public class HandlerListModifiersTest {
         List<String> called = new ArrayList<>();
         Handler<String> list =
                 new HandlerList<>(
-                        List.of(
+                        Arrays.asList(
                                 input -> {
                                     called.add("first");
                                     return error("fail");
@@ -98,13 +99,14 @@ public class HandlerListModifiersTest {
                                 }));
 
         assertTrue(list.handle("x").isError());
-        assertEquals(List.of("first"), called);
+        assertEquals(Arrays.asList("first"), called);
     }
 
     @Test
     public void singleErrorIsTheOriginalException() {
         IOException checked = new IOException("disk");
-        Handled checkedResult = new HandlerList<>(List.of(input -> error(checked))).handle("x");
+        Handled checkedResult =
+                new HandlerList<>(Arrays.asList(input -> error(checked))).handle("x");
         assertSame(checked, checkedResult.exception());
         HandlerException wrapped =
                 assertThrows(HandlerException.class, checkedResult::throwIfError);
@@ -113,7 +115,8 @@ public class HandlerListModifiersTest {
         assertEquals(0, wrapped.getSuppressed().length);
 
         IllegalStateException runtime = new IllegalStateException("disk");
-        Handled runtimeResult = new HandlerList<>(List.of(input -> error(runtime))).handle("x");
+        Handled runtimeResult =
+                new HandlerList<>(Arrays.asList(input -> error(runtime))).handle("x");
         assertSame(runtime, runtimeResult.exception());
         assertSame(runtime, assertThrows(IllegalStateException.class, runtimeResult::throwIfError));
     }
@@ -131,7 +134,7 @@ public class HandlerListModifiersTest {
 
         Handled result = list.handle("x");
         HandlerException aggregated = assertInstanceOf(HandlerException.class, result.exception());
-        assertEquals(List.of(first, second), aggregated.causes());
+        assertEquals(Arrays.asList(first, second), aggregated.causes());
         assertSame(first, aggregated.getCause());
         assertEquals("disk; bad", aggregated.getMessage());
         assertEquals(0, aggregated.getSuppressed().length);

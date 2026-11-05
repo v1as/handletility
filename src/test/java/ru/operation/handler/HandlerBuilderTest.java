@@ -15,6 +15,8 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -103,7 +105,7 @@ public class HandlerBuilderTest {
                         .build();
 
         assertTrue(composed.handle("x").isDone());
-        assertEquals(List.of("before", "main", "after"), order);
+        assertEquals(Arrays.asList("before", "main", "after"), order);
         assertTrue(composed.toString().contains("Around("));
         assertTrue(composed.toString().contains("Catching("));
         assertTrue(composed.toString().contains("Mdc([k],"));
@@ -132,7 +134,7 @@ public class HandlerBuilderTest {
                         .build();
 
         assertTrue(composed.handle("x").isDone());
-        assertEquals(List.of("before", "main", "after"), order);
+        assertEquals(Arrays.asList("before", "main", "after"), order);
     }
 
     @Test
@@ -339,7 +341,7 @@ public class HandlerBuilderTest {
                         .build();
 
         assertTrue(composed.handle("x").isSkipped());
-        assertEquals(List.of(), order);
+        assertEquals(Collections.emptyList(), order);
         assertTrue(composed.toString().contains("Catching(Conditional(Around("));
     }
 
@@ -363,7 +365,7 @@ public class HandlerBuilderTest {
                         .build();
 
         assertTrue(composed.handle("x").isDone());
-        assertEquals(List.of("before", "main", "after"), order);
+        assertEquals(Arrays.asList("before", "main", "after"), order);
     }
 
     @Test
@@ -409,7 +411,7 @@ public class HandlerBuilderTest {
                         .build();
 
         assertTrue(composed.handle("x").isDone());
-        assertEquals(List.of("main"), order);
+        assertEquals(Arrays.asList("main"), order);
     }
 
     @Test

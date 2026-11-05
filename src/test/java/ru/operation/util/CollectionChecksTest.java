@@ -5,7 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.List;
+import java.util.Arrays;
+import java.util.Collections;
 import org.junit.jupiter.api.Test;
 
 public class CollectionChecksTest {
@@ -13,13 +14,14 @@ public class CollectionChecksTest {
     @Test
     public void isNullOrEmpty() {
         assertTrue(CollectionChecks.isNullOrEmpty(null));
-        assertTrue(CollectionChecks.isNullOrEmpty(List.of()));
-        assertFalse(CollectionChecks.isNullOrEmpty(List.of(1)));
+        assertTrue(CollectionChecks.isNullOrEmpty(Collections.emptyList()));
+        assertFalse(CollectionChecks.isNullOrEmpty(Arrays.asList(1)));
     }
 
     @Test
     public void copyNonEmptyCopies() {
-        assertEquals(List.of("a"), CollectionChecks.copyNonEmpty(List.of("a"), "items"));
+        assertEquals(
+                Arrays.asList("a"), CollectionChecks.copyNonEmpty(Arrays.asList("a"), "items"));
     }
 
     @Test
@@ -29,6 +31,6 @@ public class CollectionChecksTest {
                 () -> CollectionChecks.copyNonEmpty(null, "mdc entries"));
         assertThrows(
                 IllegalArgumentException.class,
-                () -> CollectionChecks.copyNonEmpty(List.of(), "mdc entries"));
+                () -> CollectionChecks.copyNonEmpty(Collections.emptyList(), "mdc entries"));
     }
 }

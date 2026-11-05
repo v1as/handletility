@@ -15,7 +15,7 @@ public class AbstractProcessorTest {
     public void checkRejectedSkipsInternal() {
         AtomicBoolean called = new AtomicBoolean();
         Processor<String, String> processor =
-                new AbstractProcessor<>() {
+                new AbstractProcessor<String, String>() {
                     @Override
                     protected boolean check(String input) {
                         return "ok".equals(input);
@@ -40,7 +40,7 @@ public class AbstractProcessorTest {
         IllegalStateException boom = new IllegalStateException("boom");
         AtomicBoolean called = new AtomicBoolean();
         Processor<String, String> processor =
-                new AbstractProcessor<>() {
+                new AbstractProcessor<String, String>() {
                     @Override
                     protected boolean check(String input) {
                         throw boom;

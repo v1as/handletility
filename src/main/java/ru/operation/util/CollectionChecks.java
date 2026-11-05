@@ -1,6 +1,8 @@
 package ru.operation.util;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /** Collection argument checks. */
@@ -20,6 +22,10 @@ public final class CollectionChecks {
     }
 
     public static <E> List<E> copyNonEmpty(List<E> list, String name) {
-        return List.copyOf(requireNonEmpty(list, name));
+        return unmodifiableCopy(requireNonEmpty(list, name));
+    }
+
+    static <E> List<E> unmodifiableCopy(List<? extends E> list) {
+        return Collections.unmodifiableList(new ArrayList<>(list));
     }
 }

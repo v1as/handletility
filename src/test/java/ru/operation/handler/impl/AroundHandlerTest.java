@@ -11,6 +11,7 @@ import static ru.operation.handler.Handled.skipped;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -46,7 +47,7 @@ public class AroundHandlerTest {
         assertTrue(result.isError());
         assertEquals("boom", result.exception().getMessage());
         assertSame(result, seenAfter.get());
-        assertEquals(List.of("before", "main", "after"), order);
+        assertEquals(Arrays.asList("before", "main", "after"), order);
     }
 
     @Test

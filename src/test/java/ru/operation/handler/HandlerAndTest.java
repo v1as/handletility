@@ -8,6 +8,7 @@ import static ru.operation.handler.Handled.error;
 import static ru.operation.handler.Handled.skipped;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -38,7 +39,7 @@ public class HandlerAndTest {
 
         assertTrue(first.and(second).and(third).handle(input).isDone());
         assertSame(input, received.get());
-        assertEquals(List.of("first", "second", "third"), seen);
+        assertEquals(Arrays.asList("first", "second", "third"), seen);
 
         seen.clear();
         Handler<String> skipping =
@@ -47,7 +48,7 @@ public class HandlerAndTest {
                     return skipped();
                 };
         assertTrue(first.and(skipping).and(third).handle(input).isSkipped());
-        assertEquals(List.of("first", "skip"), seen);
+        assertEquals(Arrays.asList("first", "skip"), seen);
 
         IllegalStateException boom = new IllegalStateException("boom");
         Handled error = first.and(value -> error(boom)).handle(input);
