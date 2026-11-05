@@ -46,6 +46,7 @@ public class ListHandler<I> extends AbstractHandler<I> {
 
     @Override
     protected Handled handleInternal(I input) {
+        log.trace("Handling input '{}'", input);
         List<Exception> errors = new ArrayList<>();
         boolean failed = false;
         boolean done = false;
@@ -54,11 +55,7 @@ public class ListHandler<I> extends AbstractHandler<I> {
             try {
                 handled = handle(handler, input);
             } catch (Exception e) {
-                log.trace(
-                        "Handler '{}' threw while handling '{}'",
-                        handler.getClass().getSimpleName(),
-                        input,
-                        e);
+                log.trace("Handler '{}' threw", handler.getClass().getSimpleName(), e);
                 handled = onException.handle(new Failure<>(input, e));
             }
             log.trace("Handler '{}' has result '{}'", handler.getClass().getSimpleName(), handled);

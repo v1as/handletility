@@ -5,9 +5,17 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ru.operation.processor.Processed.done;
+import static ru.operation.processor.Processed.skipped;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 public class AbstractProcessorTest {
 
@@ -57,5 +65,61 @@ public class AbstractProcessorTest {
         assertTrue(result.isError());
         assertSame(boom, result.exception());
         assertFalse(called.get());
+    }
+
+    @Test
+    public void logsCheckSkipAndInternalResult() {
+        Processor<String, String> processor =
+                new AbstractProcessor<String, String>() {
+                    @Override
+                    protected boolean check(String input) {
+                        return "ok".equals(input);
+                    }
+
+                    @Override
+                    protected Processed<String> processInternal(String input) {
+                        return done(input);
+                    }
+                };
+        Logger logger = (Logger) LoggerFactory.getLogger(processor.getClass());
+        Level previous = logger.getLevel();
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        logger.setLevel(Level.TRACE);
+        try {
+            assertTrue(processor.process("no").isSkipped());
+            assertEquals("ok", processor.process("ok").value());
+        } finally {
+            logger.detachAppender(appender);
+            logger.setLevel(previous);
+        }
+
+        assertEquals(
+                Arrays.asList(
+                        "Skipped because check rejected input: 'no'",
+                        "Processed 'ok' to '[DONE: ok]'"),
+                appender.list.stream()
+                        .map(ILoggingEvent::getFormattedMessage)
+                        .collect(Collectors.toList()));
+    }
+
+    @Test
+    public void onResultReplacesInternalResult() {
+        Processor<String, String> processor =
+                new AbstractProcessor<String, String>() {
+                    @Override
+                    protected Processed<String> processInternal(String input) {
+                        return done(input);
+                    }
+
+                    @Override
+                    protected Processed<String> onResult(
+                            String input, Processed<String> processed) {
+                        return skipped();
+                    }
+                };
+
+        assertTrue(processor.process("x").isSkipped());
     }
 }

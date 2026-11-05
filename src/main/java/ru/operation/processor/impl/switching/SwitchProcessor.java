@@ -36,19 +36,31 @@ public class SwitchProcessor<K, I, O> extends AbstractProcessor<I, O> {
 
     @Override
     protected Processed<O> processInternal(I input) {
-        Processed<? extends Processor<I, O>> processor = lookup.process(input);
+        log.trace("Handling input '{}'", input);
+        Processed<? extends IdentifiedProcessor<K, I, O>> processor = lookup.process(input);
         if (processor.isError()) {
+            log.trace("Key read failed", processor.exception());
             return error(processor.exception());
         }
         if (processor.hasValue()) {
-            Processor<I, O> selected = processor.value();
-            log.trace("Using processor {}", selected);
-            return selected.process(input);
+            IdentifiedProcessor<K, I, O> selected = processor.value();
+            Processed<O> processed = selected.process(input);
+            log.trace(
+                    "Processor '{}' ({}) has result '{}'",
+                    selected.getClass().getSimpleName(),
+                    selected.identifier(),
+                    processed);
+            return processed;
         }
         if (defaultProcessor != null) {
-            log.trace("Using default processor");
-            return defaultProcessor.process(input);
+            Processed<O> processed = defaultProcessor.process(input);
+            log.trace(
+                    "Default processor '{}' has result '{}'",
+                    defaultProcessor.getClass().getSimpleName(),
+                    processed);
+            return processed;
         }
+        log.trace("No processor matched, result '[SKIPPED]'");
         return skipped();
     }
 }

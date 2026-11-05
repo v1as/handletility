@@ -9,7 +9,8 @@ import org.slf4j.Logger;
 /**
  * Template for handlers: optional {@link #check(Object)}; when it returns {@code false}, {@link
  * #onCheckRejected} runs (default {@link Handled#skipped()}). Thrown exceptions → {@link
- * ru.operation.ResultState#ERROR}. Naming and outcome logging belong in wrappers / builder.
+ * ru.operation.ResultState#ERROR}. Check rejection and the result of {@link #handleInternal} are
+ * logged at trace. A chosen level and logger name stay on the logging wrapper.
  */
 public abstract class AbstractHandler<I> implements Handler<I> {
 
@@ -26,13 +27,22 @@ public abstract class AbstractHandler<I> implements Handler<I> {
             if (!check(input)) {
                 return onCheckRejected(input);
             }
-            return handleInternal(input);
+            return onResult(input, handleInternal(input));
         } catch (Exception exception) {
             return onException(input, exception);
         }
     }
 
     protected abstract Handled handleInternal(I input) throws Exception;
+
+    /**
+     * Logs the result of {@link #handleInternal} at trace. An override may return a different
+     * result.
+     */
+    protected Handled onResult(I input, Handled handled) {
+        log.trace("Handled input '{}' with result {}", input, handled);
+        return handled;
+    }
 
     /** Outcome when {@link #check} returns {@code false}; default is skip. */
     protected Handled onCheckRejected(I input) {

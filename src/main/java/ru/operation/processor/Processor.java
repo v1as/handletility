@@ -135,8 +135,8 @@ public interface Processor<I, O> {
      * Bare processor from a {@link ThrowableFunction} ({@code null} result → {@link Processed#done}).
      * A thrown exception is {@link Processed#error(Exception)}.
      */
-    static <A, B> Processor<A, B> of(ThrowableFunction<A, B> transform) {
-        return new FunctionProcessor<>(notNull(transform, "transform"));
+    static <A, B> Processor<A, B> of(ThrowableFunction<A, B> function) {
+        return new FunctionProcessor<>(notNull(function, "function"));
     }
 
     /**

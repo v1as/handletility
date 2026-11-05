@@ -10,10 +10,16 @@ import static ru.operation.processor.Processed.done;
 import static ru.operation.processor.Processed.error;
 import static ru.operation.processor.Processed.skipped;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
 import ru.operation.processor.ProcessorException;
@@ -27,6 +33,33 @@ public class ListProcessorTest {
                 new ListProcessor<>(Arrays.asList(value -> skipped(), value -> done("polo")));
         Processed<String> result = handlers.process("marko");
         assertEquals(done("polo"), result);
+    }
+
+    @Test
+    public void stepTraceIncludesProcessorInputAndResult() {
+        Logger logger = (Logger) LoggerFactory.getLogger(ListProcessor.class);
+        Level previous = logger.getLevel();
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        logger.setLevel(Level.TRACE);
+        try {
+            new ListProcessor<>(Arrays.asList(new SkippingProcessor(), new DoneProcessor()))
+                    .process("marko");
+        } finally {
+            logger.detachAppender(appender);
+            logger.setLevel(previous);
+        }
+
+        assertEquals(
+                Arrays.asList(
+                        "Handling input 'marko'",
+                        "Processor 'SkippingProcessor' has result '[SKIPPED]'",
+                        "Processor 'DoneProcessor' has result '[DONE: polo]'",
+                        "Processed 'marko' to '[DONE: polo]'"),
+                appender.list.stream()
+                        .map(ILoggingEvent::getFormattedMessage)
+                        .collect(Collectors.toList()));
     }
 
     @Test
@@ -229,5 +262,21 @@ public class ListProcessorTest {
             builder.modifier(ProcessorModifier.CONTINUE_ON_ERROR);
         }
         return builder.build();
+    }
+
+    private static final class SkippingProcessor implements Processor<String, String> {
+
+        @Override
+        public Processed<String> process(String input) {
+            return skipped();
+        }
+    }
+
+    private static final class DoneProcessor implements Processor<String, String> {
+
+        @Override
+        public Processed<String> process(String input) {
+            return done("polo");
+        }
     }
 }

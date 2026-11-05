@@ -6,8 +6,16 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ru.operation.processor.Processed.done;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import ru.operation.processor.IdentifiedProcessor;
 import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
@@ -112,5 +120,68 @@ public class SwitchProcessorTest {
 
         assertEquals(15, processor.process(5).value());
         assertTrue(defaultCalled.get());
+    }
+
+    @Test
+    public void traceLogsInputOnceAndBranchOutcome() {
+        Logger logger = (Logger) LoggerFactory.getLogger(SwitchProcessor.class);
+        Level previous = logger.getLevel();
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        logger.setLevel(Level.TRACE);
+        try {
+            SwitchProcessor<String, Integer, Integer> processor =
+                    SwitchProcessor.<String, Integer, Integer>switchProcessor()
+                            .processor(ADD_PROCESSOR)
+                            .keyReader(KEY_READER)
+                            .build();
+
+            assertEquals(11, processor.process(10).value());
+            assertEquals(
+                    Arrays.asList(
+                            "Handling input '10'",
+                            "Processor 'ConstantIdentifiedProcessor' (ADD) has result '[DONE: 11]'",
+                            "Processed '10' to '[DONE: 11]'"),
+                    messages(appender));
+
+            appender.list.clear();
+            assertTrue(processor.process(0).isSkipped());
+            assertEquals(
+                    Arrays.asList(
+                            "Handling input '0'",
+                            "No processor matched, result '[SKIPPED]'",
+                            "Processed '0' to '[SKIPPED]'"),
+                    messages(appender));
+
+            appender.list.clear();
+            IllegalStateException failure = new IllegalStateException("broken parse");
+            SwitchProcessor<String, Integer, Integer> broken =
+                    SwitchProcessor.<String, Integer, Integer>switchProcessor()
+                            .processor(ADD_PROCESSOR)
+                            .keyReader(
+                                    new FunctionProcessor<>(
+                                            value -> {
+                                                throw failure;
+                                            }))
+                            .build();
+            assertSame(failure, broken.process(5).exception());
+            assertEquals(
+                    Arrays.asList(
+                            "Handling input '5'",
+                            "Key read failed",
+                            "Processed '5' to '[ERROR: IllegalStateException: broken parse]'"),
+                    messages(appender));
+            assertEquals("broken parse", appender.list.get(1).getThrowableProxy().getMessage());
+        } finally {
+            logger.detachAppender(appender);
+            logger.setLevel(previous);
+        }
+    }
+
+    private static List<String> messages(ListAppender<ILoggingEvent> appender) {
+        return appender.list.stream()
+                .map(ILoggingEvent::getFormattedMessage)
+                .collect(Collectors.toList());
     }
 }

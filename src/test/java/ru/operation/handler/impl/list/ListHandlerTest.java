@@ -4,11 +4,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static ru.operation.handler.Handled.done;
 import static ru.operation.handler.Handled.skipped;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import ru.operation.handler.AbstractHandler;
 import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
@@ -26,6 +32,33 @@ public class ListHandlerTest {
                 new ListHandler<>(Arrays.asList(value -> skipped(), value -> done()));
         Handled result = handlers.handle("hello");
         assertEquals(done(), result);
+    }
+
+    @Test
+    public void stepTraceIncludesHandlerInputAndResult() {
+        Logger logger = (Logger) LoggerFactory.getLogger(ListHandler.class);
+        Level previous = logger.getLevel();
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        logger.setLevel(Level.TRACE);
+        try {
+            new ListHandler<>(Arrays.asList(new SkippingHandler(), new DoneHandler()))
+                    .handle("hello");
+        } finally {
+            logger.detachAppender(appender);
+            logger.setLevel(previous);
+        }
+
+        assertEquals(
+                Arrays.asList(
+                        "Handling input 'hello'",
+                        "Handler 'SkippingHandler' has result '[SKIPPED]'",
+                        "Handler 'DoneHandler' has result '[DONE]'",
+                        "Handled input 'hello' with result [DONE]"),
+                appender.list.stream()
+                        .map(ILoggingEvent::getFormattedMessage)
+                        .collect(Collectors.toList()));
     }
 
     @Test
@@ -120,6 +153,22 @@ public class ListHandlerTest {
         @Override
         protected Handled handleInternal(Command input) {
             System.out.println("Bye " + input);
+            return done();
+        }
+    }
+
+    private static final class SkippingHandler implements Handler<String> {
+
+        @Override
+        public Handled handle(String input) {
+            return skipped();
+        }
+    }
+
+    private static final class DoneHandler implements Handler<String> {
+
+        @Override
+        public Handled handle(String input) {
             return done();
         }
     }

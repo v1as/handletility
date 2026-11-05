@@ -6,8 +6,16 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ru.operation.handler.Handled.done;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import ru.operation.handler.Handled;
 import ru.operation.handler.Handler;
 import ru.operation.handler.HandlerBuilder;
@@ -122,5 +130,69 @@ public class SwitchHandlerTest {
 
         assertTrue(handler.handle("weird").isDone());
         assertTrue(defaultCalled.get());
+    }
+
+    @Test
+    public void traceLogsInputOnceAndBranchOutcome() {
+        Logger logger = (Logger) LoggerFactory.getLogger(SwitchHandler.class);
+        Level previous = logger.getLevel();
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        logger.setLevel(Level.TRACE);
+        try {
+            SwitchHandler<String, String> handler =
+                    SwitchHandler.<String, String>switchHandler()
+                            .handler(firstHandler)
+                            .keyReader(identityKeyReader)
+                            .build();
+
+            assertTrue(handler.handle("1").isDone());
+            assertEquals(
+                    Arrays.asList(
+                            "Handling input '1'",
+                            "Handler 'ConstantIdentifiedHandler' (1) has result '[DONE]'",
+                            "Handled input '1' with result [DONE]"),
+                    messages(appender));
+
+            appender.list.clear();
+            assertTrue(handler.handle("missing").isSkipped());
+            assertEquals(
+                    Arrays.asList(
+                            "Handling input 'missing'",
+                            "No handler matched, result '[SKIPPED]'",
+                            "Handled input 'missing' with result [SKIPPED]"),
+                    messages(appender));
+
+            appender.list.clear();
+            IllegalStateException failure = new IllegalStateException("broken parse");
+            SwitchHandler<String, String> broken =
+                    SwitchHandler.<String, String>switchHandler()
+                            .handler(firstHandler)
+                            .keyReader(
+                                    new FunctionProcessor<>(
+                                            input -> {
+                                                throw failure;
+                                            }))
+                            .build();
+            assertSame(failure, broken.handle("weird").exception());
+            assertEquals(
+                    Arrays.asList(
+                            "Handling input 'weird'",
+                            "Key read failed",
+                            "Handled input 'weird' with result [ERROR: class"
+                                    + " java.lang.IllegalStateException broken parse]"),
+                    messages(appender));
+            assertEquals("broken parse", appender.list.get(1).getThrowableProxy().getMessage());
+        } finally {
+            logger.detachAppender(appender);
+            logger.setLevel(previous);
+        }
+    }
+
+    private static List<String> messages(ListAppender<ILoggingEvent> appender) {
+        return appender.list.stream()
+                .map(ILoggingEvent::getFormattedMessage)
+                .collect(Collectors.toList());
     }
 }

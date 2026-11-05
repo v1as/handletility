@@ -56,6 +56,7 @@ public class ListProcessor<I, O> extends AbstractProcessor<I, O> {
 
     @Override
     protected Processed<O> processInternal(I input) {
+        log.trace("Handling input '{}'", input);
         List<Exception> errors = new ArrayList<>();
         boolean failed = false;
         boolean hasDone = false;
@@ -65,11 +66,7 @@ public class ListProcessor<I, O> extends AbstractProcessor<I, O> {
             try {
                 processed = processor.process(input);
             } catch (Exception e) {
-                log.trace(
-                        "Processor '{}' threw while processing '{}'",
-                        processor.getClass().getSimpleName(),
-                        input,
-                        e);
+                log.trace("Processor '{}' threw", processor.getClass().getSimpleName(), e);
                 processed = this.onException.process(new Failure<>(input, e));
             }
             log.trace(
@@ -94,7 +91,7 @@ public class ListProcessor<I, O> extends AbstractProcessor<I, O> {
                     accumulator = combiner.apply(accumulator, processed.value());
                     continue;
                 } catch (Exception exception) {
-                    log.trace("Combiner threw while processing '{}'", input, exception);
+                    log.trace("Combiner threw", exception);
                     Processed<O> mapped = onException.process(new Failure<>(input, exception));
                     failed = true;
                     errors.add(mapped.isError() ? mapped.exception() : exception);

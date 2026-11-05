@@ -37,19 +37,31 @@ public class SwitchHandler<K, I> extends AbstractHandler<I> {
 
     @Override
     protected Handled handleInternal(I input) {
+        log.trace("Handling input '{}'", input);
         Processed<? extends IdentifiedHandler<K, I>> handler = lookup.process(input);
         if (handler.isError()) {
+            log.trace("Key read failed", handler.exception());
             return error(handler.exception());
         }
         if (handler.hasValue()) {
             IdentifiedHandler<K, I> selected = handler.value();
-            log.trace("Using handler {}", selected);
-            return selected.handle(input);
+            Handled handled = selected.handle(input);
+            log.trace(
+                    "Handler '{}' ({}) has result '{}'",
+                    selected.getClass().getSimpleName(),
+                    selected.identifier(),
+                    handled);
+            return handled;
         }
         if (defaultHandler != null) {
-            log.trace("Using default handler");
-            return defaultHandler.handle(input);
+            Handled handled = defaultHandler.handle(input);
+            log.trace(
+                    "Default handler '{}' has result '{}'",
+                    defaultHandler.getClass().getSimpleName(),
+                    handled);
+            return handled;
         }
+        log.trace("No handler matched, result '[SKIPPED]'");
         return skipped();
     }
 }
