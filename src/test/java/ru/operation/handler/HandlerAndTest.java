@@ -1,6 +1,7 @@
 package ru.operation.handler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ru.operation.handler.Handled.done;
@@ -37,7 +38,9 @@ public class HandlerAndTest {
                     return done();
                 };
 
-        assertTrue(first.and(second).and(third).handle(input).isDone());
+        Handler<String> chain = first.and(second).and(third);
+        assertInstanceOf(AndHandler.class, chain);
+        assertTrue(chain.handle(input).isDone());
         assertSame(input, received.get());
         assertEquals(Arrays.asList("first", "second", "third"), seen);
 

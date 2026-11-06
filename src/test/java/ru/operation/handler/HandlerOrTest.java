@@ -6,10 +6,16 @@ import static ru.operation.handler.Handled.done;
 import static ru.operation.handler.Handled.error;
 import static ru.operation.handler.Handled.skipped;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 public class HandlerOrTest {
 
@@ -74,5 +80,56 @@ public class HandlerOrTest {
         Handler<String> skipping = input -> skipped();
 
         assertTrue(skipping.or(skipping).handle("x").isSkipped());
+    }
+
+    @Test
+    public void orFlattensToSingleOrHandler() {
+        Handler<String> a = new Step(true);
+        Handler<String> b = new Step(true);
+        Handler<String> c = new Step(false);
+
+        Handler<String> chain = a.or(b).or(c);
+
+        assertEquals(OrHandler.class, chain.getClass());
+        assertEquals(
+                Arrays.asList(
+                        "Handling input 'x'",
+                        "Handler 'Step' has result '[SKIPPED]'",
+                        "Handler 'Step' has result '[SKIPPED]'",
+                        "Handler 'Step' has result '[DONE]'",
+                        "Handled input 'x' with result [DONE]"),
+                traceMessages(chain, "x"));
+    }
+
+    private static final class Step implements Handler<String> {
+
+        private final boolean skip;
+
+        Step(boolean skip) {
+            this.skip = skip;
+        }
+
+        @Override
+        public Handled handle(String input) {
+            return skip ? skipped() : done();
+        }
+    }
+
+    private static List<String> traceMessages(Handler<String> chain, String input) {
+        Logger logger = (Logger) LoggerFactory.getLogger(OrHandler.class);
+        Level previous = logger.getLevel();
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        logger.setLevel(Level.TRACE);
+        try {
+            chain.handle(input);
+        } finally {
+            logger.detachAppender(appender);
+            logger.setLevel(previous);
+        }
+        return appender.list.stream()
+                .map(ILoggingEvent::getFormattedMessage)
+                .collect(Collectors.toList());
     }
 }

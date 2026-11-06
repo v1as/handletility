@@ -45,16 +45,7 @@ public interface Processor<I, O> {
      * stops at the first done or error and stays skipped only when every step skips.
      */
     default Processor<I, O> or(Processor<? super I, O> next) {
-        return input -> {
-            Processed<O> result = process(input);
-            if (result.isError()) {
-                return result;
-            }
-            if (result.isDone()) {
-                return result;
-            }
-            return next.process(input);
-        };
+        return new OrProcessor<>(this, notNull(next, "next"));
     }
 
     /**

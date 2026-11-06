@@ -47,16 +47,7 @@ public interface Handler<I> {
      * of {@code next}.
      */
     default Handler<I> and(Handler<? super I> next) {
-        return input -> {
-            Handled result = handle(input);
-            if (result.isError()) {
-                return result;
-            }
-            if (result.isDone()) {
-                return next.handle(input);
-            }
-            return result;
-        };
+        return new AndHandler<>(this, notNull(next, "next"));
     }
 
     /**
@@ -65,16 +56,7 @@ public interface Handler<I> {
      * stops at the first done or error and stays skipped only when every step skips.
      */
     default Handler<I> or(Handler<? super I> next) {
-        return input -> {
-            Handled result = handle(input);
-            if (result.isError()) {
-                return result;
-            }
-            if (result.isDone()) {
-                return result;
-            }
-            return next.handle(input);
-        };
+        return new OrHandler<>(this, notNull(next, "next"));
     }
 
     /** Identifies this handler by a constant. */

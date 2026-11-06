@@ -8,10 +8,16 @@ import static ru.operation.processor.Processed.done;
 import static ru.operation.processor.Processed.error;
 import static ru.operation.processor.Processed.skipped;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import ru.operation.handler.Handler;
 
 public class ProcessorThenTest {
@@ -164,6 +170,57 @@ public class ProcessorThenTest {
         Processor<String, String> skipping = input -> skipped();
 
         assertTrue(skipping.or(skipping).process("x").isSkipped());
+    }
+
+    @Test
+    public void orFlattensToSingleOrProcessor() {
+        Processor<String, String> a = new Step(true);
+        Processor<String, String> b = new Step(true);
+        Processor<String, String> c = new Step(false);
+
+        Processor<String, String> chain = a.or(b).or(c);
+
+        assertEquals(OrProcessor.class, chain.getClass());
+        assertEquals(
+                Arrays.asList(
+                        "Handling input 'x'",
+                        "Processor 'Step' has result '[SKIPPED]'",
+                        "Processor 'Step' has result '[SKIPPED]'",
+                        "Processor 'Step' has result '[DONE: ok]'",
+                        "Processed 'x' to '[DONE: ok]'"),
+                traceMessages(chain, "x"));
+    }
+
+    private static final class Step implements Processor<String, String> {
+
+        private final boolean skip;
+
+        Step(boolean skip) {
+            this.skip = skip;
+        }
+
+        @Override
+        public Processed<String> process(String input) {
+            return skip ? skipped() : done("ok");
+        }
+    }
+
+    private static List<String> traceMessages(Processor<String, String> chain, String input) {
+        Logger logger = (Logger) LoggerFactory.getLogger(OrProcessor.class);
+        Level previous = logger.getLevel();
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        logger.setLevel(Level.TRACE);
+        try {
+            chain.process(input);
+        } finally {
+            logger.detachAppender(appender);
+            logger.setLevel(previous);
+        }
+        return appender.list.stream()
+                .map(ILoggingEvent::getFormattedMessage)
+                .collect(Collectors.toList());
     }
 
     @Test
