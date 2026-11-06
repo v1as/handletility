@@ -4,7 +4,6 @@ import static ru.operation.util.Checks.notNull;
 
 import java.util.function.Function;
 import ru.operation.processor.Processor;
-import ru.operation.processor.impl.FunctionProcessor;
 
 /** Binding of an MDC key to a value extracted from the input. */
 public final class MdcEntry<I> {
@@ -30,7 +29,6 @@ public final class MdcEntry<I> {
     /** Preferred factory: method references like {@code Request::id} work without wrapping. */
     public static <I, T> MdcEntry<I> of(String key, Function<I, T> valueExtractor) {
         return new MdcEntry<>(
-                key,
-                new FunctionProcessor<>(notNull(valueExtractor, "mdc value extractor")::apply));
+                key, Processor.of(notNull(valueExtractor, "mdc value extractor")::apply));
     }
 }

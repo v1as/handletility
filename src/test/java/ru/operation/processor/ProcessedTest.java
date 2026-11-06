@@ -15,8 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import ru.operation.ResultState;
 import ru.operation.handler.Handled;
-import ru.operation.handler.impl.ConsumerHandler;
-import ru.operation.processor.impl.FunctionProcessor;
+import ru.operation.handler.Handler;
 
 public class ProcessedTest {
 
@@ -75,7 +74,7 @@ public class ProcessedTest {
 
     @Test
     public void simpleProcessorNullIsDone() {
-        Processed<String> result = new FunctionProcessor<String, String>(s -> null).process("in");
+        Processed<String> result = Processor.<String, String>of(s -> null).process("in");
         assertTrue(result.isDone());
         assertFalse(result.isSkipped());
         assertFalse(result.hasValue());
@@ -124,19 +123,16 @@ public class ProcessedTest {
         assertEquals(4, done(2).map(n -> n * 2).value());
         assertFalse(Processed.<Integer>skipped().map(n -> n * 2).hasValue());
 
-        Processed<Integer> chained = done("42").flatMap(new FunctionProcessor<>(Integer::valueOf));
+        Processed<Integer> chained = done("42").flatMap(Processor.of(Integer::valueOf));
         assertEquals(42, chained.requireDone());
 
-        assertTrue(
-                Processed.<String>error("x")
-                        .flatMap(new FunctionProcessor<>(Integer::valueOf))
-                        .isError());
+        assertTrue(Processed.<String>error("x").flatMap(Processor.of(Integer::valueOf)).isError());
     }
 
     @Test
     public void handle() {
         AtomicInteger sum = new AtomicInteger();
-        Handled handled = done(3).handle(new ConsumerHandler<>(n -> sum.addAndGet(n)));
+        Handled handled = done(3).handle(Handler.<Integer>of(n -> sum.addAndGet(n)));
         assertTrue(handled.isDone());
         assertEquals(3, sum.get());
 

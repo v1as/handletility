@@ -1,0 +1,68 @@
+package ru.operation.processor;
+
+import static ru.operation.handler.Handled.skipped;
+import static ru.operation.processor.Processed.error;
+
+import lombok.Builder;
+import lombok.NonNull;
+import ru.operation.handler.Handled;
+import ru.operation.handler.Handler;
+
+/**
+ * AOP-style around: {@code before(input)} → {@code delegate(input)} → {@code after(result)}. Hooks
+ * are {@link Handler}s (side effects). {@code DONE} and {@code SKIPPED} from a hook do not replace
+ * the main result, and a skipped before still runs the core. {@code ERROR} from a hook is returned
+ * as {@link Processed#error(Exception)}: a failed before skips the core and after; a failed after
+ * replaces a successful main result. When the main result is already an error, that exception is
+ * suppressed on the after-hook failure. An exception thrown by a hook propagates unchanged.
+ */
+@Builder
+final class AroundProcessor<I, O> implements Processor<I, O> {
+
+    private final Handler<I> beforeHandler;
+    private final Processor<I, O> delegate;
+    private final Handler<Processed<O>> afterHandler;
+
+    public AroundProcessor(
+            Handler<I> beforeHandler,
+            @NonNull Processor<I, O> delegate,
+            Handler<Processed<O>> afterHandler) {
+        this.beforeHandler = beforeHandler != null ? beforeHandler : input -> skipped();
+        this.delegate = delegate;
+        this.afterHandler = afterHandler != null ? afterHandler : input -> skipped();
+    }
+
+    @Override
+    public Processed<O> process(I input) {
+        Handled before = beforeHandler.handle(input);
+        if (before.isError()) {
+            return error(before.exception());
+        }
+        Processed<O> result = delegate.process(input);
+        Handled after = afterHandler.handle(result);
+        if (after.isError()) {
+            if (result.isError()) {
+                suppressCoreFailure(after.exception(), result.exception());
+            }
+            return error(after.exception());
+        }
+        return result;
+    }
+
+    private static void suppressCoreFailure(Exception hookFailure, Exception coreFailure) {
+        if (hookFailure != coreFailure) {
+            hookFailure.addSuppressed(coreFailure);
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "Around(before="
+                + beforeHandler
+                + ", delegate="
+                + delegate
+                + ", after="
+                + afterHandler
+                + ")";
+    }
+}

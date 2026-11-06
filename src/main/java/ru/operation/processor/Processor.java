@@ -9,8 +9,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import ru.operation.Failure;
 import ru.operation.handler.Handler;
-import ru.operation.processor.impl.FilterProcessor;
-import ru.operation.processor.impl.FunctionProcessor;
 import ru.operation.util.function.ThrowableBiFunction;
 import ru.operation.util.function.ThrowableFunction;
 

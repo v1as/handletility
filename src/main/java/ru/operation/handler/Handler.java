@@ -4,7 +4,6 @@ import static ru.operation.processor.Processed.error;
 import static ru.operation.processor.Processed.skipped;
 import static ru.operation.util.Checks.notNull;
 
-import ru.operation.handler.impl.ConsumerHandler;
 import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
 import ru.operation.util.function.ThrowableConsumer;

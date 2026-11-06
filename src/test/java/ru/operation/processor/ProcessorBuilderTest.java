@@ -25,10 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import ru.operation.handler.Handled;
-import ru.operation.handler.impl.ConsumerHandler;
-import ru.operation.processor.impl.FunctionProcessor;
-import ru.operation.processor.impl.MdcProcessor;
-import ru.operation.processor.impl.wrap.LoggingProcessor;
+import ru.operation.handler.Handler;
 import ru.operation.util.function.ThrowableConsumer;
 import ru.operation.util.function.ThrowableFunction;
 
@@ -41,7 +38,7 @@ public class ProcessorBuilderTest {
 
     @Test
     public void buildOrderIsLoggingMdcCore() {
-        Processor<String, String> core = new FunctionProcessor<>(String::toUpperCase);
+        Processor<String, String> core = Processor.of(String::toUpperCase);
         Processor<String, String> composed =
                 ProcessorBuilder.from(core)
                         .mdc("traceId", s -> "t-" + s)
@@ -49,18 +46,16 @@ public class ProcessorBuilderTest {
                         .named("upper-log")
                         .build();
 
-        assertInstanceOf(MdcProcessor.class, composed);
+        assertTrue(composed.toString().startsWith("Mdc("));
         assertTrue(composed.toString().startsWith("Mdc([traceId], Logging(DEBUG, Catching("));
     }
 
     @Test
     public void loggingWithoutName() {
         Processor<String, String> composed =
-                ProcessorBuilder.from(new FunctionProcessor<String, String>(s -> s))
-                        .logging()
-                        .build();
+                ProcessorBuilder.from(Processor.<String, String>of(s -> s)).logging().build();
 
-        assertInstanceOf(LoggingProcessor.class, composed);
+        assertTrue(composed.toString().startsWith("Logging(DEBUG,"));
         assertTrue(composed.toString().startsWith("Logging(DEBUG, Catching("));
     }
 
@@ -69,7 +64,7 @@ public class ProcessorBuilderTest {
         AtomicReference<String> seen = new AtomicReference<>();
         Processor<String, String> composed =
                 ProcessorBuilder.from(
-                                new FunctionProcessor<String, String>(
+                                Processor.<String, String>of(
                                         input -> {
                                             seen.set(MDC.get("traceId"));
                                             return input;
@@ -88,12 +83,12 @@ public class ProcessorBuilderTest {
         List<String> order = new ArrayList<>();
         Processor<String, String> composed =
                 ProcessorBuilder.from(
-                                new FunctionProcessor<String, String>(
+                                Processor.<String, String>of(
                                         s -> {
                                             order.add("main");
                                             return s.toUpperCase();
                                         }))
-                        .before(new ConsumerHandler<>(s -> order.add("before")))
+                        .before(Handler.of(s -> order.add("before")))
                         .after(
                                 result -> {
                                     order.add("after");
@@ -211,7 +206,7 @@ public class ProcessorBuilderTest {
                                     return s;
                                 })
                         .before(
-                                new ConsumerHandler<String>(
+                                Handler.<String>of(
                                         s -> {
                                             throw new IllegalStateException("hook");
                                         }))
@@ -244,7 +239,7 @@ public class ProcessorBuilderTest {
         Processor<String, String> composed =
                 ProcessorBuilder.from((String s) -> "ok")
                         .after(
-                                new ConsumerHandler<Processed<String>>(
+                                Handler.<Processed<String>>of(
                                         result -> {
                                             throw new IllegalStateException("hook");
                                         }))

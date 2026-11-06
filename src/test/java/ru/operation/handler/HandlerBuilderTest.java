@@ -25,9 +25,6 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.slf4j.event.Level;
-import ru.operation.handler.impl.ConsumerHandler;
-import ru.operation.handler.impl.MdcHandler;
-import ru.operation.handler.impl.wrap.LoggingHandler;
 import ru.operation.util.function.ThrowableConsumer;
 
 public class HandlerBuilderTest {
@@ -39,7 +36,7 @@ public class HandlerBuilderTest {
 
     @Test
     public void buildOrderIsLoggingMdcCore() {
-        Handler<String> core = new ConsumerHandler<>(s -> {});
+        Handler<String> core = Handler.<String>of(s -> {});
         Handler<String> composed =
                 HandlerBuilder.from(core)
                         .mdc("requestId", s -> "id-" + s)
@@ -47,18 +44,14 @@ public class HandlerBuilderTest {
                         .logging()
                         .build();
 
-        assertInstanceOf(MdcHandler.class, composed);
         assertTrue(composed.toString().startsWith("Mdc([requestId], Logging(DEBUG, Catching("));
     }
 
     @Test
     public void loggingWithoutName() {
         Handler<String> composed =
-                HandlerBuilder.from(new ConsumerHandler<String>(s -> {}))
-                        .logging(Level.TRACE)
-                        .build();
+                HandlerBuilder.from(Handler.<String>of(s -> {})).logging(Level.TRACE).build();
 
-        assertInstanceOf(LoggingHandler.class, composed);
         assertTrue(composed.toString().startsWith("Logging(TRACE, Catching("));
     }
 
@@ -66,9 +59,7 @@ public class HandlerBuilderTest {
     public void mdcReachesDelegate() {
         AtomicReference<String> seen = new AtomicReference<>();
         Handler<String> composed =
-                HandlerBuilder.from(
-                                new ConsumerHandler<String>(
-                                        input -> seen.set(MDC.get("requestId"))))
+                HandlerBuilder.from(Handler.<String>of(input -> seen.set(MDC.get("requestId"))))
                         .mdc("requestId", s -> "req-" + s)
                         .build();
 
@@ -80,22 +71,22 @@ public class HandlerBuilderTest {
     public void namedRejectsNull() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> HandlerBuilder.from(new ConsumerHandler<String>(s -> {})).named(null));
+                () -> HandlerBuilder.from(Handler.<String>of(s -> {})).named(null));
     }
 
     @Test
     public void mdcWithoutLogging() {
         Handler<String> composed =
-                HandlerBuilder.from(new ConsumerHandler<String>(s -> {})).mdc("k", s -> s).build();
-        assertInstanceOf(MdcHandler.class, composed);
+                HandlerBuilder.from(Handler.<String>of(s -> {})).mdc("k", s -> s).build();
+        assertTrue(composed.toString().startsWith("Mdc("));
     }
 
     @Test
     public void beforeAndAfterWrapCoreInsideMdc() {
         List<String> order = new ArrayList<>();
         Handler<String> composed =
-                HandlerBuilder.from(new ConsumerHandler<String>(s -> order.add("main")))
-                        .before(new ConsumerHandler<>(s -> order.add("before")))
+                HandlerBuilder.from(Handler.<String>of(s -> order.add("main")))
+                        .before(Handler.<String>of(s -> order.add("before")))
                         .after(
                                 result -> {
                                     order.add("after");
@@ -203,7 +194,7 @@ public class HandlerBuilderTest {
         Handler<String> composed =
                 HandlerBuilder.from((String s) -> coreCalled.set(true))
                         .before(
-                                new ConsumerHandler<String>(
+                                Handler.<String>of(
                                         s -> {
                                             throw new IllegalStateException("hook");
                                         }))
@@ -235,7 +226,7 @@ public class HandlerBuilderTest {
         Handler<String> composed =
                 HandlerBuilder.from((String s) -> {})
                         .after(
-                                new ConsumerHandler<Handled>(
+                                Handler.<Handled>of(
                                         result -> {
                                             throw new IllegalStateException("hook");
                                         }))
