@@ -48,6 +48,27 @@ public class HandlerBuilderTest {
     }
 
     @Test
+    public void caughtExceptionIsNotLogged() {
+        Logger root = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        root.addAppender(appender);
+        try {
+            Handler<String> handler =
+                    HandlerBuilder.from(
+                                    (String input) -> {
+                                        throw new IllegalStateException("boom");
+                                    })
+                            .build();
+            assertTrue(handler.handle("x").isError());
+        } finally {
+            root.detachAppender(appender);
+        }
+
+        assertTrue(appender.list.isEmpty());
+    }
+
+    @Test
     public void loggingWithoutName() {
         Handler<String> composed =
                 HandlerBuilder.from(Handler.<String>of(s -> {})).logging(Level.TRACE).build();

@@ -68,6 +68,62 @@ public class AbstractProcessorTest {
     }
 
     @Test
+    public void exceptionLoggedAtTrace() {
+        IllegalStateException boom = new IllegalStateException("boom");
+        Processor<String, String> processor =
+                new AbstractProcessor<String, String>() {
+                    @Override
+                    protected Processed<String> processInternal(String input) {
+                        throw boom;
+                    }
+                };
+        Logger logger = (Logger) LoggerFactory.getLogger(processor.getClass());
+        Level previous = logger.getLevel();
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        logger.setLevel(Level.TRACE);
+        try {
+            Processed<String> result = processor.process("x");
+            assertTrue(result.isError());
+            assertSame(boom, result.exception());
+        } finally {
+            logger.detachAppender(appender);
+            logger.setLevel(previous);
+        }
+
+        assertEquals(1, appender.list.size());
+        assertEquals(Level.TRACE, appender.list.get(0).getLevel());
+        assertEquals("Processing error of 'x'", appender.list.get(0).getFormattedMessage());
+    }
+
+    @Test
+    public void exceptionNotLoggedAboveTrace() {
+        IllegalStateException boom = new IllegalStateException("boom");
+        Processor<String, String> processor =
+                new AbstractProcessor<String, String>() {
+                    @Override
+                    protected Processed<String> processInternal(String input) {
+                        throw boom;
+                    }
+                };
+        Logger logger = (Logger) LoggerFactory.getLogger(processor.getClass());
+        Level previous = logger.getLevel();
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        logger.setLevel(Level.WARN);
+        try {
+            assertTrue(processor.process("x").isError());
+        } finally {
+            logger.detachAppender(appender);
+            logger.setLevel(previous);
+        }
+
+        assertTrue(appender.list.isEmpty());
+    }
+
+    @Test
     public void logsCheckSkipAndInternalResult() {
         Processor<String, String> processor =
                 new AbstractProcessor<String, String>() {

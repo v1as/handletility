@@ -124,7 +124,9 @@ public final class HandlerBuilder<I> {
 
     public Handler<I> build() {
         Handler<Failure<I>> exceptionMapping =
-                this.onException != null ? this.onException : new LoggingExceptionHandler<>();
+                this.onException != null
+                        ? this.onException
+                        : failure -> Handled.error(failure.exception());
 
         Handler<I> result = core;
         if (beforeHandler != null || afterHandler != null) {

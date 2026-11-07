@@ -7,7 +7,10 @@ import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.event.Level;
 
-/** Decorator that logs processor outcome at a configurable level (default {@link Level#DEBUG}). */
+/**
+ * Decorator that logs processor outcome. {@link Processed#skipped()} is logged at {@link
+ * Level#TRACE}; done and error use the configured level (default {@link Level#DEBUG}).
+ */
 final class LoggingProcessor<I, O> implements Processor<I, O> {
 
     private final Processor<I, O> delegate;
@@ -51,7 +54,8 @@ final class LoggingProcessor<I, O> implements Processor<I, O> {
     @Override
     public Processed<O> process(I input) {
         Processed<O> processed = delegate.process(input);
-        log.atLevel(level).log("Processed '{}' to '{}'", input, processed);
+        Level outcomeLevel = processed.isSkipped() ? Level.TRACE : level;
+        log.atLevel(outcomeLevel).log("Processed '{}' to '{}'", input, processed);
         return processed;
     }
 

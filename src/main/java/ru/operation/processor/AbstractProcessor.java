@@ -50,8 +50,9 @@ public abstract class AbstractProcessor<I, O> implements Processor<I, O> {
         return skipped();
     }
 
+    /** Logs at trace and returns the exception as {@link Processed#error(Exception)}. */
     protected Processed<O> onException(I input, Exception exception) {
-        log.warn("Processing error of '{}'", input, exception);
+        log.trace("Processing error of '{}'", input, exception);
         return error(exception);
     }
 }

@@ -1,7 +1,10 @@
 package ru.operation.handler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ru.operation.handler.Handled.done;
+import static ru.operation.handler.Handled.error;
 import static ru.operation.handler.Handled.skipped;
 
 import ch.qos.logback.classic.Level;
@@ -52,6 +55,52 @@ public class ListHandlerTest {
                 appender.list.stream()
                         .map(ILoggingEvent::getFormattedMessage)
                         .collect(Collectors.toList()));
+    }
+
+    @Test
+    public void thrownStepIsLoggedAtWarn() {
+        IllegalStateException boom = new IllegalStateException("boom");
+        Logger logger = (Logger) LoggerFactory.getLogger(ListHandler.class);
+        Level previous = logger.getLevel();
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        logger.setLevel(Level.WARN);
+        try {
+            Handled result = new ListHandler<>(Arrays.asList(new BoomHandler(boom))).handle("x");
+            assertSame(boom, result.exception());
+        } finally {
+            logger.detachAppender(appender);
+            logger.setLevel(previous);
+        }
+
+        assertEquals(1, appender.list.size());
+        assertEquals(Level.WARN, appender.list.get(0).getLevel());
+        assertEquals("Handler 'BoomHandler' threw", appender.list.get(0).getFormattedMessage());
+        assertEquals("boom", appender.list.get(0).getThrowableProxy().getMessage());
+    }
+
+    @Test
+    public void returnedErrorIsNotLogged() {
+        Logger logger = (Logger) LoggerFactory.getLogger(ListHandler.class);
+        Level previous = logger.getLevel();
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        logger.setLevel(Level.WARN);
+        try {
+            assertTrue(
+                    new ListHandler<>(
+                                    Arrays.asList(
+                                            input -> error(new IllegalStateException("boom"))))
+                            .handle("x")
+                            .isError());
+        } finally {
+            logger.detachAppender(appender);
+            logger.setLevel(previous);
+        }
+
+        assertTrue(appender.list.isEmpty());
     }
 
     @Test
@@ -145,6 +194,20 @@ public class ListHandlerTest {
         protected Handled handleInternal(Command input) {
             System.out.println("Bye " + input);
             return done();
+        }
+    }
+
+    private static final class BoomHandler implements Handler<String> {
+
+        private final RuntimeException exception;
+
+        private BoomHandler(RuntimeException exception) {
+            this.exception = exception;
+        }
+
+        @Override
+        public Handled handle(String input) {
+            throw exception;
         }
     }
 

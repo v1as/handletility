@@ -17,7 +17,8 @@ import ru.operation.Failure;
 
 /**
  * Runs handlers in order. By default stops on the first {@code DONE} or {@code ERROR}; behaviour is
- * controlled by {@link HandlerModifier}.
+ * controlled by {@link HandlerModifier}. A thrown exception is logged at warn and mapped through
+ * {@code onException}. A returned error is not logged.
  */
 public class ListHandler<I> extends AbstractHandler<I> {
 
@@ -32,11 +33,12 @@ public class ListHandler<I> extends AbstractHandler<I> {
             Handler<Failure<I>> onException) {
         this.handlers = handlers;
         this.modifiers = modifiers == null ? emptySet() : modifiers;
-        this.onException = onException != null ? onException : new LoggingExceptionHandler<>();
+        this.onException =
+                onException != null ? onException : failure -> error(failure.exception());
     }
 
     public ListHandler(List<? extends Handler<I>> handlers) {
-        this(handlers, emptySet(), new LoggingExceptionHandler<>());
+        this(handlers, emptySet(), null);
     }
 
     @Override
@@ -50,7 +52,7 @@ public class ListHandler<I> extends AbstractHandler<I> {
             try {
                 handled = handle(handler, input);
             } catch (Exception e) {
-                log.trace("Handler '{}' threw", handler.getClass().getSimpleName(), e);
+                log.warn("Handler '{}' threw", handler.getClass().getSimpleName(), e);
                 handled = onException.handle(new Failure<>(input, e));
             }
             log.trace("Handler '{}' has result '{}'", handler.getClass().getSimpleName(), handled);

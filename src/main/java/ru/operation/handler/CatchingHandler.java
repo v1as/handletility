@@ -1,6 +1,7 @@
 package ru.operation.handler;
 
 import static lombok.AccessLevel.PACKAGE;
+import static ru.operation.handler.Handled.error;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +18,7 @@ final class CatchingHandler<I> implements Handler<I> {
     @NonNull private final Handler<Failure<I>> onException;
 
     public CatchingHandler(Handler<I> delegate) {
-        this(delegate, new LoggingExceptionHandler<>());
+        this(delegate, failure -> error(failure.exception()));
     }
 
     @Override

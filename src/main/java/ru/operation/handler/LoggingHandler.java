@@ -7,7 +7,10 @@ import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.event.Level;
 
-/** Decorator that logs handler outcome at a configurable level (default {@link Level#DEBUG}). */
+/**
+ * Decorator that logs handler outcome. {@link Handled#skipped()} is logged at {@link Level#TRACE};
+ * done and error use the configured level (default {@link Level#DEBUG}).
+ */
 final class LoggingHandler<I> implements Handler<I> {
 
     private final Handler<I> delegate;
@@ -48,7 +51,8 @@ final class LoggingHandler<I> implements Handler<I> {
     @Override
     public Handled handle(I input) {
         Handled handled = delegate.handle(input);
-        log.atLevel(level).log("Handled input '{}' with result {}", input, handled);
+        Level outcomeLevel = handled.isSkipped() ? Level.TRACE : level;
+        log.atLevel(outcomeLevel).log("Handled input '{}' with result {}", input, handled);
         return handled;
     }
 

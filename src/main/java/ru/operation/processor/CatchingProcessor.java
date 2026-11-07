@@ -1,6 +1,7 @@
 package ru.operation.processor;
 
 import static lombok.AccessLevel.PACKAGE;
+import static ru.operation.processor.Processed.error;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +18,7 @@ final class CatchingProcessor<I, O> implements Processor<I, O> {
     @NonNull private final Processor<Failure<I>, O> onException;
 
     public CatchingProcessor(Processor<I, O> delegate) {
-        this(delegate, new LoggingExceptionProcessor<>());
+        this(delegate, failure -> error(failure.exception()));
     }
 
     @Override

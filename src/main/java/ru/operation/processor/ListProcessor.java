@@ -1,12 +1,12 @@
 package ru.operation.processor;
 
+import static java.util.Collections.emptySet;
 import static ru.operation.processor.Processed.done;
 import static ru.operation.processor.Processed.error;
 import static ru.operation.processor.Processed.skipped;
 import static ru.operation.processor.ProcessorModifier.CONTINUE_ON_ERROR;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import lombok.Builder;
@@ -18,9 +18,10 @@ import ru.operation.util.function.ThrowableBiFunction;
 /**
  * Runs processors over one input. Without {@code combiner}, the first {@code DONE} is returned.
  * With {@code combiner}, every {@code DONE} is folded left to right. {@code SKIPPED} moves on. Stops
- * on {@code ERROR} unless {@link ProcessorModifier#CONTINUE_ON_ERROR} is set. An exception from
- * {@code combiner} is an error of the list and follows the same rule. A collected error during a
- * fold is still the result, and the accumulated value is dropped.
+ * on {@code ERROR} unless {@link ProcessorModifier#CONTINUE_ON_ERROR} is set. A thrown exception,
+ * including one from {@code combiner}, is logged at warn and mapped through {@code onException}. A
+ * returned error is not logged. A collected error during a fold is still the result, and the
+ * accumulated value is dropped.
  */
 public class ListProcessor<I, O> extends AbstractProcessor<I, O> {
 
@@ -36,17 +37,14 @@ public class ListProcessor<I, O> extends AbstractProcessor<I, O> {
             ThrowableBiFunction<O, O, O> combiner,
             Processor<Failure<I>, O> onException) {
         this.processors = processors;
-        this.modifiers = modifiers == null ? Collections.<ProcessorModifier>emptySet() : modifiers;
+        this.modifiers = modifiers == null ? emptySet() : modifiers;
         this.combiner = combiner;
-        this.onException = onException != null ? onException : new LoggingExceptionProcessor<>();
+        this.onException =
+                onException != null ? onException : failure -> error(failure.exception());
     }
 
     public ListProcessor(List<? extends Processor<I, O>> processors) {
-        this(
-                processors,
-                Collections.<ProcessorModifier>emptySet(),
-                null,
-                new LoggingExceptionProcessor<>());
+        this(processors, emptySet(), null, null);
     }
 
     @Override
@@ -61,7 +59,7 @@ public class ListProcessor<I, O> extends AbstractProcessor<I, O> {
             try {
                 processed = processor.process(input);
             } catch (Exception e) {
-                log.trace("Processor '{}' threw", processor.getClass().getSimpleName(), e);
+                log.warn("Processor '{}' threw", processor.getClass().getSimpleName(), e);
                 processed = this.onException.process(new Failure<>(input, e));
             }
             log.trace(
@@ -86,7 +84,7 @@ public class ListProcessor<I, O> extends AbstractProcessor<I, O> {
                     accumulator = combiner.apply(accumulator, processed.value());
                     continue;
                 } catch (Exception exception) {
-                    log.trace("Combiner threw", exception);
+                    log.warn("Combiner threw", exception);
                     Processed<O> mapped = onException.process(new Failure<>(input, exception));
                     failed = true;
                     errors.add(mapped.isError() ? mapped.exception() : exception);

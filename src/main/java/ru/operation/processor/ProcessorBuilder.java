@@ -131,7 +131,9 @@ public final class ProcessorBuilder<I, O> {
 
     public Processor<I, O> build() {
         Processor<Failure<I>, O> exceptionMapping =
-                this.onException != null ? this.onException : new LoggingExceptionProcessor<>();
+                this.onException != null
+                        ? this.onException
+                        : failure -> Processed.error(failure.exception());
 
         Processor<I, O> result = core;
         if (beforeHandler != null || afterHandler != null) {

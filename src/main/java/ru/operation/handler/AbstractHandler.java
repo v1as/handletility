@@ -50,8 +50,9 @@ public abstract class AbstractHandler<I> implements Handler<I> {
         return skipped();
     }
 
+    /** Logs at trace and returns the exception as {@link Handled#error(Exception)}. */
     protected Handled onException(I input, Exception exception) {
-        log.warn("Error while handling '{}'", input, exception);
+        log.trace("Error while handling '{}'", input, exception);
         return error(exception);
     }
 }

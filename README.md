@@ -16,7 +16,7 @@ Java 8. Транзитивно подтягивается `slf4j-api`; реал�
 
 ```gradle
 dependencies {
-    implementation 'io.github.v1as:handletility:0.0.15'
+    implementation 'io.github.v1as:handletility:0.0.16'
 }
 ```
 
@@ -24,7 +24,7 @@ dependencies {
 <dependency>
   <groupId>io.github.v1as</groupId>
   <artifactId>handletility</artifactId>
-  <version>0.0.15</version>
+  <version>0.0.16</version>
 </dependency>
 ```
 

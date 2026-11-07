@@ -60,6 +60,86 @@ public class ListProcessorTest {
     }
 
     @Test
+    public void thrownStepIsLoggedAtWarn() {
+        IllegalStateException boom = new IllegalStateException("boom");
+        Logger logger = (Logger) LoggerFactory.getLogger(ListProcessor.class);
+        Level previous = logger.getLevel();
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        logger.setLevel(Level.WARN);
+        try {
+            assertSame(
+                    boom,
+                    new ListProcessor<>(Arrays.asList(new BoomProcessor(boom)))
+                            .process("x")
+                            .exception());
+        } finally {
+            logger.detachAppender(appender);
+            logger.setLevel(previous);
+        }
+
+        assertEquals(1, appender.list.size());
+        assertEquals(Level.WARN, appender.list.get(0).getLevel());
+        assertEquals("Processor 'BoomProcessor' threw", appender.list.get(0).getFormattedMessage());
+        assertEquals("boom", appender.list.get(0).getThrowableProxy().getMessage());
+    }
+
+    @Test
+    public void returnedErrorIsNotLogged() {
+        Logger logger = (Logger) LoggerFactory.getLogger(ListProcessor.class);
+        Level previous = logger.getLevel();
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        logger.setLevel(Level.WARN);
+        try {
+            assertTrue(
+                    new ListProcessor<String, String>(
+                                    Arrays.asList(
+                                            input -> error(new IllegalStateException("boom"))))
+                            .process("x")
+                            .isError());
+        } finally {
+            logger.detachAppender(appender);
+            logger.setLevel(previous);
+        }
+
+        assertTrue(appender.list.isEmpty());
+    }
+
+    @Test
+    public void combinerThrowIsLoggedAtWarn() {
+        IOException merge = new IOException("merge");
+        Logger logger = (Logger) LoggerFactory.getLogger(ListProcessor.class);
+        Level previous = logger.getLevel();
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        logger.setLevel(Level.WARN);
+        try {
+            Processor<String, String> list =
+                    ListProcessor.<String, String>listProcessor()
+                            .processor(input -> done("a"))
+                            .processor(input -> done("b"))
+                            .combiner(
+                                    (left, right) -> {
+                                        throw merge;
+                                    })
+                            .build();
+            assertSame(merge, list.process("x").exception());
+        } finally {
+            logger.detachAppender(appender);
+            logger.setLevel(previous);
+        }
+
+        assertEquals(1, appender.list.size());
+        assertEquals(Level.WARN, appender.list.get(0).getLevel());
+        assertEquals("Combiner threw", appender.list.get(0).getFormattedMessage());
+        assertEquals("merge", appender.list.get(0).getThrowableProxy().getMessage());
+    }
+
+    @Test
     public void continueOnErrorTriesNext() {
         Processor<String, Integer> list =
                 ListProcessor.<String, Integer>listProcessor()
@@ -259,6 +339,20 @@ public class ListProcessorTest {
             builder.modifier(ProcessorModifier.CONTINUE_ON_ERROR);
         }
         return builder.build();
+    }
+
+    private static final class BoomProcessor implements Processor<String, String> {
+
+        private final RuntimeException exception;
+
+        private BoomProcessor(RuntimeException exception) {
+            this.exception = exception;
+        }
+
+        @Override
+        public Processed<String> process(String input) {
+            throw exception;
+        }
     }
 
     private static final class SkippingProcessor implements Processor<String, String> {
