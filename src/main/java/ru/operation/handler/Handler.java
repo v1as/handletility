@@ -4,6 +4,7 @@ import static ru.operation.processor.Processed.error;
 import static ru.operation.processor.Processed.skipped;
 import static ru.operation.util.Checks.notNull;
 
+import ru.operation.HandlerOutcome;
 import ru.operation.processor.Processed;
 import ru.operation.processor.Processor;
 import ru.operation.util.function.ThrowableConsumer;
@@ -15,7 +16,8 @@ import ru.operation.util.function.ThrowableConsumer;
  * <p>{@link #and} runs the next handler on the same input when this one returns {@link
  * Handled#done()} and stops on skip or error. {@link #or} tries the next handler on the same input
  * when this one returns {@link Handled#skipped()} and stops on done or error. {@link #thenProcess}
- * runs a processor on that same input when this handler returns {@link Handled#done()}.
+ * runs a processor on that same input when this handler returns {@link Handled#done()}. {@link
+ * #after} runs a finisher after any returned {@link Handled} and keeps that result.
  */
 @FunctionalInterface
 public interface Handler<I> {
@@ -56,6 +58,17 @@ public interface Handler<I> {
      */
     default Handler<I> or(Handler<? super I> next) {
         return new OrHandler<>(this, notNull(next, "next"));
+    }
+
+    /**
+     * Runs {@code next} after a returned {@link Handled}, with {@link HandlerOutcome} (input and
+     * result). The chain keeps this result unless {@code next} throws an {@link Exception}. A
+     * different prior error is suppressed on that exception. {@link Error} is not caught. A throw from
+     * this handler skips {@code next}. Unlike {@link #and}, {@code next} also runs on skip and error
+     * and does not replace the chain result.
+     */
+    default Handler<I> after(ThrowableConsumer<HandlerOutcome<I>> next) {
+        return new AfterHandler<>(this, notNull(next, "next"));
     }
 
     /** Identifies this handler by a constant. */

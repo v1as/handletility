@@ -272,4 +272,19 @@ public class ProcessorThenTest {
         assertTrue(error.isError());
         assertEquals("boom", error.exception().getMessage());
     }
+
+    @Test
+    public void thenFilterNotNullSkipsOnNullAndPropagatesSkipAndError() {
+        Processor<String, String> present = input -> done(input);
+        assertEquals("a", present.thenFilterNotNull().process("a").requireDone());
+        assertTrue(present.thenFilterNotNull().process(null).isSkipped());
+
+        Processor<String, String> skipping = input -> skipped();
+        assertTrue(skipping.thenFilterNotNull().process("x").isSkipped());
+
+        Processor<String, String> failing = input -> error(new IllegalStateException("boom"));
+        Processed<String> error = failing.thenFilterNotNull().process("x");
+        assertTrue(error.isError());
+        assertEquals("boom", error.exception().getMessage());
+    }
 }

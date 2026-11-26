@@ -136,6 +136,21 @@ money.process(new Order(null, "EUR")); // skipped: cents пропустил, cur
 money.process(new Order("15", null));  // cents done, currency skipped → skipped
 ```
 
+## Финал после шага
+
+`after` — побочный эффект после любого возвращённого `done`, `skipped` или `error`, с доступом к входу и итогу (`HandlerOutcome` / `ProcessorOutcome`). Снаружи остаётся итог левой части; бросок финала даёт `error`, прежняя ошибка шага подавляется. Если левый шаг бросил исключение, а не вернул результат, финал не вызывается.
+
+```java
+Handler<Payment> chargeThenAudit =
+        card.after(outcome -> audit.log(outcome.input(), outcome.handled()));
+
+chargeThenAudit.handle(new Payment("card", 500));   // done, audit, снаружи done
+chargeThenAudit.handle(new Payment("wallet", 500)); // skipped, audit, снаружи skipped
+chargeThenAudit.handle(new Payment("card", -1));    // error, audit, снаружи тот же error
+```
+
+`and` — только после `done`, итог цепочки берётся у правого шага. `HandlerBuilder.after` — хук без входа внутри `when` и `before`.
+
 ## Сбой становится значением
 
 ```java

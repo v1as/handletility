@@ -5,22 +5,27 @@ import static ru.operation.processor.Processed.error;
 import static ru.operation.processor.Processed.skipped;
 import static ru.operation.util.Checks.notNull;
 
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import ru.operation.Failure;
+import ru.operation.ProcessorOutcome;
 import ru.operation.handler.Handler;
 import ru.operation.util.function.ThrowableBiFunction;
+import ru.operation.util.function.ThrowableConsumer;
 import ru.operation.util.function.ThrowableFunction;
 
 /**
  * Transforms {@code I} into {@code O}. Prefer extending {@link AbstractProcessor} for check,
  * exception handling and logging.
  *
- * <p>{@link #thenApply}, {@link #thenPipe}, {@link #thenFilter} and {@link #thenHandle} follow {@link
- * Processed}: skip and error propagate, and later steps are not invoked. {@link #and} runs the next
+ * <p>{@link #thenApply}, {@link #thenPipe}, {@link #thenFilter}, {@link #thenFilterNotNull} and {@link
+ * #thenHandle} follow {@link Processed}: skip and error propagate, and later steps are not invoked.
+ * {@link #and} runs the next
  * processor on the same input only after done and folds both payloads. {@link #or} tries the next
  * processor on the same input after skip and still stops on done or error. {@link #recover} turns an
- * error into {@link Processed#done(Object)} from the original input and the exception.
+ * error into {@link Processed#done(Object)} from the original input and the exception. {@link
+ * #after} runs a finisher after any returned {@link Processed} and keeps that result.
  */
 @FunctionalInterface
 public interface Processor<I, O> {
@@ -44,6 +49,17 @@ public interface Processor<I, O> {
      */
     default Processor<I, O> or(Processor<? super I, O> next) {
         return new OrProcessor<>(this, notNull(next, "next"));
+    }
+
+    /**
+     * Runs {@code next} after a returned {@link Processed}, with {@link ProcessorOutcome} (input and
+     * result). The chain keeps this result unless {@code next} throws an {@link Exception}. A
+     * different prior error is suppressed on that exception. {@link Error} is not caught. A throw from
+     * this processor skips {@code next}. Unlike {@link #and}, {@code next} also runs on skip and
+     * error and does not replace the chain result.
+     */
+    default Processor<I, O> after(ThrowableConsumer<ProcessorOutcome<I, O>> next) {
+        return new AfterProcessor<>(this, notNull(next, "next"));
     }
 
     /**
@@ -108,6 +124,14 @@ public interface Processor<I, O> {
      */
     default Processor<I, O> thenFilter(Predicate<? super O> predicate) {
         return input -> process(input).filter(predicate);
+    }
+
+    /**
+     * Keeps a successful output only when it is non-null; a done {@code null} payload becomes {@link
+     * Processed#skipped()}. Skip and error from this processor propagate unchanged.
+     */
+    default Processor<I, O> thenFilterNotNull() {
+        return input -> process(input).filter(Objects::nonNull);
     }
 
     /** Continues with a handler ({@link Processed#handle}). */
